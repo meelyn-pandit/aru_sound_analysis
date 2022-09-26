@@ -16,14 +16,15 @@ library(multcomp) #posthoc tests for ANOVA type III effects
 library(bbmle) #AIC comparisons
 library(performance)
 library(generics) #find rows with the same values across dataframes
+library(lintr)
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 # sites = as.list(c("sswma"))
 arid_species = NULL
 water_species = NULL
 for(s in sites){
-  setwd("/home/meelyn/Documents/dissertation/birdnet_analysis/data_clean/")
-  dir = "/home/meelyn/Documents/dissertation/birdnet_analysis/data_clean/"
+  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
+  dir = "/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/"
   if(s == "lwma"){
     load("lwma_aru_results.Rdata")
     data = lwma_aru_results

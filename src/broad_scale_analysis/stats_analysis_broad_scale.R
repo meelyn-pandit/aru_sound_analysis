@@ -20,7 +20,7 @@ library(lsmeans)
 
 # Loading Clean Data ------------------------------------------------------
 
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data_clean/")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/acoustic_metric_data/")
 load("aci_full.Rdata")
 load("bio_full.Rdata")
 

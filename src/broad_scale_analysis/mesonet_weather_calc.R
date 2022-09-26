@@ -168,7 +168,7 @@ sswma_hour = sswma_weather %>%
 
 # Clean CBMA Weather Data obtained from Texas Mesonet ---------------------
 
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/")
 
 cbma_weather = read_csv("cbma_mesonet.csv", col_names = TRUE, col_types = "ccnnnTnnnnnnnnnnnnnc") %>%
   dplyr::rename(station = "Station_ID",
