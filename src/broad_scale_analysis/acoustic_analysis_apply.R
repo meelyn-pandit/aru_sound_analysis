@@ -592,7 +592,7 @@ aci = lapply(sites, function(x){
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/lwma_mesonet.Rdata")
     wd = lwma_mesonet
     
-    #load historic data from 2012-2021
+    #load historic data from 2005-2021
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data_clean/historic_weather_data/lwma_wh.Rdata")
     hd = lwma_wh %>%
       dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
@@ -605,7 +605,7 @@ aci = lapply(sites, function(x){
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/sswma_mesonet.Rdata")
     wd = sswma_mesonet
     
-    #load historic data from 2012-2021
+    #load historic data from 2005-2021
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data_clean/historic_weather_data/sswma_wh.Rdata")
     hd = sswma_wh %>%
     dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
@@ -619,7 +619,7 @@ aci = lapply(sites, function(x){
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/cbma_mesonet.Rdata")
     wd = cbma_mesonet
     
-    #load historic data from 2012-2021
+    #load historic data from 2005-2021
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data_clean/historic_weather_data/cbma_wh.Rdata")
     hd = cbma_wh %>% 
       dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
@@ -633,7 +633,7 @@ aci = lapply(sites, function(x){
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/kiowa_mesonet.Rdata")
     wd = kiowa_mesonet
     
-    #load historic data from 2012-2021
+    #load historic data from 2005-2021
     load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data_clean/historic_weather_data/kiowa_wh.Rdata")
     hd = kiowa_wh %>% 
       dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%

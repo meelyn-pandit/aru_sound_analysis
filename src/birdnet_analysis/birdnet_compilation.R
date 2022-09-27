@@ -54,44 +54,89 @@ setwd("/Volumes/LaCie/aridity_project/")
 birdnet_data = rbind(lwma_aru_results,sswma_aru_results,cbma_aru_results,kiowa_aru_results)
 save(birdnet_data, file = "birdnet_data.Rdata")
 
-# Combining Site Datasets, adding sunlight and sunaltitude variables, and adding weather data from NiceMapR --------------------------------------
+# Combining Site Datasets, adding sunlight and sunaltitude variables, and adding weather data from Mesonet Sites--------------------------------------
+
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
-# sites = as.list(c("sswma"))
+# sites = as.list(c("lwma"))
 arid_full = NULL
 water_full = NULL
 for(s in sites){
-  setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
-  
+  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
   if(s == "lwma"){
-    load("lwma_aru_results.Rdata")
+    # load lwma bird data
+    load("birdnet_data/lwma_aru_results.Rdata")
     data = lwma_aru_results
-    load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/lwma_mesonet.Rdata")
-    weather_data = lwma_mesonet
-  } else if(s == "sswma"){
-    load("sswma_aru_results.Rdata")
-    data = sswma_aru_results
-    load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/sswma_mesonet.Rdata")
-    weather_data = sswma_mesonet
-  } else if(s == "cbma"){
-    load("cbma_aru_results.Rdata")
-    data = cbma_aru_results
-    load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/cbma_mesonet.Rdata")
-    weather_data = cbma_mesonet
-  } else if(s == "kiowa"){
-    load("kiowa_aru_results.Rdata")
-    data = kiowa_aru_results
-    load("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/kiowa_mesonet.Rdata")
-    weather_data = kiowa_mesonet
-  }
-  
-  
-  if(s == "kiowa"){
-    tz = "US/Mountain"
-    #i want to only subtract 3600s from 06/17/21 and 06/18/21
-  } else {
+    #load 2021 mesonet data
+    load("mesonet_data/lwma_mesonet.Rdata")
+    wd = lwma_mesonet
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    #load historic data from 2005-2021
+    load("historic_weather_data/lwma_wh.Rdata")
+    hd = lwma_wh %>%
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
     tz = "US/Central"
+    
+  } else if(s == "sswma"){
+    # load sswma bird data
+    load("birdnet_data/sswma_aru_results.Rdata")
+    data = sswma_aru_results
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
+    wd = sswma_mesonet
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/sswma_wh.Rdata")
+    hd = sswma_wh %>%
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Central"
+    
+    
+  } else if(s == "cbma"){
+    # load cbma bird data
+    load("birdnet_data/cbma_aru_results.Rdata")
+    data = cbma_aru_results
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
+    wd = cbma_mesonet
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/cbma_wh.Rdata")
+    hd = cbma_wh %>% 
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Central"
+    
+    
+  } else if(s == "kiowa"){
+    # load kiowa bird data
+    load("birdnet_data/kiowa_aru_results.Rdata")
+    data = kiowa_aru_results
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/kiowa_mesonet.Rdata")
+    wd = kiowa_mesonet
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/kiowa_wh.Rdata")
+    hd = kiowa_wh %>% 
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Mountain"
+    
   }
   
+  # summarize birdnet data into number of vocalizations and number of species
   data_temp = data %>%
     mutate(date = as_date(date),
            local_time = force_tz(date_time, tz = tz),
@@ -122,19 +167,23 @@ for(s in sites){
     
   }
   
-  data_temp = left_join(data_temp, weather_data, by = "date_time")
+  data_temp = left_join(data_temp, wd, by = "date_time")
   data_missing = data_temp %>%
     dplyr::filter(is.na(mas)==TRUE)
   
-  data_temp = data_temp %>%
+  data_temp = data_temp %>% filter(is.na(mas) == FALSE)
+  data_temp2 = left_join(data_temp, hd, by = "mas")
+  
+  data_temp3 = data_temp2 %>%
     mutate(site = factor(site.x, levels=c("lwma","sswma","cbma","kiowa")))%>%
     # dplyr::select(-site.x, -site.y,-hour.x,-hour.y)
-    dplyr::select(-hour, -site.y)
+    dplyr::select(-hour, -site.y, -hour_utc.y) %>%
+    rename(hour_utc = "hour_utc.x")
   
-  data_temp_arid = data_temp%>%
+  data_temp_arid = data_temp3 %>%
     filter(aru == "aru01" | aru == "aru02"| aru == "aru03"| aru == "aru04"| aru == "aru05")
   
-  data_temp_water = data_temp %>%
+  data_temp_water = data_temp3 %>%
   filter(aru == "ws01" | aru == "ws02"| aru == "ws03"| aru == "ws04"| aru == "ws05" |
          aru == "ws06" | aru == "ws07"| aru == "ws08"| aru == "ws09"| aru == "ws10" | 
          aru == "ws11" | aru == "ws12"| aru == "ws13"| aru == "ws14"| aru == "ws15" |
@@ -152,6 +201,7 @@ for(s in sites){
 #Aridity Gradient Data for statistical analyses
 full_arid = arid_full %>% #saving it a different name so you don't overwrite it
   dplyr::filter(is.na(mas)==FALSE) %>%
+  dplyr::filter(is.na(gh_hobs) == FALSE) %>%
   dplyr::filter(hour_local <13) %>%
   dplyr::filter(year(date) != 2106) %>%
   mutate(arid_bin = cut(arid, 3, labels = c("low","med","high")))
@@ -159,7 +209,7 @@ full_arid = arid_full %>% #saving it a different name so you don't overwrite it
 max(full_arid$mas)
 which.max(full_arid$mas)
 mas_check = full_arid[which.max(full_arid$mas),];mas_check
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
 save(full_arid, file = "aridity_gradient_ml.Rdata")
 load("aridity_gradient_ml.Rdata")
 
@@ -168,11 +218,12 @@ load("aridity_gradient_ml.Rdata")
 
 full_water = water_full %>% #saving it a different name so you don't overwrite it
   dplyr::filter(is.na(mas)==FALSE) %>%
+  dplyr::filter(is.na(gh_hobs) == FALSE) %>%
   dplyr::filter(hour_local <13) %>%
   dplyr::filter(year(date) != 2106) %>%
   dplyr::filter(is.na(mas)==FALSE)
 
-
+#Separating out CBMA water sites
 full_water1 = full_water %>%
   filter(aru == "wg01" | aru == "wg02" | aru == "wg03") %>%
   mutate(water = ifelse(date >= "2021-06-04" & date <"2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1),
@@ -185,7 +236,7 @@ full_water2 = full_water %>%
 
 cbma_full_water = rbind(full_water1, full_water2)
 
-
+#Separating out SSWMA water sites
 sswma_full_water1 = full_water %>%
   filter(aru == "ws01"| aru == "ws02"| aru == "ws03"| aru == "ws04"| aru == "ws05")%>%
   mutate(water = ifelse(date >= "2021-05-17" & date <"2021-05-30"| date >= "2021-06-13" & date < "2021-07-02", 1,0),
@@ -210,7 +261,7 @@ max(water_compiled$mas)
 which.max(water_compiled$mas)
 mas_check = water_compiled[which.max(water_compiled$mas),];mas_check
   
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
 save(water_compiled, file = "water_supp_ml.Rdata")
 load("water_supp_ml.Rdata")
 
