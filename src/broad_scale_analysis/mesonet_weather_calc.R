@@ -186,6 +186,9 @@ cbma_weather = read_csv("cbma_mesonet.csv", col_names = TRUE, col_types = "ccnnn
 # cbma_weather$temp = na.approx(cbma_weather$temp, na.rm = FALSE)
 # cbma_weather$relh = na.approx(cbma_weather$relh, na.rm = FALSE)
 # cbma_weather$pres = na.approx(cbma_weather$pres, na.rm = FALSE)
+cbma_weather$dew = na.approx(cbma_weather$dew, na.rm = FALSE)
+cbma_weather$relh2 = relhum(cbma_weather$temp, cbma_weather$dew)
+##just use relh from cbma sites
 
 load("cbma_sunrise.Rdata")
 
@@ -722,7 +725,7 @@ ggplot(data = sswmah_hour, aes(x = mas, y = mean_ghhobs))+
 
 # CBMA Historic Weather Data ----------------------------------------------
 
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/cbma_historic_data/")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/")
 cbma_files = list.files(pattern = ".csv")
 cbma_history = lapply(cbma_files,function(x){
   cbma_weather = read_csv(x, col_names = TRUE, col_types = "ccnnnTnnnnnnnnnnnnnc") %>%
