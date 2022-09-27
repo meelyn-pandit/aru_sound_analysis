@@ -183,6 +183,15 @@ for(s in sites){
   
   arid_species = rbind(data_temp_arid,arid_species) %>%
     filter(is.na(gh_hobs)==FALSE)
+  arid_species2 = arid_species %>%
+    group_by(common_name, site,date_time, mas)%>%
+    summarise(num_vocals = n(),
+              gh_obs = mean(gh), #observed aridity in 2021
+              gh_hobs = mean(gh_hobs), #historic aridity from 2005-2021
+              ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
+              ghmean_time = mean(ghmean_time), #observed aridity
+              ghsite_scaled = mean(ghsite_scaled)) %>% #historic aridity scaled across sites
+    mutate(mas = as.numeric(as.character(mas)))
   water_species = rbind(data_temp_water,water_species) %>%
     filter(is.na(gh_hobs)==FALSE)
 }
@@ -190,6 +199,12 @@ for(s in sites){
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 save(arid_species, file = "arid_cardinal.Rdata")
 save(water_species, file = "water_cardinal.Rdata")
+
+
+# Statistical Analyses ----------------------------------------------------
+
+noca1 = lmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+summary(noca1)
 # Number of species per aru and site --------------------------------------
 
 lwma_species = arid_species %>%
