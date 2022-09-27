@@ -171,8 +171,9 @@ for(s in sites){
   data_missing = data_temp %>%
     dplyr::filter(is.na(mas)==TRUE)
   
-  data_temp = data_temp %>% filter(is.na(mas) == FALSE)
-  data_temp2 = left_join(data_temp, hd, by = "mas")
+  data_temp = data_temp %>% filter(is.na(mas) == FALSE) %>%
+    mutate(month_day = format(as.Date(date_time), "%m-%d"))
+  data_temp2 = left_join(data_temp, hd, by = c("month_day", "mas"))
   
   data_temp3 = data_temp2 %>%
     mutate(site = factor(site.x, levels=c("lwma","sswma","cbma","kiowa")))%>%
@@ -1130,20 +1131,6 @@ assump(cwsd5)
 Anova(cwsd5, type = "III")
 contrasts = glht(cwsd5, linfct = mcp(water_int = "Tukey"))
 summary(contrasts) #presence of water increases species diversity across ws_site 1, and ws_site 2 has higher species diversity than ws_site 1 with restrected access, but is not significantly different (p = 0.0698) from ws_site 1 with access to water
-
-
-
-
-
-
-# Checking Unique Species at each Site ------------------------------------
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
-load("birdnet_data.Rdata")
-lwma_ag = birdnet_data %>%
-  dplyr::filter(site == "lwma")%>%
-  dplyr::filter(common_name == "Northern Shoveler")%>%
-  summarize(species = unique(common_name))
-
 
 # Comparing against Manual Detections in Validation Files -----------------
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/")
