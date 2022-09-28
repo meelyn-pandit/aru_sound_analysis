@@ -19,7 +19,7 @@ library(generics) #find rows with the same values across dataframes
 library(lintr)
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
-# sites = as.list(c("kiowa"))
+# sites = as.list(c("lwma"))
 arid_species = NULL
 water_species = NULL
 
@@ -29,10 +29,11 @@ for(s in sites){
     # load lwma bird data
     load("birdnet_data/lwma_aru_results.Rdata")
     data = lwma_aru_results %>%
-      dplyr::filter(common_name == "Northern Cardinal")
+      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
     #load 2021 mesonet data
     load("mesonet_data/lwma_mesonet.Rdata")
-    wd = lwma_mesonet
+    wd = lwma_mesonet %>%
+      mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
     labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
@@ -50,9 +51,10 @@ for(s in sites){
     # load sswma bird data
     load("birdnet_data/sswma_aru_results.Rdata")
     data = sswma_aru_results%>%
-      dplyr::filter(common_name == "Northern Cardinal")
+      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
-    wd = sswma_mesonet
+    wd = sswma_mesonet%>%
+      mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
     labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
@@ -73,9 +75,10 @@ for(s in sites){
     # load cbma bird data
     load("birdnet_data/cbma_aru_results.Rdata")
     data = cbma_aru_results%>%
-      dplyr::filter(common_name == "Northern Cardinal")
+      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
-    wd = cbma_mesonet
+    wd = cbma_mesonet%>%
+      mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
     labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
@@ -95,9 +98,10 @@ for(s in sites){
     # load kiowa bird data
     load("birdnet_data/kiowa_aru_results.Rdata")
     data = kiowa_aru_results%>%
-      dplyr::filter(common_name == "Northern Cardinal")
+      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/kiowa_mesonet.Rdata")
-    wd = kiowa_mesonet
+    wd = kiowa_mesonet%>%
+      mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
     labels = seq(-750,730,5) #creating bin labels, going from lowest value to the highest value-5
     wd$mas = cut(wd$mas, seq(-750,735,5),labels = labels, right = FALSE)
@@ -114,12 +118,12 @@ for(s in sites){
     
   }
   
-  if(s == "kiowa"){
-    tz = "US/Mountain"
-    #i want to only subtract 3600s from 06/17/21 and 06/18/21
-  } else {
-    tz = "US/Central"
-  }
+  # if(s == "kiowa"){
+  #   tz = "US/Mountain"
+  #   #i want to only subtract 3600s from 06/17/21 and 06/18/21
+  # } else {
+  #   tz = "US/Central"
+  # }
   
   data_temp = data %>%
     mutate(date = as_date(date),
@@ -183,28 +187,87 @@ for(s in sites){
   
   arid_species = rbind(data_temp_arid,arid_species) %>%
     filter(is.na(gh_hobs)==FALSE)
-  arid_species2 = arid_species %>%
-    group_by(common_name, site,date_time, mas)%>%
-    summarise(num_vocals = n(),
-              gh_obs = mean(gh), #observed aridity in 2021
-              gh_hobs = mean(gh_hobs), #historic aridity from 2005-2021
-              ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
-              ghmean_time = mean(ghmean_time), #observed aridity
-              ghsite_scaled = mean(ghsite_scaled)) %>% #historic aridity scaled across sites
-    mutate(mas = as.numeric(as.character(mas)))
+
   water_species = rbind(data_temp_water,water_species) %>%
     filter(is.na(gh_hobs)==FALSE)
 }
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
-save(arid_species, file = "arid_cardinal.Rdata")
-save(water_species, file = "water_cardinal.Rdata")
+arid_species$ghacross_sites = scale(arid_species$gh)
+arid_species2 = arid_species %>%
+  group_by(common_name, site,date_time, mas)%>%
+  summarise(num_vocals = n(),
+            gh_obs = mean(gh), #observed aridity in 2021
+            gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
+            ghwithin_scaled = mean(ghobs_scaled), # observed aridity scaled within sites
+            ghacross_sites = mean(ghacross_sites), # observed aridity scaled across sites
+            ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
+            ghsite_scaled = mean(ghsite_scaled)) %>% #historic aridity scaled across sites
+  mutate(mas = as.numeric(as.character(mas)))
 
+water_species$ghacross_sites = scale(water_species$gh)
+water_species2 = water_species %>%
+  group_by(common_name, site,date_time, mas)%>%
+  summarise(num_vocals = n(),
+            gh_obs = mean(gh), #observed aridity in 2021
+            gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
+            ghwithin_scaled = mean(ghobs_scaled), # observed aridity scaled within sites
+            ghacross_sites = mean(ghacross_sites), # observed aridity scaled across sites
+            ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
+            ghsite_scaled = mean(ghsite_scaled)) %>% #historic aridity scaled across sites
+  mutate(mas = as.numeric(as.character(mas)))
+
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+save(arid_species2, file = "general_species_ag.Rdata")
+save(water_species2, file = "general_species_water.Rdata")
+
+# Plotting Cardinal Vocalizations across time and aridity -----------------
+cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999")
+#################light blue, green, orange-yellow, orange, yellow, dark blue, pink, gray
+
+#
+ggplot(data = arid_species2 %>% filter(common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark"),
+       aes(x=ghwithin_scaled, y=num_vocals, color = site)) +
+  # geom_point()+
+  geom_smooth(method = "lm")+
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_y_continuous(name = "Number of Vocals")+
+  theme_classic(base_size = 20) +
+  ggtitle("Species: Meadowlarks") +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "bottom")
+# for observed aridity the trend for cardinals in cbma is positive, while for historic aridity it is negative
+# 2021 aridity was drier than historic aridity levels
+# relationship could be driven by a few outliers
+
+# Creating cbma, cardinal dataset
+card_cbma = arid_species2 %>% filter(common_name == "Northern Cardinal") %>% filter(site == "cbma")
+
+# Plotting observed aridity against historic aridity ----------------------
+ggplot(data = arid_species2,aes(x=gh_obs, y=gh_hist, color = site)) +
+  # geom_point()+
+  geom_smooth(method = "lm")+
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_x_continuous(name = "observed aridity")+
+  scale_y_continuous(name = "historic aridity")+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "bottom")
 
 # Statistical Analyses ----------------------------------------------------
-
-noca1 = lmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+#Number of cardinal vocalizations across the aridity gradient
+noca1 = lmer(num_vocals ~ gh_obs*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
 summary(noca1)
+
+noca2 = lmer(num_vocals ~ ghhobs_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+summary(noca2)
+
+noca3 = lmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+summary(noca3)
+
 # Number of species per aru and site --------------------------------------
 
 lwma_species = arid_species %>%
