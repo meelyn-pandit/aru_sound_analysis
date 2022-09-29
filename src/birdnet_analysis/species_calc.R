@@ -241,15 +241,21 @@ arid_species2 = arid_species %>%
 
 water_species$ghacross_sites = scale(water_species$gh)
 water_species2 = water_species %>%
-  group_by(common_name, site,date_time, hour_utc, mas)%>%
-  summarise(num_vocals = n(),
+  group_by(site,date,hour_utc)%>%
+  summarise(num_noca = sum(`Northern Cardinal`),
+            num_hofi = sum(`House Finch`),
+            num_casp = sum(`Cassin's Sparrow`),
+            num_eame = sum(`Eastern Meadowlark`),
+            num_weme = sum(`Western Meadowlark`),
+            num_lasp = sum(`Lark Sparrow`),
+            num_mela = num_eame+num_weme,
             gh_obs = mean(gh), #observed aridity in 2021
             gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
             ghwithin_scaled = mean(ghobs_scaled), # observed aridity scaled within sites
             ghacross_sites = mean(ghacross_sites), # observed aridity scaled across sites
             ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
-            ghsite_scaled = mean(ghsite_scaled)) %>% #historic aridity scaled across sites
-  mutate(mas = as.numeric(as.character(mas)))
+            ghsite_scaled = mean(ghsite_scaled)) #%>% #historic aridity scaled across sites
+  # mutate(mas = as.numeric(as.character(mas)))
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 save(arid_species2, file = "general_species_ag.Rdata")
@@ -292,25 +298,69 @@ ggplot(data = arid_species2,aes(x=gh_obs, y=gh_hist, color = site)) +
         legend.position = "bottom")
 
 # Statistical Analyses ----------------------------------------------------
+library(glmmTMB)
 # Number of cardinal vocalizations across the aridity gradient
 noca1 = glmer(num_noca ~ gh_obs*hour_utc + (1|site), family = "poisson", data = arid_species2)
 summary(noca1)
 
+zip_noca1 <- glmmTMB(num_noca ~ gh_obs*hour_utc + (1|site), data = arid_species2, ziformula=~1, family=poisson)
+summary(zip_noca1)
+
 # observed aridity scaled within sites
-noca2 = glmer(num_noca ~ ghwithin_scaled*hour_utc + (1|site), family = "poisson", data = arid_species2)
+noca2 = glmer(num_noca ~ ghwithin_scaled*scale(hour_utc) + (1|site), family = "poisson", data = arid_species2)
 summary(noca2)
 
+zip_noca2 <- glmmTMB(num_noca ~ ghwithin_scaled*scale(hour_utc) + (1|site), data = arid_species2, ziformula=~1, family=poisson)
+summary(zip_noca2)
+
 # observed aridity scaled across sites
-noca3 = lmer(num_noca ~ ghacross_sites*hour_utc + (1|site), REML = FALSE, data = arid_species2)
+noca3 = glmer(num_noca ~ ghacross_sites*scale(hour_utc )+ (1|site), family="poisson", data = arid_species2)
 summary(noca3)
 
+zip_noca3 = glmmTMB(num_noca ~ ghacross_sites*scale(hour_utc) + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+summary(zip_noca3)
+
 # historic aridity scaled within sites
-noca4 = lmer(num_vocals ~ ghhobs_scaled*hour_utc + (1|site), REML = FALSE, data = arid_species2)
+noca4 = glmer(num_noca ~ ghhobs_scaled*hour_utc + (1|site), family = "poisson", data = arid_species2)
 summary(noca4)
 
+zip_noca4 = glmmTMB(num_noca ~ ghhobs_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+summary(zip_noca4)
+
 # historic aridity scaled across sites
-noca5 = lmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+noca5 = glmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), family = "poisson", data = arid_species2)
 summary(noca5)
+
+zip_noca5 = glmmTMB(num_noca ~ ghsite_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+summary(zip_noca5)
+
+
+# Meadowark Zero-inflated poisson models ----------------------------------
+
+# observed aridity
+zip_mela1 <- glmmTMB(num_mela ~ gh_obs*hour_utc*site + (1|site), data = arid_species2, ziformula=~1, family=poisson)
+summary(zip_mela1)
+
+# observed aridity scaled within sites
+zip_mela2 <- glmmTMB(num_mela ~ ghwithin_scaled*scale(hour_utc)*site + (1|site), data = arid_species2, ziformula=~1, family=poisson)
+summary(zip_mela2)
+
+# observed aridity scaled across sites
+zip_mela3 = glmmTMB(num_mela ~ ghacross_sites*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+summary(zip_mela3)
+
+# historic aridity scaled within sites
+zip_mela4 = glmmTMB(num_mela ~ ghhobs_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+summary(zip_mela4)
+
+# historic aridity scaled across sites
+zip_mela5 = glmmTMB(num_mela ~ ghsite_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+summary(zip_mela5)
+
+aridx = interaction(arid_species2$ghsite_scaled,scale(arid_species2$hour_utc),arid_species2$site)
+zip_mela5.5 = glmmTMB(num_mela ~ aridx + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+contrasts = glht(zip_mela5, linfct = mcp(site = "Tukey"))
+summary(contrasts)
 
 # Number of species per aru and site --------------------------------------
 
