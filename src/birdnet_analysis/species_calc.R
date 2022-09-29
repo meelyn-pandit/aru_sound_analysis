@@ -1,4 +1,5 @@
 library(dplyr) #data manipulation
+library(tidyverse)
 library(tibble) #data manipulation
 library(lubridate) #manipulating date and time
 library(hms) #manipulate time
@@ -28,8 +29,16 @@ for(s in sites){
   if(s == "lwma"){
     # load lwma bird data
     load("birdnet_data/lwma_aru_results.Rdata")
-    data = lwma_aru_results %>%
-      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
+    data <- lwma_aru_results %>%
+      mutate(hour_utc = hour(date_time),
+             date = date(date_time)) %>%
+      group_by(site,aru,common_name,date_time,date) %>%
+      summarise(n = n()) %>%
+      pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
+      select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`)
+    
+    # data = lwma_aru_results %>%
+    #   dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
     #load 2021 mesonet data
     load("mesonet_data/lwma_mesonet.Rdata")
     wd = lwma_mesonet %>%
@@ -37,6 +46,7 @@ for(s in sites){
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
     labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
     #load historic data from 2005-2021
     load("historic_weather_data/lwma_wh.Rdata")
     hd = lwma_wh %>%
@@ -50,8 +60,14 @@ for(s in sites){
   } else if(s == "sswma"){
     # load sswma bird data
     load("birdnet_data/sswma_aru_results.Rdata")
-    data = sswma_aru_results%>%
-      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
+    data = sswma_aru_results %>%
+      mutate(hour_utc = hour(date_time),
+             date = date(date_time)) %>%
+      group_by(site,aru,common_name,date_time,date) %>%
+      summarise(n = n()) %>%
+      pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
+      select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`)
+    
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
     wd = sswma_mesonet%>%
       mutate(ghobs_scaled = scale(gh))
@@ -74,8 +90,14 @@ for(s in sites){
   } else if(s == "cbma"){
     # load cbma bird data
     load("birdnet_data/cbma_aru_results.Rdata")
-    data = cbma_aru_results%>%
-      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
+    data = cbma_aru_results %>%
+      mutate(hour_utc = hour(date_time),
+             date = date(date_time)) %>%
+      group_by(site,aru,common_name,date_time,date) %>%
+      summarise(n = n()) %>%
+      pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
+      select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`)
+    
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
     wd = cbma_mesonet%>%
       mutate(ghobs_scaled = scale(gh))
@@ -97,8 +119,14 @@ for(s in sites){
   } else if(s == "kiowa"){
     # load kiowa bird data
     load("birdnet_data/kiowa_aru_results.Rdata")
-    data = kiowa_aru_results%>%
-      dplyr::filter(common_name == "Northern Cardinal" | common_name == "House Finch" | common_name == "Cassin's Sparrow" | common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark" | common_name == "Lark Sparrow")
+    data = kiowa_aru_results %>%
+      mutate(hour_utc = hour(date_time),
+             date = date(date_time)) %>%
+      group_by(site,aru,common_name,date_time,date) %>%
+      summarise(n = n()) %>%
+      pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
+      select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`)
+    
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/kiowa_mesonet.Rdata")
     wd = kiowa_mesonet%>%
       mutate(ghobs_scaled = scale(gh))
@@ -126,14 +154,15 @@ for(s in sites){
   # }
   
   data_temp = data %>%
-    mutate(date = as_date(date),
+    mutate(date = as_date(date_time),
            local_time = force_tz(date_time, tz = tz),
            date_time = as_datetime(local_time, tz = "UTC"),
            time = as_hms(date_time),
            hour_local = hour(local_time),
-           hour_utc = hour(date_time)) %>%
+           hour_utc = hour(date_time),
+           month_day = format(as.Date(date_time), "%m-%d")) %>%
     # filter(date > "2021-04-30 CDT")%>%
-    dplyr::filter(is.na(common_name) == FALSE) %>% 
+    # dplyr::filter(is.na(common_name) == FALSE) %>% 
     group_by(site) 
   
   if(s == "kiowa"){
@@ -155,8 +184,6 @@ for(s in sites){
   # data_missing = data_temp %>%
   #   dplyr::filter(is.na(mas)==TRUE)
   
-  data_temp = data_temp %>%
-    mutate(month_day = format(as.Date(date_time), "%m-%d"))
   
   hd2 = full_join(wd,hd, by = c("month_day","mas")) %>%
     arrange(month_day, mas)
@@ -193,20 +220,28 @@ for(s in sites){
 }
 
 arid_species$ghacross_sites = scale(arid_species$gh)
+
 arid_species2 = arid_species %>%
-  group_by(common_name, site,date_time, mas)%>%
-  summarise(num_vocals = n(),
+  # group_by(site,date,hour_utc,mas)%>%
+  group_by(site,date,hour_utc)%>%
+  summarise(num_noca = sum(`Northern Cardinal`),
+            num_hofi = sum(`House Finch`),
+            num_casp = sum(`Cassin's Sparrow`),
+            num_eame = sum(`Eastern Meadowlark`),
+            num_weme = sum(`Western Meadowlark`),
+            num_lasp = sum(`Lark Sparrow`),
+            num_mela = num_eame+num_weme,
             gh_obs = mean(gh), #observed aridity in 2021
             gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
             ghwithin_scaled = mean(ghobs_scaled), # observed aridity scaled within sites
             ghacross_sites = mean(ghacross_sites), # observed aridity scaled across sites
             ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
-            ghsite_scaled = mean(ghsite_scaled)) %>% #historic aridity scaled across sites
-  mutate(mas = as.numeric(as.character(mas)))
+            ghsite_scaled = mean(ghsite_scaled)) #%>% #historic aridity scaled across sites
+  # mutate(mas = as.numeric(as.character(mas)))
 
 water_species$ghacross_sites = scale(water_species$gh)
 water_species2 = water_species %>%
-  group_by(common_name, site,date_time, mas)%>%
+  group_by(common_name, site,date_time, hour_utc, mas)%>%
   summarise(num_vocals = n(),
             gh_obs = mean(gh), #observed aridity in 2021
             gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
@@ -224,15 +259,14 @@ save(water_species2, file = "general_species_water.Rdata")
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999")
 #################light blue, green, orange-yellow, orange, yellow, dark blue, pink, gray
 
-#
-ggplot(data = arid_species2 %>% filter(common_name == "Eastern Meadowlark" | common_name == "Western Meadowlark"),
-       aes(x=ghwithin_scaled, y=num_vocals, color = site)) +
-  # geom_point()+
+ggplot(data = arid_species2,
+       aes(x=ghwithin_scaled, y=num_lasp, color = site)) +
+  geom_point()+
   geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Site")+
   scale_y_continuous(name = "Number of Vocals")+
   theme_classic(base_size = 20) +
-  ggtitle("Species: Meadowlarks") +
+  ggtitle(paste0("Species: Lark Sparrow")) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
@@ -258,15 +292,25 @@ ggplot(data = arid_species2,aes(x=gh_obs, y=gh_hist, color = site)) +
         legend.position = "bottom")
 
 # Statistical Analyses ----------------------------------------------------
-#Number of cardinal vocalizations across the aridity gradient
-noca1 = lmer(num_vocals ~ gh_obs*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+# Number of cardinal vocalizations across the aridity gradient
+noca1 = glmer(num_noca ~ gh_obs*hour_utc + (1|site), family = "poisson", data = arid_species2)
 summary(noca1)
 
-noca2 = lmer(num_vocals ~ ghhobs_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+# observed aridity scaled within sites
+noca2 = glmer(num_noca ~ ghwithin_scaled*hour_utc + (1|site), family = "poisson", data = arid_species2)
 summary(noca2)
 
-noca3 = lmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+# observed aridity scaled across sites
+noca3 = lmer(num_noca ~ ghacross_sites*hour_utc + (1|site), REML = FALSE, data = arid_species2)
 summary(noca3)
+
+# historic aridity scaled within sites
+noca4 = lmer(num_vocals ~ ghhobs_scaled*hour_utc + (1|site), REML = FALSE, data = arid_species2)
+summary(noca4)
+
+# historic aridity scaled across sites
+noca5 = lmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), REML = FALSE, data = arid_species2)
+summary(noca5)
 
 # Number of species per aru and site --------------------------------------
 
