@@ -266,13 +266,13 @@ cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2",
 #################light blue, green, orange-yellow, orange, yellow, dark blue, pink, gray
 
 ggplot(data = arid_species2,
-       aes(x=ghwithin_scaled, y=num_lasp, color = site)) +
+       aes(x=ghsite_scaled, y=num_noca, color = site)) +
   geom_point()+
   geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Site")+
   scale_y_continuous(name = "Number of Vocals")+
   theme_classic(base_size = 20) +
-  ggtitle(paste0("Species: Lark Sparrow")) +
+  ggtitle(paste0("Species: Cardinal")) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
@@ -333,6 +333,8 @@ summary(noca5)
 
 zip_noca5 = glmmTMB(num_noca ~ ghsite_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
 summary(zip_noca5)
+contrasts = glht(zip_noca5, linfct = mcp(site = "Tukey"))
+summary(contrasts)
 
 
 # Meadowark Zero-inflated poisson models ----------------------------------
@@ -356,10 +358,13 @@ summary(zip_mela4)
 # historic aridity scaled across sites
 zip_mela5 = glmmTMB(num_mela ~ ghsite_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
 summary(zip_mela5)
+contrasts = glht(zip_mela5, linfct = mcp(site = "Tukey"))
+summary(contrasts)
 
 aridx = interaction(arid_species2$ghsite_scaled,scale(arid_species2$hour_utc),arid_species2$site)
 zip_mela5.5 = glmmTMB(num_mela ~ aridx + (1|site), ziformula=~1, family=poisson, data = arid_species2)
-contrasts = glht(zip_mela5, linfct = mcp(site = "Tukey"))
+summary(zip_mela5.5)
+contrasts = glht(zip_mela5.5, linfct = mcp(aridx = "Tukey"))
 summary(contrasts)
 
 # Number of species per aru and site --------------------------------------
