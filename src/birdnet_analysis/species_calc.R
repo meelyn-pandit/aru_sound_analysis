@@ -274,17 +274,18 @@ cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2",
 #################light blue, green, orange-yellow, orange, yellow, dark blue, pink, gray
 
 ggplot(data = a3,
-       aes(x=arid_within, y=num_lasp, color = site)) +
-  geom_point()+
+       aes(x=as.factor(arid_across), y=num_noca, color = site)) +
+  geom_boxplot()+
   # geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Site")+
   scale_y_continuous(name = "Number of Vocals")+
   theme_classic(base_size = 20) +
-  ggtitle(paste0("Species: Lark Sparrow")) +
+  ggtitle(paste0("Species: Northern Cardinal")) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
         legend.position = "bottom")
+ggsave("results/noca_daybin_results.jpg", width = 8, height = 6, units = "in", dpi = 600)
 # for observed aridity the trend for cardinals in cbma is positive, while for historic aridity it is negative
 # 2021 aridity was drier than historic aridity levels
 # relationship could be driven by a few outliers
@@ -324,11 +325,11 @@ summary(contrasts)
 zip_noca2 <- glmmTMB(num_noca ~ aridx + (1|site), data = a3, ziformula=~1, family=poisson)
 summary(zip_noca2)
 # emmeans significance grouping
-inter.test1 = emmeans(zip_noca2, "aridx", type = "response")
-cld(inter.test1, Letter = "abcdefg")
-# multcomp comparisons
-contrasts = glht(zip_noca2, linfct = mcp(aridx = "Tukey"))
-summary(contrasts)
+# inter.test1 = emmeans(zip_noca2, "aridx", type = "response")
+# cld(inter.test1, Letter = "abcdefg")
+# # multcomp comparisons
+# contrasts = glht(zip_noca2, linfct = mcp(aridx = "Tukey"))
+# summary(contrasts)
 noca_emms = emmeans(zip_noca2, "aridx")
 pairs(noca_emms)
 # eff_size(noca_emms, sigma = sigma(noca_emms),edf = 394) # can't get to work, ignore for now
