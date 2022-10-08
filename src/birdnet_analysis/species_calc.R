@@ -17,7 +17,8 @@ library(multcomp) #posthoc tests for ANOVA type III effects
 library(bbmle) #AIC comparisons
 library(performance)
 library(generics) #find rows with the same values across dataframes
-library(lintr)
+library(emmeans)
+# library(lintr)
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 # sites = as.list(c("lwma"))
@@ -223,7 +224,7 @@ arid_species$ghacross_sites = scale(arid_species$gh)
 
 arid_species2 = arid_species %>%
   # group_by(site,date,hour_utc,mas)%>%
-  group_by(site,date,hour_utc)%>%
+  group_by(site,date)%>%
   summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
@@ -233,10 +234,16 @@ arid_species2 = arid_species %>%
             num_mela = num_eame+num_weme,
             gh_obs = mean(gh), #observed aridity in 2021
             gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
-            ghwithin_scaled = mean(ghobs_scaled), # observed aridity scaled within sites
-            ghacross_sites = mean(ghacross_sites), # observed aridity scaled across sites
-            ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
-            ghsite_scaled = mean(ghsite_scaled)) #%>% #historic aridity scaled across sites
+            arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
+            arid_across = mean(ghacross_sites), # observed aridity scaled across sites
+            hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
+            hist_across = mean(ghsite_scaled) #%>% #historic aridity scaled across sites sites
+  )
+a3 = arid_species2 %>% # data binned by date
+  mutate(arid_within = ntile(arid_within,n=5), # observed aridity scaled within sites
+         arid_across = ntile(arid_across,n=5), # observed aridity scaled across sites
+         hist_within = ntile(hist_within,n=5), #historic aridity scaled within sites
+         hist_across = ntile(hist_across,n=5)) #%>% #historic aridity scaled across sites)
   # mutate(mas = as.numeric(as.character(mas)))
 
 water_species$ghacross_sites = scale(water_species$gh)
@@ -251,10 +258,11 @@ water_species2 = water_species %>%
             num_mela = num_eame+num_weme,
             gh_obs = mean(gh), #observed aridity in 2021
             gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
-            ghwithin_scaled = mean(ghobs_scaled), # observed aridity scaled within sites
-            ghacross_sites = mean(ghacross_sites), # observed aridity scaled across sites
-            ghhobs_scaled = mean(ghhobs_scaled), #historic aridity scaled within sites
-            ghsite_scaled = mean(ghsite_scaled)) #%>% #historic aridity scaled across sites
+            arid_within = ntile(mean(ghobs_scaled),n=5), # observed aridity scaled within sites
+            arid_across = ntile(mean(ghacross_sites),n=5), # observed aridity scaled across sites
+            hist_within = ntile(mean(ghhobs_scaled),n=5), #historic aridity scaled within sites
+            hist_across = ntile(mean(ghsite_scaled),n=5) #%>% #historic aridity scaled across sites
+            ) 
   # mutate(mas = as.numeric(as.character(mas)))
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
@@ -265,14 +273,14 @@ save(water_species2, file = "general_species_water.Rdata")
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999")
 #################light blue, green, orange-yellow, orange, yellow, dark blue, pink, gray
 
-ggplot(data = arid_species2,
-       aes(x=ghsite_scaled, y=num_noca, color = site)) +
+ggplot(data = a3,
+       aes(x=arid_within, y=num_lasp, color = site)) +
   geom_point()+
-  geom_smooth(method = "lm")+
+  # geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Site")+
   scale_y_continuous(name = "Number of Vocals")+
   theme_classic(base_size = 20) +
-  ggtitle(paste0("Species: Cardinal")) +
+  ggtitle(paste0("Species: Lark Sparrow")) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
@@ -285,7 +293,7 @@ ggplot(data = arid_species2,
 card_cbma = arid_species2 %>% filter(common_name == "Northern Cardinal") %>% filter(site == "cbma")
 
 # Plotting observed aridity against historic aridity ----------------------
-ggplot(data = arid_species2,aes(x=gh_obs, y=gh_hist, color = site)) +
+ggplot(data = a3,aes(x=gh_obs, y=gh_hist, color = site)) +
   # geom_point()+
   geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Site")+
@@ -300,40 +308,55 @@ ggplot(data = arid_species2,aes(x=gh_obs, y=gh_hist, color = site)) +
 # Statistical Analyses ----------------------------------------------------
 library(glmmTMB)
 # Number of cardinal vocalizations across the aridity gradient
-noca1 = glmer(num_noca ~ gh_obs*hour_utc + (1|site), family = "poisson", data = arid_species2)
+noca1 = glmer(num_noca ~ gh_obs + (1|site), family = "poisson", data = arid_species2)
 summary(noca1)
 
-zip_noca1 <- glmmTMB(num_noca ~ gh_obs*hour_utc + (1|site), data = arid_species2, ziformula=~1, family=poisson)
+zip_noca1 <- glmmTMB(num_noca ~ gh_obs*site + (1|site), data = a3, ziformula=~1, family=poisson)
 summary(zip_noca1)
 
 # observed aridity scaled within sites
-noca2 = glmer(num_noca ~ ghwithin_scaled*scale(hour_utc) + (1|site), family = "poisson", data = arid_species2)
+a3$aridx = interaction(a3$arid_within, a3$site)
+noca2 = glmer(num_noca ~ aridx + (1|site), family = "poisson", data = a3)
 summary(noca2)
+contrasts = glht(noca2, linfct = mcp(aridx = "Tukey"))
+summary(contrasts)
 
-zip_noca2 <- glmmTMB(num_noca ~ ghwithin_scaled*scale(hour_utc) + (1|site), data = arid_species2, ziformula=~1, family=poisson)
+zip_noca2 <- glmmTMB(num_noca ~ aridx + (1|site), data = a3, ziformula=~1, family=poisson)
 summary(zip_noca2)
+# emmeans significance grouping
+inter.test1 = emmeans(zip_noca2, "aridx", type = "response")
+cld(inter.test1, Letter = "abcdefg")
+# multcomp comparisons
+contrasts = glht(zip_noca2, linfct = mcp(aridx = "Tukey"))
+summary(contrasts)
+noca_emms = emmeans(zip_noca2, "aridx")
+pairs(noca_emms)
+# eff_size(noca_emms, sigma = sigma(noca_emms),edf = 394) # can't get to work, ignore for now
 
 # observed aridity scaled across sites
-noca3 = glmer(num_noca ~ ghacross_sites*scale(hour_utc )+ (1|site), family="poisson", data = arid_species2)
+noca3 = glmer(num_noca ~ arid_across*site + (1|site), family="poisson", data = arid_species2)
 summary(noca3)
 
-zip_noca3 = glmmTMB(num_noca ~ ghacross_sites*scale(hour_utc) + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+zip_noca3 = glmmTMB(num_noca ~ arid_across*site + (1|site), ziformula=~1, family=poisson, data = a3)
 summary(zip_noca3)
 
 # historic aridity scaled within sites
-noca4 = glmer(num_noca ~ ghhobs_scaled*hour_utc + (1|site), family = "poisson", data = arid_species2)
+noca4 = glmer(num_noca ~ hist_within*hour_utc + (1|site), family = "poisson", data = arid_species2)
 summary(noca4)
 
-zip_noca4 = glmmTMB(num_noca ~ ghhobs_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+zip_noca4 = glmmTMB(num_noca ~ hist_within*site + (1|site), ziformula=~1, family=poisson, data = a3)
 summary(zip_noca4)
 
 # historic aridity scaled across sites
 noca5 = glmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), family = "poisson", data = arid_species2)
 summary(noca5)
 
-zip_noca5 = glmmTMB(num_noca ~ ghsite_scaled*scale(hour_utc)*site + (1|site), ziformula=~1, family=poisson, data = arid_species2)
+aridx = interaction(a3$hist_across,a3$site)
+zip_noca5 = glmmTMB(num_noca ~ hist_across*site + (1|site), ziformula=~1, family=poisson, data = a3)
 summary(zip_noca5)
-contrasts = glht(zip_noca5, linfct = mcp(site = "Tukey"))
+
+zip_noca5.5 = glmmTMB(num_noca ~ aridx + (1|site), ziformula=~1, family=poisson, data = a3)
+contrasts = glht(zip_noca5.5, linfct = mcp(aridx = "Tukey"))
 summary(contrasts)
 
 
@@ -361,7 +384,7 @@ summary(zip_mela5)
 contrasts = glht(zip_mela5, linfct = mcp(site = "Tukey"))
 summary(contrasts)
 
-aridx = interaction(arid_species2$ghsite_scaled,scale(arid_species2$hour_utc),arid_species2$site)
+aridx = interaction(arid_species2$ghsite_scaled,arid_species2$site)
 zip_mela5.5 = glmmTMB(num_mela ~ aridx + (1|site), ziformula=~1, family=poisson, data = arid_species2)
 summary(zip_mela5.5)
 contrasts = glht(zip_mela5.5, linfct = mcp(aridx = "Tukey"))
