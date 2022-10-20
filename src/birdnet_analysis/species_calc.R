@@ -623,7 +623,7 @@ ggsave("results/blgr_masbin_results.jpg", width = 8, height = 6, units = "in", d
 water_species$ghacross_sites = scale(water_species$gh)
 ws_sswma = water_species %>%
   dplyr::filter(site == "sswma") %>% 
-  group_by(aru,date,hour_utc)%>%
+  group_by(aru,date,hour_utc,mas)%>%
   summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
@@ -640,14 +640,17 @@ ws_sswma = water_species %>%
             arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
             arid_across = mean(ghacross_sites), # observed aridity scaled across sites
             hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
-            hist_across = mean(ghsite_scaled) #%>% #historic aridity scaled across sites
+            hist_across = mean(ghsite_scaled), #%>% #historic aridity scaled across sites
+            mas_num = as.numeric(mas)
   ) %>%
-  mutate(arid_within = cut(arid_within, breaks = 5, labels = c(1,2,3,4,5)),
-         arid_across = cut(arid_across, breaks = 5, labels = c(1,2,3,4,5)),
-         hist_within = cut(hist_within, breaks = 5, labels = c(1,2,3,4,5)),
-         hist_across = cut(hist_across, breaks = 5, labels = c(1,2,3,4,5)),
+  mutate(mas_bin = cut(mas_num, breaks = 3, labels = c("early","mid","late")),
          # creating water site (ws_site) 1,2,3
          ws_site = if_else(aru == "ws01" | aru == "ws02" | aru == "ws03" | aru == "ws04" | aru == "ws05", 1, if_else(aru == "ws06" | aru == "ws07" | aru == "ws08" | aru == "ws09" | aru == "ws10", 2,3)))
+
+ws_sswma$arid_within = cut(ws_sswma$arid_within, breaks = 5, labels = c(1,2,3,4,5))
+ws_sswma$arid_across = cut(ws_sswma$arid_across, breaks = 5, labels = c(1,2,3,4,5))
+ws_sswma$hist_within = cut(ws_sswma$hist_within, breaks = 5, labels = c(1,2,3,4,5))
+ws_sswma$hist_across = cut(ws_sswma$hist_across, breaks = 5, labels = c(1,2,3,4,5))
 
 #Separating out SSWMA water sites
 ws_sswma1 = ws_sswma %>%
@@ -667,7 +670,7 @@ ws_sswma = rbind(ws_sswma1, ws_sswma2, ws_sswma3)
 ##CBMA water supplementation
 ws_cbma = water_species %>%
   dplyr::filter(site == "cbma") %>% #creating water sites (ws)
-  group_by(aru,date,hour_utc)%>%
+  group_by(aru,date,hour_utc,mas)%>%
   summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
@@ -684,13 +687,16 @@ ws_cbma = water_species %>%
             arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
             arid_across = mean(ghacross_sites), # observed aridity scaled across sites
             hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
-            hist_across = mean(ghsite_scaled) #%>% #historic aridity scaled across sites
+            hist_across = mean(ghsite_scaled), #%>% #historic aridity scaled across sites
+            mas_num = as.numeric(mas)
   ) %>% 
   mutate(ws_site = if_else(aru == "wg01" | aru == "wg02" | aru == "wg03", 1, 2),
-         arid_within = cut(arid_within, breaks = 5, labels = c(1,2,3,4,5)),
-         arid_across = cut(arid_across, breaks = 5, labels = c(1,2,3,4,5)),
-         hist_within = cut(hist_within, breaks = 5, labels = c(1,2,3,4,5)),
-         hist_across = cut(hist_across, breaks = 5, labels = c(1,2,3,4,5)))
+         mas_bin = cut(mas_num, breaks = 3, labels = c("early","mid","late")))
+
+ws_cbma$arid_within = cut(ws_cbma$arid_within, breaks = 5, labels = c(1,2,3,4,5))
+ws_cbma$arid_across = cut(ws_cbma$arid_across, breaks = 5, labels = c(1,2,3,4,5))
+ws_cbma$hist_within = cut(ws_cbma$hist_within, breaks = 5, labels = c(1,2,3,4,5))
+ws_cbma$hist_across = cut(ws_cbma$hist_across, breaks = 5, labels = c(1,2,3,4,5))
 
 #Separating out CBMA water sites
 ws_cbma1 = ws_cbma %>%
@@ -703,8 +709,8 @@ ws_cbma2 = ws_cbma %>%
 
 ws_cbma = rbind(ws_cbma1, ws_cbma2)
 
-save(ws_sswma, file = "water_species_sswma_day_bin.Rdata")
-save(ws_cbma, file = "water_species_cbma_day_bin.Rdata")
+save(ws_sswma, file = "water_species_sswma_mas_bin.Rdata")
+save(ws_cbma, file = "water_species_cbma_mas_bin.Rdata")
 
 # MAS binned - Water Supplementation plotting Cardinal Vocalizations across  and aridity with day-binned data-----------------
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999")
@@ -714,6 +720,7 @@ cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2",
 ggplot(data = ws_sswma,
        aes(x=as.factor(arid_across), y=num_noca, color = as.factor(ws_site))) +
   geom_boxplot()+
+  facet_wrap(~mas_bin)+
   # geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Water Site")+
   scale_y_continuous(name = "Number of Vocals")+
@@ -812,7 +819,7 @@ ggplot(data = ws_cbma, aes(x=date, y= num_noca,
   scale_x_date(name = "Date")+
   scale_y_continuous(name = "Northern Cardinal\nVocalizations")+
   theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_text(),
         # axis.text.x = element_blank(),
         axis.text.x = element_text(),
@@ -820,77 +827,28 @@ ggplot(data = ws_cbma, aes(x=date, y= num_noca,
 
 # MAS binned - Statistical Analyses ----------------------------------------------------
 library(glmmTMB)
-# Number of cardinal vocalizations across the aridity gradient
-casp1 = glmer(num_casp ~ gh_obs + (1|site), family = "poisson", data = arid_species2)
-summary(dick1)
 
-zip_casp1 <- glmmTMB(num_casp ~ gh_obs*site + (1|site), data = a3, ziformula=~1, family=poisson)
-summary(zip_casp1)
-
-# observed aridity scaled within sites
-# a3$aridx = interaction(a3$arid_within, a3$site)
-# dick2 = glmer(num_casp ~ aridx + (1|site), family = "poisson", data = a3)
-# summary(dick2)
-# contrasts = glht(dick2, linfct = mcp(aridx = "Tukey"))
-# summary(contrasts)
-
-a3$aridx = interaction(a3$arid_within, a3$site)
-zip_casp2 <- glmmTMB(num_casp ~ aridx + (1|site), data = a3, ziformula=~1, family=poisson)
-summary(zip_casp2)
-casp_emms = emmeans(zip_casp2, "aridx")
-pairs(casp_emms)
-# emmeans significance grouping
-# inter.test1 = emmeans(zip_casp2, "aridx", type = "response")
-# cld(inter.test1, Letter = "abcdefg")
-# # multcomp comparisons
-# contrasts = glht(zip_casp2, linfct = mcp(aridx = "Tukey"))
-# summary(contrasts)
-
-# eff_size(casp_emms, sigma = sigma(casp_emms),edf = 394) # can't get to work, ignore for now
-
-# observed aridity scaled across sites
-casp3 = glmer(num_casp ~ arid_across*site + (1|site), family="poisson", data = arid_species2)
-summary(casp3)
-
-zip_casp3 = glmmTMB(num_casp ~ arid_across*site + (1|site), ziformula=~1, family=poisson, data = a3)
-summary(zip_casp3)
-
-# historic aridity scaled within sites
-casp4 = glmer(num_casp ~ hist_within*hour_utc + (1|site), family = "poisson", data = arid_species2)
-summary(casp4)
-
-zip_casp4 = glmmTMB(num_casp ~ hist_within*site + (1|site), ziformula=~1, family=poisson, data = a3)
-summary(zip_casp4)
-
-# historic aridity scaled across sites
-casp5 = glmer(num_vocals ~ ghsite_scaled*scale(mas) + (1|site), family = "poisson", data = arid_species2)
-summary(casp5)
-
-aridx = interaction(a3$hist_across,a3$site)
-zip_casp5 = glmmTMB(num_casp ~ hist_across*site + (1|site), ziformula=~1, family=poisson, data = a3)
-summary(zip_casp5)
-
-zip_casp5.5 = glmmTMB(num_casp ~ aridx + (1|site), ziformula=~1, family=poisson, data = a3)
-contrasts = glht(zip_casp5.5, linfct = mcp(aridx = "Tukey"))
-summary(contrasts)
-
+#Aridity within factor and mas bin have a 0.60 correlation factor
+a4$aridx = interaction(a4$mas_bin, a4$site)
+zip_blgr_mas <- glmmTMB(num_blgr ~ aridx + (1|site), data = a4, ziformula=~1, family=poisson)
+summary(zip_blgr_mas)
+blgr_emms = emmeans(zip_blgr_mas, "aridx")
+pairs(blgr_emms)
 
 # MAS binned - Water supplementation Statistical Analyses ------------------------------
 ### SSWMA Site
-ws_sswma$waridx = interaction(ws_sswma$arid_within,ws_sswma$ws_site,ws_sswma$water)
-zwss_casp <- glmmTMB(num_casp ~ waridx + (1|ws_site), data = ws_sswma, ziformula=~1, family=poisson)
-summary(zwss_casp)
-casp_wsswma = emmeans(zwss_casp, "waridx")
-pairs(casp_wsswma)
+ws_sswma$waridx = interaction(ws_sswma$mas_bin,ws_sswma$ws_site,ws_sswma$water)
+zwss_blgr <- glmmTMB(num_blgr ~ waridx + (1|ws_site), data = ws_sswma, ziformula=~1, family=poisson)
+summary(zwss_blgr)
+blgr_wsswma = emmeans(zwss_blgr, "waridx")
+pairs(blgr_wsswma)
 
 ### CBMA Site
-ws_cbma$waridx = interaction(ws_cbma$arid_within,ws_cbma$ws_site,ws_cbma$water)
-zwsc_casp <- glmmTMB(num_casp ~ waridx + (1|ws_site), data = ws_cbma, ziformula=~1, family=poisson)
-summary(zwsc_casp)
-casp_wsswma = emmeans(zwsc_casp, "waridx")
-pairs(casp_wsswma)
-
-
+ws_cbma$waridx = interaction(ws_cbma$mas_bin,ws_cbma$ws_site,ws_cbma$water)
+zwsc_blgr <- glmmTMB(num_blgr ~ waridx + (1|ws_site), data = ws_cbma, ziformula=~1, family=poisson)
+summary(zwsc_blgr)
+blgr_wsswma = emmeans(zwsc_blgr, "waridx")
+pairs(blgr_wsswma)
 
 
 # Number of species per aru and site --------------------------------------

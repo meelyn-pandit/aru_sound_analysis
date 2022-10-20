@@ -16,8 +16,6 @@ library(multcomp) #posthoc tests for ANOVA type III effects
 library(bbmle) #AIC comparisons
 library(performance) #performance
 
-
-
 # Load CSV Files ----------------------------------------------------------
 arus = as.list(c("aru01","aru02","aru03","aru04","aru05","ws01","ws02","ws03","ws04","ws05","ws06","ws11","ws12","ws13","ws14","ws15"))
 # arus= as.list(c("aru01","aru02","aru03","aru04","aru05","wg01", "wg02", "wg03", "wg04", "wg05"))
@@ -69,7 +67,8 @@ for(s in sites){
     data = lwma_aru_results
     #load 2021 mesonet data
     load("mesonet_data/lwma_mesonet.Rdata")
-    wd = lwma_mesonet
+    wd = lwma_mesonet %>%
+      mutate(ghobs_scaled = scale(gh))
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     #load historic data from 2005-2021
     load("historic_weather_data/lwma_wh.Rdata")
@@ -85,7 +84,8 @@ for(s in sites){
     load("birdnet_data/sswma_aru_results.Rdata")
     data = sswma_aru_results
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
-    wd = sswma_mesonet
+    wd = sswma_mesonet%>%
+      mutate(ghobs_scaled = scale(gh))
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     
@@ -104,7 +104,8 @@ for(s in sites){
     load("birdnet_data/cbma_aru_results.Rdata")
     data = cbma_aru_results
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
-    wd = cbma_mesonet
+    wd = cbma_mesonet%>%
+      mutate(ghobs_scaled = scale(gh))
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
@@ -122,7 +123,8 @@ for(s in sites){
     load("birdnet_data/kiowa_aru_results.Rdata")
     data = kiowa_aru_results
     load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/kiowa_mesonet.Rdata")
-    wd = kiowa_mesonet
+    wd = kiowa_mesonet%>%
+      mutate(ghobs_scaled = scale(gh))
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
@@ -204,10 +206,12 @@ full_arid = arid_full %>% #saving it a different name so you don't overwrite it
   dplyr::filter(is.na(mas)==FALSE) %>%
   dplyr::filter(is.na(gh_hobs) == FALSE) %>%
   dplyr::filter(hour_local <13) %>%
-  dplyr::filter(year(date) != 2106) %>%
-  mutate(arid_bin = cut(arid, 3, labels = c("low","med","high")))
+  dplyr::filter(year(date) != 2106)
+full_arid$ghacross_sites = scale(full_arid$gh)
+# %>%
+#   mutate(arid_bin = cut(arid, 3, labels = c("low","med","high")))
 
-max(full_arid$mas)
+max(as.numeric(full_arid$mas))
 which.max(full_arid$mas)
 mas_check = full_arid[which.max(full_arid$mas),];mas_check
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
@@ -223,6 +227,7 @@ full_water = water_full %>% #saving it a different name so you don't overwrite i
   dplyr::filter(hour_local <13) %>%
   dplyr::filter(year(date) != 2106) %>%
   dplyr::filter(is.na(mas)==FALSE)
+full_water$ghacross_sites = scale(full_water$gh)
 
 #Separating out CBMA water sites
 full_water1 = full_water %>%
@@ -258,8 +263,8 @@ water_compiled = rbind(cbma_full_water,sswma_full_water)
 
 
 #Checking to see if there are any outliers in the minutes after sunrise
-max(water_compiled$mas)
-which.max(water_compiled$mas)
+max(as.numeric(water_compiled$mas))
+which.max(as.numeric(water_compiled$mas))
 mas_check = water_compiled[which.max(water_compiled$mas),];mas_check
   
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
@@ -272,7 +277,7 @@ ggplot(data = full_arid, aes(x = relh, y = gh, color = site))+ #sun altitude doe
 
 
 # Averaging Data Across Hours and Months ----------------------------------
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
 load("aridity_gradient_ml.Rdata")
 
 #Data is averaged by site, aru, date, and hour across aru and breeding season
@@ -319,16 +324,78 @@ arid_date = full_arid %>%
             se_vocals = sd(num_vocals)/sqrt(n()),
             mean_species = mean(species_diversity),
             se_species = sd(species_diversity)/sqrt(n()),
-            mean_temp = mean(temp),
-            mean_relh = mean(relh),
-            mean_dew = mean(dew),
-            mean_arid = mean(arid),
-            mean_gh = mean(gh),
-            se_gh = sd(gh)/sqrt(n()),
-            max_gh = max(gh)) %>%
-  mutate(gh_bin = cut(mean_gh, 3, labels = c("low","med","high")),
-         maxgh_bin = cut(max_gh, 3, labels = c("low","med","high")))
+            gh_obs = mean(gh), #observed aridity in 2021
+            gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
+            arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
+            arid_across = mean(ghacross_sites), # observed aridity scaled across sites
+            hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
+            hist_across = mean(ghsite_scaled), #%>% #historic aridity scaled across sites
+            mas_num = as.numeric(mas)
+  )
+arid_date$arid_within = cut(arid_date$arid_within, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled within sites
+arid_date$arid_across = cut(arid_date$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
+arid_date$hist_within = cut(arid_date$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
+arid_date$hist_across = cut(arid_date$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
+arid_date$mas_bin = cut(arid_date$mas_num, breaks = 3, labels = c("early","mid","late"))
 
+# Date-bin - Statistical Analyses ------------------------------------------
+library(emmeans)
+
+### Date-bin Number of Vocalizations
+arid_date$aridx = interaction(arid_date$arid_within, arid_date$site)
+date_vocals = lmer(mean_vocals ~ aridx + (1|site), REML = FALSE, data = arid_date)
+summary(date_vocals)
+date_vocals_emms = emmeans(date_vocals, "aridx", lmerTest.limit = 32094)
+pairs(date_vocals_emms)
+
+### Date-bin Species Diversity
+arid_date$aridx = interaction(arid_date$arid_within, arid_date$site)
+date_species = lmer(mean_species ~ aridx + (1|site), REML = FALSE, data = arid_date)
+summary(date_species)
+date_species_emms = emmeans(date_species, "aridx", lmerTest.limit = 32094)
+pairs(date_species_emms)
+
+
+### MAS Bin - Num Vocals and Species Diversity
+arid_mas = full_arid %>%
+  group_by(site,date,mas)%>%
+  summarise(mean_sunalt = mean(altitude),
+            mean_vocals = mean(num_vocals),
+            se_vocals = sd(num_vocals)/sqrt(n()),
+            mean_species = mean(species_diversity),
+            se_species = sd(species_diversity)/sqrt(n()),
+            gh_obs = mean(gh), #observed aridity in 2021
+            gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
+            arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
+            arid_across = mean(ghacross_sites), # observed aridity scaled across sites
+            hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
+            hist_across = mean(ghsite_scaled), #%>% #historic aridity scaled across sites
+            mas_num = as.numeric(mas)
+  )
+
+arid_mas$arid_within = cut(arid_mas$arid_within, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled within sites
+arid_mas$arid_across = cut(arid_mas$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
+arid_mas$hist_within = cut(arid_mas$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
+arid_mas$hist_across = cut(arid_mas$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
+arid_mas$mas_bin = cut(arid_mas$mas_num, breaks = 3, labels = c("early","mid","late"))
+
+
+# MAS-bin - Statistical Analyses ------------------------------------------
+library(emmeans)
+
+### MAS-bin Number of Vocalizations
+arid_mas$aridx = interaction(arid_mas$mas_bin, arid_mas$site)
+mas_vocals = lmer(mean_vocals ~ aridx + (1|site), REML = FALSE, data = arid_mas)
+summary(mas_vocals)
+mas_vocals_emms = emmeans(mas_vocals, "aridx", lmerTest.limit = 32094)
+pairs(mas_vocals_emms)
+
+### MAS-bin Species Diversity
+arid_mas$aridx = interaction(arid_mas$mas_bin, arid_mas$site)
+mas_species = lmer(mean_species ~ aridx + (1|site), REML = FALSE, data = arid_mas)
+summary(mas_species)
+mas_species_emms = emmeans(mas_species, "aridx", lmerTest.limit = 32094)
+pairs(mas_species_emms)
 
 # Statistical Analyses - Aridity Graident LMMs ----------------------------
 #Testing for Collinearity
