@@ -17,40 +17,64 @@ library(bbmle) #AIC comparisons
 library(performance) #performance
 
 # Load CSV Files ----------------------------------------------------------
-arus = as.list(c("aru01","aru02","aru03","aru04","aru05","ws01","ws02","ws03","ws04","ws05","ws06","ws11","ws12","ws13","ws14","ws15"))
-# arus= as.list(c("aru01","aru02","aru03","aru04","aru05","wg01", "wg02", "wg03", "wg04", "wg05"))
+sites = as.list(c("lwma","sswma","cbma","kiowa"))
 
 results_final = NULL
-for(i in arus){
-  setwd(paste0("/Volumes/LaCie/aridity_project/sswma/sswma_audio_files/",i))
-  
-  # setwd(paste0("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/sswma/pabu_filtered/",
-        # i,"_pabu_filtered"))
-  birdnet = list.files(pattern = "BirdNET.results.csv")
-  for(j in 1:length(birdnet)){
-    
-      results_temp = read.csv(birdnet[[j]], header = TRUE, sep = ",", fill = TRUE)
-      if(nrow(results_temp) == 0){
-        results_temp = rbind(results_temp, data.frame("filepath"= NA, "start" = NA, "end" = NA, "scientific_name" = NA, "common_name" = NA, "confidence" = NA, "lat" = NA, "lon" = NA, "week" = NA, "overlap" = NA, "sensitivity" = NA, "min_conf" = NA, "species_list" = NA, "model" = NA))
-      }
-      results_temp$date_time = as_datetime(substr(birdnet[[j]],1,15)) #change to 15,30 if you are using bird filtered data
-      results_temp$date = date(results_temp$date_time)
-      results_temp$time = hms(substr(results_temp$date_time,10,15))
-      results_temp$aru = i   
-      results_temp$site = "sswma"
-    results_final = rbind(results_final,results_temp)
+for(s in sites){
+  if(s == "lwma"){
+    arus = as.list(c("aru01","aru02","aru03","aru04","aru05"))
+  } else if(s == "sswma"){
+    arus = as.list(c("aru01","aru02","aru03","aru04","aru05","ws01","ws02","ws03","ws04","ws05","ws06","ws11","ws12","ws13","ws14","ws15"))
+  } else if(s == "cbma"){
+    arus = as.list(c("aru01","aru02","aru03","aru04","aru05","wg01", "wg02", "wg03", "wg04", "wg05"))
+  } else if(s == "kiowa") {
+    arus = as.list(c("aru01","aru02","aru03","aru04","aru05"))
   }
-
+  for(i in arus){
+    setwd(paste0("/media/meelyn/LaCie/aridity_project/",s,"/",s,"_audio_files/",i))
+    
+    # setwd(paste0("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/sswma/pabu_filtered/",
+    # i,"_pabu_filtered"))
+    birdnet = list.files(pattern = "BirdNET.results.csv")
+    for(j in 1:length(birdnet)){
+      
+      results_temp = read.csv2(birdnet[[j]], header = TRUE, sep = ",", fill = TRUE)
+      if(nrow(results_temp) == 0){
+        results_temp = rbind(results_temp, data.frame("filepath"= birdnet[[j]], "start" = NA, "end" = NA, "scientific_name" = NA, "common_name" = NA, "confidence" = NA, "lat" = NA, "lon" = NA, "week" = NA, "overlap" = NA, "sensitivity" = NA, "min_conf" = NA, "species_list" = NA, "model" = NA))
+      }
+      results_temp$date_time = ymd_hms(substr(birdnet[[j]],1,15)) #change to 15,30 if you are using bird filtered data
+      results_temp$date = date(results_temp$date_time)
+      results_temp$time = as_hms(results_temp$date_time)
+      results_temp$aru = i   
+      results_temp$site = s
+      results_final = rbind(results_final,results_temp)
+    }
+    
+  }
+  
 }
 
-sswma_aru_results = results_final %>% dplyr::filter(is.na(confidence) != TRUE)
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/")
-setwd("/Volumes/LaCie/aridity_project/sswma/sswma_audio_files/")
-save(sswma_aru_results, file = "sswma_aru_results.Rdata")
-gc(reset = TRUE)
-setwd("/Volumes/LaCie/aridity_project/")
-birdnet_data = rbind(lwma_aru_results,sswma_aru_results,cbma_aru_results,kiowa_aru_results)
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+
+  lwma_aru_results = results_final %>%
+    dplyr::filter(site == "lwma")
+  save(lwma_aru_results, file = "lwma_aru_results.Rdata")
+
+  sswma_aru_results = results_final %>%
+    dplyr::filter(site == "sswma")
+  save(sswma_aru_results, file = "sswma_aru_results.Rdata")
+
+  cbma_aru_results = results_final %>%
+    dplyr::filter(site == "cbma")
+  save(cbma_aru_results, file = "cbma_aru_results.Rdata")
+  
+  kiowa_aru_results = results_final %>%
+    dplyr::filter(site == "kiowa")
+  save(kiowa_aru_results, file = "kiowa_aru_results.Rdata")
+  
+birdnet_data = results_final
 save(birdnet_data, file = "birdnet_data.Rdata")
+
 
 # Combining Site Datasets, adding sunlight and sunaltitude variables, and adding weather data from Mesonet Sites--------------------------------------
 
@@ -145,13 +169,18 @@ for(s in sites){
            date_time = as_datetime(local_time, tz = "UTC"),
            time = as_hms(date_time),
            hour_local = hour(local_time),
-           hour_utc = hour(date_time)) %>%
+           hour_utc = hour(date_time)
+           ) %>%
     # filter(date > "2021-04-30 CDT")%>%
-    dplyr::filter(is.na(common_name) == FALSE) %>% 
+    # dplyr::filter(is.na(common_name) == FALSE) %>% 
     group_by(date,time,local_time,date_time,hour_local,hour_utc,lat,lon,aru,site) %>%
     summarise(num_vocals = n(),
               species_diversity = n_distinct(common_name))%>%
-    arrange(date_time) 
+    arrange(date_time) %>%
+    mutate(num_vocals = replace(num_vocals, is.na(lat)==TRUE && num_vocals == 1, 0),
+           species_diversity = replace(species_diversity, is.na(lat)==TRUE && species_diversity == 1, 0))
+  
+  
   
     if(s == "kiowa"){
       kiowa_time_bad = data_temp %>% 
@@ -175,13 +204,19 @@ for(s in sites){
   
   data_temp = data_temp %>% filter(is.na(mas) == FALSE) %>%
     mutate(month_day = format(as.Date(date_time), "%m-%d"))
-  data_temp2 = left_join(data_temp, hd, by = c("month_day", "mas"))
+  
+  data_temp2 = full_join(data_temp, hd, by = c("month_day", "mas")) %>%
+    arrange(month_day,mas)
+  data_temp2$gh_hobs = na.approx(data_temp2$gh_hobs, na.rm = FALSE) 
+  data_temp2$ghhobs_scaled = na.approx(data_temp2$ghhobs_scaled, na.rm = FALSE) 
+  data_temp2$ghmean_time = na.approx(data_temp2$ghmean_time, na.rm = FALSE) 
+  data_temp2$ghsite_scaled = na.approx(data_temp2$ghsite_scaled, na.rm = FALSE) 
   
   data_temp3 = data_temp2 %>%
     mutate(site = factor(site.x, levels=c("lwma","sswma","cbma","kiowa")))%>%
     # dplyr::select(-site.x, -site.y,-hour.x,-hour.y)
     dplyr::select(-hour, -site.y, -hour_utc.y) %>%
-    rename(hour_utc = "hour_utc.x")
+    rename(hour_utc = "hour_utc.x") 
   
   data_temp_arid = data_temp3 %>%
     filter(aru == "aru01" | aru == "aru02"| aru == "aru03"| aru == "aru04"| aru == "aru05")
@@ -200,16 +235,16 @@ for(s in sites){
   
 }
 
-# Saving Compilation Results ----------------------------------------------
+# Saving Aridity Gradient Data Results ----------------------------------------------
 #Aridity Gradient Data for statistical analyses
 full_arid = arid_full %>% #saving it a different name so you don't overwrite it
   dplyr::filter(is.na(mas)==FALSE) %>%
   dplyr::filter(is.na(gh_hobs) == FALSE) %>%
   dplyr::filter(hour_local <13) %>%
-  dplyr::filter(year(date) != 2106)
+  dplyr::filter(year(date) != 2106) %>%
+  dplyr::filter(date < "2021-08-16")
 full_arid$ghacross_sites = scale(full_arid$gh)
-# %>%
-#   mutate(arid_bin = cut(arid, 3, labels = c("low","med","high")))
+
 
 max(as.numeric(full_arid$mas))
 which.max(full_arid$mas)
@@ -219,14 +254,15 @@ save(full_arid, file = "aridity_gradient_ml.Rdata")
 load("aridity_gradient_ml.Rdata")
 
 
-# Water Supplementation Data Compilation ----------------------------------
+# Water Saving Supplementation Data Compilation ----------------------------------
 
 full_water = water_full %>% #saving it a different name so you don't overwrite it
   dplyr::filter(is.na(mas)==FALSE) %>%
   dplyr::filter(is.na(gh_hobs) == FALSE) %>%
   dplyr::filter(hour_local <13) %>%
   dplyr::filter(year(date) != 2106) %>%
-  dplyr::filter(is.na(mas)==FALSE)
+  dplyr::filter(is.na(mas)==FALSE) %>%
+  dplyr::filter(date < "2021-08-16")
 full_water$ghacross_sites = scale(full_water$gh)
 
 #Separating out CBMA water sites
@@ -263,8 +299,8 @@ water_compiled = rbind(cbma_full_water,sswma_full_water)
 
 
 #Checking to see if there are any outliers in the minutes after sunrise
-max(as.numeric(water_compiled$mas))
-which.max(as.numeric(water_compiled$mas))
+max(as.numeric(as.character(water_compiled$mas)))
+which.max(as.numeric(as.character(water_compiled$mas)))
 mas_check = water_compiled[which.max(water_compiled$mas),];mas_check
   
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
@@ -276,417 +312,286 @@ ggplot(data = full_arid, aes(x = relh, y = gh, color = site))+ #sun altitude doe
   geom_line()
 
 
-# Averaging Data Across Hours and Months ----------------------------------
+
+# Aridity Graident Date bin ----------------------------------
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data/")
 load("aridity_gradient_ml.Rdata")
 
-#Data is averaged by site, aru, date, and hour across aru and breeding season
-arid_dh = full_arid %>%
-  dplyr::filter(is.na(arid) == FALSE) %>%
-  group_by(site,aru,date,hour_utc) %>%
-  summarise(mean_sunalt = mean(altitude),
-            mean_vocals = mean(num_vocals),
-            mean_species = mean(species_diversity),
-            mean_temp = mean(temp),
-            mean_relh = mean(relh),
-            mean_dew = mean(dew),
-            mean_arid = mean(arid),
-            mean_gh = mean(gh),
-            max_gh = max(gh)) %>%
-  mutate(gh_bin = cut(mean_gh, 3, labels = c("low","med","high")),
-         maxgh_bin = cut(max_gh, 3, labels = c("low","med","high")))
-
-#Summarizing Datat by site, aru, hour for Graphs
-arid_hour = full_arid %>%
-  dplyr::filter(is.na(arid) == FALSE) %>%
-  group_by(site,hour_utc) %>%
-  summarise(mean_sunalt = mean(altitude),
-            mean_vocals = mean(num_vocals),
-            se_vocals = sd(num_vocals)/sqrt(n()),
-            mean_species = mean(species_diversity),
-            se_species = sd(species_diversity)/sqrt(n()),
-            mean_temp = mean(temp),
-            mean_relh = mean(relh),
-            mean_dew = mean(dew),
-            mean_arid = mean(arid),
-            mean_gh = mean(gh),
-            se_gh = sd(gh)/sqrt(n()),
-            max_gh = max(gh)) %>%
-  mutate(gh_bin = cut(mean_gh, 3, labels = c("low","med","high")),
-         maxgh_bin = cut(max_gh, 3, labels = c("low","med","high")))
-
 arid_date = full_arid %>%
-  dplyr::filter(is.na(arid) == FALSE) %>%
+  # dplyr::filter(is.na(arid) == FALSE) %>%
   mutate(week = week(date_time))%>%
   group_by(site,date) %>%
   summarise(mean_sunalt = mean(altitude),
             mean_vocals = mean(num_vocals),
-            se_vocals = sd(num_vocals)/sqrt(n()),
+            # se_vocals = sd(num_vocals)/sqrt(n()),
             mean_species = mean(species_diversity),
-            se_species = sd(species_diversity)/sqrt(n()),
+            # se_species = sd(species_diversity)/sqrt(n()),
             gh_obs = mean(gh), #observed aridity in 2021
             gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
             arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
             arid_across = mean(ghacross_sites), # observed aridity scaled across sites
             hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
-            hist_across = mean(ghsite_scaled), #%>% #historic aridity scaled across sites
-            mas_num = as.numeric(mas)
+            hist_across = mean(ghsite_scaled) #%>% #historic aridity scaled across sites
   )
 arid_date$arid_within = cut(arid_date$arid_within, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled within sites
 arid_date$arid_across = cut(arid_date$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
 arid_date$hist_within = cut(arid_date$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
 arid_date$hist_across = cut(arid_date$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
-arid_date$mas_bin = cut(arid_date$mas_num, breaks = 3, labels = c("early","mid","late"))
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data")
+save(arid_date, file = "birdnet_totals_arid_date.Rdata")
 
-# Date-bin - Statistical Analyses ------------------------------------------
+
+# Aridity Gradient Date-Bin - Plots ---------------------------------------
+cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999")
+graph_arid_date = arid_date %>%
+  # dplyr::filter(is.na(mas_bin) == FALSE)%>%
+  group_by(site,arid_within) %>%
+  summarise(n = n(),
+            vocals_mean = mean(mean_vocals),
+            vocals_se = (sd(mean_vocals))/sqrt(n()))
+
+### Boxplot Graph of Number of Vocalizations - Date bin
+ggplot(data = arid_date %>% 
+         dplyr::filter(is.na(arid_within)==FALSE), 
+       aes(x=arid_within, y= mean_vocals, color = as.factor(site))) +
+  # geom_point(aes(color = site), shape = 20, size = 3)+
+  geom_boxplot()+
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 5,
+               aes(group=as.factor(site)),
+               position = position_dodge(0.75)) +
+  # geom_jitter()+
+  # geom_point(size = 2, position = position_dodge(0.2))+
+  # geom_errorbar(aes(ymin = vocals_mean-vocals_se, 
+  #                   ymax = vocals_mean+vocals_se), width = 0.2,
+  #               position = position_dodge())+
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_y_continuous(name = "Number of Vocals")+
+  theme_classic(base_size = 20) +
+  # ggtitle(paste0("Species: Northern Cardinal")) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+ggsave("results/arid_date_bin_vocals_boxplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
+
+### Boxplot Graph of Number of Vocalizations - Date bin
+ggplot(data = arid_date %>% 
+         dplyr::filter(is.na(arid_within)==FALSE), 
+       aes(x=arid_within, y= mean_species, color = as.factor(site))) +
+  # geom_point(aes(color = site), shape = 20, size = 3)+
+  geom_boxplot()+
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 5,
+               aes(group=as.factor(site)),
+               position = position_dodge(0.75)) +
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_y_continuous(name = "Species Diversity")+
+  theme_classic(base_size = 20) +
+  # ggtitle(paste0("Species: Northern Cardinal")) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+ggsave("results/arid_date_bin_species_boxplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
+
+# Aridity Gradient Date-bin - Statistical Analyses ------------------------------------------
 library(emmeans)
 
 ### Date-bin Number of Vocalizations
-arid_date$aridx = interaction(arid_date$arid_within, arid_date$site)
-date_vocals = lmer(mean_vocals ~ aridx + (1|site), REML = FALSE, data = arid_date)
+
+ggplot(arid_date,
+       aes(x=arid_within,y=mean_vocals,color=site)) + 
+  geom_jitter() + 
+  geom_boxplot(alpha=0.2) + 
+  facet_wrap(~site)
+
+# arid_date$aridx = interaction(arid_date$arid_within, arid_date$site)
+date_vocals = lm(mean_vocals ~ arid_within*site, data = arid_date)
 summary(date_vocals)
-date_vocals_emms = emmeans(date_vocals, "aridx", lmerTest.limit = 32094)
-pairs(date_vocals_emms)
+assump(date_vocals)
+aov(date_vocals)
+fit_date = Anova(date_vocals,
+         contrasts=list(factorA='arid_within', FactorB ='site'), 
+         data = arid_date,
+         type='III')
+TukeyHSD(aov(date_vocals))
+# date_vocals_emms = emmeans(date_vocals, "aridx", lmerTest.limit = 32094)
+# pairs(date_vocals_emms)
 
 ### Date-bin Species Diversity
+
+ggplot(arid_date,
+       aes(x=arid_within,y=mean_species,color=site)) + 
+  geom_jitter() + 
+  geom_boxplot(alpha=0.2) + 
+  facet_wrap(~site)
+
 arid_date$aridx = interaction(arid_date$arid_within, arid_date$site)
-date_species = lmer(mean_species ~ aridx + (1|site), REML = FALSE, data = arid_date)
+date_species = lm(mean_species ~ arid_within*site, data = arid_date)
 summary(date_species)
-date_species_emms = emmeans(date_species, "aridx", lmerTest.limit = 32094)
-pairs(date_species_emms)
+assump(date_species)
+aov(date_species)
+fit_date = Anova(date_species,
+                 contrasts=list(factorA='arid_within', FactorB ='site'), 
+                 data = arid_date,
+                 type='III')
+TukeyHSD(aov(date_species))
+# date_species_emms = emmeans(date_species, "aridx", lmerTest.limit = 317)
+# pairs(date_species_emms)
 
 
+
+
+# Aridity Gradient - MAS bin - Num Vocals and Species Diversity -----------
 ### MAS Bin - Num Vocals and Species Diversity
 arid_mas = full_arid %>%
-  group_by(site,date,mas)%>%
+  dplyr::filter(is.na(mas) == FALSE) %>%
+  group_by(site,mas)%>%
   summarise(mean_sunalt = mean(altitude),
             mean_vocals = mean(num_vocals),
-            se_vocals = sd(num_vocals)/sqrt(n()),
             mean_species = mean(species_diversity),
-            se_species = sd(species_diversity)/sqrt(n()),
             gh_obs = mean(gh), #observed aridity in 2021
             gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
             arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
             arid_across = mean(ghacross_sites), # observed aridity scaled across sites
             hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
-            hist_across = mean(ghsite_scaled), #%>% #historic aridity scaled across sites
-            mas_num = as.numeric(mas)
+            hist_across = mean(ghsite_scaled) #%>% #historic aridity scaled across sites
   )
 
+arid_mas$mas_num = as.numeric(as.character(arid_mas$mas))
 arid_mas$arid_within = cut(arid_mas$arid_within, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled within sites
 arid_mas$arid_across = cut(arid_mas$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
 arid_mas$hist_within = cut(arid_mas$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
 arid_mas$hist_across = cut(arid_mas$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
-arid_mas$mas_bin = cut(arid_mas$mas_num, breaks = 3, labels = c("early","mid","late"))
+arid_mas$mas_bin = cut(arid_mas$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
+
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/birdnet_data")
+save(arid_mas, file = "birdnet_totals_arid_mas.Rdata")
 
 
-# MAS-bin - Statistical Analyses ------------------------------------------
+# Aridity Gradient - MAS Bin - Plots --------------------------------------
+
+graph_arid_mas = arid_mas %>%
+  dplyr::filter(is.na(mas_bin) == FALSE)%>%
+  group_by(site,mas_bin) %>%
+  summarise(n = n(),
+            vocals_mean = mean(mean_vocals),
+            vocals_se = (sd(mean_vocals))/sqrt(n()),
+            species_mean = mean(mean_species),
+            species_se = sd(mean_species)/sqrt(n()))
+
+### Aridity Gradient - Mas Bin - Dot Plot - Number of Vocals
+ggplot(data = graph_arid_mas %>% 
+         dplyr::filter(is.na(mas_bin)==FALSE), 
+       aes(x=mas_bin, y= vocals_mean, color = as.factor(site))) +
+  geom_point(size = 2, position = position_dodge(0.2))+
+  geom_errorbar(aes(ymin = vocals_mean-vocals_se, 
+                    ymax = vocals_mean+vocals_se), width = 0.2,
+                position = position_dodge())+
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_y_continuous(name = "Number of Vocals")+
+  theme_classic(base_size = 20) +
+  # ggtitle(paste0("Species: Northern Cardinal")) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+ggsave("results/aridity_gradient_masbin_vocals_dotplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
+
+### Aridity Gradient - Mas Bin - Dot Plot - Number of Vocals
+ggplot(data = graph_arid_mas %>% 
+         dplyr::filter(is.na(mas_bin)==FALSE), 
+       aes(x=mas_bin, y= species_mean, color = as.factor(site))) +
+  geom_point(size = 2, position = position_dodge(0.2))+
+  geom_errorbar(aes(ymin = species_mean-species_se, 
+                    ymax = species_mean+species_se), width = 0.2,
+                position = position_dodge())+
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_y_continuous(name = "Species Diversity")+
+  theme_classic(base_size = 20) +
+  # ggtitle(paste0("Species: Northern Cardinal")) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+ggsave("results/aridity_gradient_masbin_species_dotplot_.jpg", width = 8, height = 6, units = "in", dpi = 600)
+# Aridity Gradient MAS-bin - Statistical Analyses ------------------------------------------
 library(emmeans)
 
 ### MAS-bin Number of Vocalizations
 arid_mas$aridx = interaction(arid_mas$mas_bin, arid_mas$site)
-mas_vocals = lmer(mean_vocals ~ aridx + (1|site), REML = FALSE, data = arid_mas)
+
+# stripchart(mean_vocals ~ site, vertical = TRUE, pch = 1, xlab = "site", 
+#            data = arid_mas)
+ggplot(arid_mas,
+       aes(x=mas_bin,y=mean_vocals,color=site)) + 
+  geom_boxplot()
+  # geom_boxplot(alpha=0.2) + 
+  # facet_wrap(~site)
+
+mas_vocals = lm(mean_vocals ~ mas_bin*site, data = arid_mas)
 summary(mas_vocals)
-mas_vocals_emms = emmeans(mas_vocals, "aridx", lmerTest.limit = 32094)
-pairs(mas_vocals_emms)
+aov(mas_vocals)
+Anova(mas_vocals, type = "III")
+TukeyHSD(aov(mas_vocals))
+# anova(mas_vocals)
+# ranef(mas_vocals)
+# mas_vocals_emms = emmeans(mas_vocals, "mas_bin", lmerTest.limit = 418)
+# pairs(mas_vocals_emms)
 
 ### MAS-bin Species Diversity
-arid_mas$aridx = interaction(arid_mas$mas_bin, arid_mas$site)
-mas_species = lmer(mean_species ~ aridx + (1|site), REML = FALSE, data = arid_mas)
+# arid_mas$aridx = interaction(arid_mas$mas_bin, arid_mas$site)
+mas_species = lm(mean_species ~ mas_bin*site, data = arid_mas)
 summary(mas_species)
-mas_species_emms = emmeans(mas_species, "aridx", lmerTest.limit = 32094)
-pairs(mas_species_emms)
-
-# Statistical Analyses - Aridity Graident LMMs ----------------------------
-#Testing for Collinearity
-
-cor(arid_date[,c(4:13)])
-cor.test(cor_arid$num_vocals,cor_arid$species_diversity)
-#altitude and mas are highly positively correlated so cannot use them in same model
-# Testing for Best Random effect -------------------------------------------
-re1 = lmer(log(mean_vocals) ~ mean_gh*scale(date)*hour_utc+(1|site), REML = TRUE, data = arid_dh)
-re2 = lmer(log(mean_vocals) ~ mean_gh*scale(date)*hour_utc+(1|aru), REML = TRUE, data = arid_dh)
-re3 = lmer(log(mean_vocals) ~ mean_gh*scale(date)*hour_utc+(1|site/aru), REML = TRUE, data = arid_dh)
-AICctab(re1,re2,re3, nobs = 9521, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-#best random effect is aru nested in site
+aov(mas_species)
+Anova(mas_species, type = "III")
+TukeyHSD(aov(mas_species))
+# mas_species_emms = emmeans(mas_species, "aridx", lmerTest.limit = 418)
+# pairs(mas_species_emms)
 
 
-#arid_dh dataset
-v1 = lmer(log(mean_vocals) ~ mean_gh*scale(date)*hour_utc+(1|site/aru), REML = TRUE, data = arid_dh)
-v2 = lmer(log(mean_vocals) ~ max_gh*scale(date)*hour_utc+(1|site/aru), REML = TRUE, data = arid_dh)
-
-AICctab(v1,v2,nobs = 9521, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-
-summary(v1) #ardity increases, species diversity decreases, no significant effect of scale(mas)
-assump(v1)
-
-#Species Diversity LMMs
-
-s1 = lmer(log(mean_species) ~ mean_gh*scale(date)*hour_utc+(1|site/aru), REML = TRUE, data = arid_dh)
-s2 = lmer(log(mean_species) ~ max_gh*scale(date)*hour_utc+(1|site/aru), REML = TRUE, data = arid_dh)
-
-AICctab(s1,s2, nobs = 9521, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-
-summary(s1) #ardity increases, species diversity decreases, no significant effect of scale(mas)
-assump(s1)
-
-
-
-#Plotting mean num_vocals across sun altitude per hour
-ggplot(data = arid_dh, aes(x = mean_gh, y = mean_vocals, color = site))+ #sun altitude does not overlap between sites, so good metric for time AND location
-  geom_line()
-
-cbpalette <- c("#56B4E9", "#E69F00", "#999999", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-#creating two panel graph for dew temperature fluctuation and 
-hour_vocals = ggplot(data = arid_hour,aes(x=hour_utc, y=log(mean_vocals), color = site)) +
-  geom_point(size = 3)+
-  # geom_line(size = 1) +
-  # geom_errorbar(aes(ymin=mean_vocals-se_vocals, ymax=mean_vocals+se_vocals), width=1,
-  #               position=position_dodge(0.0))+
-  geom_smooth(method = "lm")+
-  scale_color_manual(values = cbpalette,name = "Site")+
-  scale_y_continuous(name = "Log (Mean\nNum.\nVocals)")+
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
-        axis.title.x=element_blank(),
-        axis.text.x = element_blank(),
-        legend.position = "none");hour_vocals
-
-hour_species = ggplot(data = arid_hour,aes(x=hour_utc, y=log(mean_species), color = site)) +
-  # ggtitle("climate_change_extreme") +
-  geom_point(size = 3)+
-  # geom_line(size = 1) +
-  # geom_errorbar(aes(ymin=mean_species-se_species, ymax=mean_species+se_species), width=1,
-  #               position=position_dodge(0.0))+
-  geom_smooth(method = "lm")+
-  scale_color_manual(values = cbpalette,name = "Site")+
-  scale_y_continuous(name = "Log(Mean\nSpecies\nDiversity)")+
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
-        axis.title.x=element_blank(),
-        axis.text.x = element_blank(),
-        legend.position = "none");hour_species
-
-hour_arid = ggplot(data = arid_hour,
-                   aes(x=hour_utc, y=mean_gh, color = site)) +
-  geom_point(size = 3)+
-  # geom_line(size = 1) +
-  # geom_errorbar(aes(ymin=mean_gh-se_gh, ymax=mean_gh+se_gh), width=1,
-  #               position=position_dodge(0.0))+
-  geom_smooth(method = "lm")+
-  scale_color_manual(values = cbpalette,name = "Site",labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  scale_x_continuous(name = "Hour (UTC)")+
-  scale_y_continuous(name = "Mean\nEvaporation\nRate\n(kg/hr)")+
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
-        # axis.title.x= element_text("Mean Sun Altitude (Radians)")
-        )+ #change angle to 0 for presentations, 90 for papers
-  theme(legend.position = "bottom");hour_arid
-
-hour_out <- plot_grid(hour_vocals, hour_species,
-                      hour_arid, align = "v", ncol = 1, rel_heights = c(0.2,0.2,0.3));hour_out
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
-ggsave("ml_hour.jpg",plot = last_plot(), width = 8, height = 7.5, units = "in")
-
-
-
-hour_species = ggplot(data = arid_hour) +
-  geom_line(aes(x = mean_sunalt, y = mean_species, color = site))
-hour_out2 = plot_grid(hour_species, hour_arid, align = "v", ncol = 1, rel_heights = c(0.5,0.5));hour_out2
-
-
-# Graphing results across date --------------------------------------------
-cbpalette <- c("#56B4E9", "#E69F00", "#999999", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-#Graphs showing vocal trends across date
-date_vocals = ggplot(data = arid_date,aes(x=date, y=log(mean_vocals), color = site)) +
-  geom_point(size = 3)+
-  # geom_line(size = 1) +
-  geom_smooth(method = "lm")+
-  # geom_errorbar(aes(ymin=mean_vocals-se_vocals, ymax=mean_vocals+se_vocals), width=1,
-  #               position=position_dodge(0.0))+
-  # geom_smooth(method = "loess")+
-  scale_color_manual(values = cbpalette,name = "Site")+
-  scale_y_continuous(name = "Log (Mean\nNum.\nVocals)")+
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
-        axis.title.x=element_blank(),
-        axis.text.x = element_blank(),
-        legend.position = "none");date_vocals
-
-date_species = ggplot(data = arid_date,aes(x=date, y=mean_species, color = site)) +
-  # ggtitle("climate_change_extreme") +
-  geom_point(size = 3)+
-  # geom_line(size = 1) +
-  geom_smooth(method = "lm")+
-  # geom_errorbar(aes(ymin=mean_species-se_species, ymax=mean_species+se_species), width=1,
-  #               position=position_dodge(0.0))+
-  # geom_smooth(method = "lm")+
-  scale_color_manual(values = cbpalette,name = "Site")+
-  scale_y_continuous(name = "Log (Mean\nSpecies\nDiversity")+
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
-        axis.title.x=element_blank(),
-        axis.text.x = element_blank(),
-        legend.position = "none");date_species
-
-date_arid = ggplot(data = arid_date,aes(x=date, y=mean_gh, color = site)) +
-  geom_point(size = 3)+
-  # geom_line(size = 1) +
-  geom_smooth(method = "lm")+
-  # geom_errorbar(aes(ymin=mean_gh-se_gh, ymax=mean_gh+se_gh), width=1,
-  #               position=position_dodge(0.0))+
-  scale_color_manual(values = cbpalette,name = "Site",labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  scale_x_date(name = "Date")+
-  scale_y_continuous(name = "Mean\nEvaporation\nRate\n(kg/hr)")+
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
-        # axis.title.x= element_text("Mean Sun Altitude (Radians)")
-  )+ #change angle to 0 for presentations, 90 for papers
-  theme(legend.position = "bottom");date_arid
-
-date_out <- plot_grid(date_vocals,date_species,date_arid, align = "v", ncol = 1, rel_heights = c(0.2,0.2,0.3));date_out
-  
-
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
-ggsave("ml_date.jpg",plot = date_out, width = 8, height = 7.5, units = "in")
-
-# Testing for Collinearity ------------------------------------------------
-cor_arid = full_arid %>%
-  dplyr::select(site,aru,arid,mas,altitude,num_vocals,species_diversity,gh)
-cor(cor_arid[,c(11:16)])
-cor.test(cor_arid$num_vocals,cor_arid$species_diversity)
-#altitude and mas are highly positively correlated so cannot use them in same model
-# Testing for Best Random effect -------------------------------------------
-re1 = glmer(num_vocals ~ abs((1/gh))*altitude + (1|site), family = "poisson",data = full_arid)
-re2 = glmer(num_vocals ~ abs((1/gh))*altitude + (1|aru), family = "poisson",data = full_arid)
-re3 = glmer(num_vocals ~ abs((1/gh))*altitude + (1|site/aru), family = "poisson",data = full_arid)
-AICctab(re1,re2,re3, nobs = 48128, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-#best random effect is aru nested in site
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
-load("aridity_gradient_ml.Rdata")
-
-v1 = glmer(num_vocals ~ 1 + (1|site/aru), family = "poisson", data = full_arid)
-v2 = glmer(num_vocals ~ arid + (1|site/aru), family = "poisson", data = full_arid)
-v3 = glmer(num_vocals ~ altitude + (1|site/aru), family = "poisson", data = full_arid)
-v4 = glmer(num_vocals ~ abs((1/gh)) + (1|site/aru), family = "poisson", data = full_arid)
-v5 = glmer(num_vocals ~ relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-v6 = glmer(num_vocals ~ scale(mas) + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-v7 = glmer(num_vocals ~ altitude+abs((1/gh)) + (1|site/aru), family = "poisson", data = full_arid) 
-v8 = glmer(num_vocals ~ altitude*abs((1/gh)) + (1|site/aru),  family = "poisson", data = full_arid)
-v9 = glmer(num_vocals ~ altitude+relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-v10 = glmer(num_vocals ~ altitude*relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-v11 = glmer(num_vocals ~ scale(mas)+relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-v12 = glmer(num_vocals ~ scale(mas)*relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-AICctab(v1,v2,v3,v4,v7,v8, nobs = 48128, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-
-install.packages("pscl")
-library(pscl)
-
-f1 = formula(num_vocals ~ altitude*gh + (1|site/aru))
-zip1 = zeroinfl(f1, dist = "poisson", link = "logit", data = full_arid)
-summary(v8) #as altitude increases (further west/increasing time of day) number of vocalizations decrease, and as evaporation rate increases number of vocalizations decrease, interaction between the two has num_vocals decreasing as evaporation rate*altitude increases
-assump(v8)
-
-
-#Mean Species Diversity
-sd1 = glmer(species_diversity ~ 1 + (1|site/aru), family = "poisson", data = full_arid)
-sd2 = glmer(species_diversity ~ arid + (1|site/aru), family = "poisson", data = full_arid)
-sd3 = glmer(species_diversity ~ altitude + (1|site/aru), family = "poisson", data = full_arid)
-sd4 = glmer(species_diversity ~ abs((1/gh)) + (1|site/aru), family = "poisson", data = full_arid)
-sd5 = glmer(species_diversity ~ relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-sd6 = glmer(species_diversity ~ scale(mas) + (1|site/aru), family = "poisson", data = full_arid) 
-sd7 = glmer(species_diversity ~ altitude+abs((1/gh)) + (1|site/aru), family = "poisson", data = full_arid) 
-sd8 = glmer(species_diversity ~ altitude*abs((1/gh)) + (1|site/aru), family = "poisson", data = full_arid)
-sd9 = glmer(species_diversity ~ altitude+relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-sd10 = glmer(species_diversity ~ altitude*relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-sd11 = glmer(species_diversity ~ scale(mas)+relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-sd12 = glmer(species_diversity ~ scale(mas)*relh + (1|site/aru), family = "poisson", data = full_arid) # large eigenvalue ratio
-AICctab(sd1,sd2,sd3,sd4,sd6,sd7,sd8, nobs = 48128, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-
-summary(sd8) #ardity increases, species diversity decreases, no significant effect of scale(mas)
-assump(sd8)
-
-
-# Aridity Gradient Dataset WITHOUT OUTLIER!!!! ----------------------------
-# which.max(full_arid$arid)
-# full_arid$arid[34191,]
-# out_df = full_arid %>% dplyr::filter(site == "kiowa" && date == "2021-05-19")
-# ag_noout = full_arid %>% dplyr::filter(dew > 0.65)
-# 
-# # No Outlier - Testing for Best Random effect -------------------------------------------
-# cor_arid = ag_noout %>%
-#   dplyr::select(site,aru,arid,mas,altitude,num_vocals,species_diversity)
-# cor(cor_arid[,c(6,9:13)]) #no significant correlations between covariates
-# cor.test(cor_arid$num_vocals,cor_arid$species_diversity)
-# 
-# re1out = glmer(num_vocals ~ altitude + arid + (1|site), family = "poisson",data = ag_noout)
-# re2out = glmer(num_vocals ~ altitude + arid + (1|aru), family = "poisson",data = ag_noout)
-# re3out = glmer(num_vocals ~ altitude + arid + (1|site/aru), family = "poisson",data = ag_noout)
-# AICctab(re1out,re2out,re3out, nobs = 44594, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-# #best random effect is aru nested in site
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
-# 
-# v1out = glmer(num_vocals ~ 1 + (1|site/aru), family = "poisson", data = ag_noout)
-# v2out = glmer(num_vocals ~ arid + (1|site/aru), family = "poisson", data = ag_noout)
-# v3out = glmer(num_vocals ~ altitude + (1|site/aru), family = "poisson", data = ag_noout)
-# v4out = glmer(num_vocals ~ altitude+arid + (1|site/aru), family = "poisson", data = ag_noout)
-# v5out = glmer(num_vocals ~ scale(mas) + (1|site/aru), family = "poisson", data = ag_noout)
-# v6out = glmer(num_vocals ~ scale(mas)+arid + (1|site/aru), family = "poisson", data = ag_noout)
-# 
-# AICctab(v1out,v2out,v3out,v4out,v5out,v6out, nobs = 44594, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-# 
-# 
-# summary(v4out) #as altitude increases (further west/later in the day) number of vocalizations decrease, and as aridity decreases number of vocalizations increase
-# # Anova(v4, type = "III")
-# # contrasts = glht(v4, linfct = mcp(site = "Tukey"))
-# # summary(contrasts)
-# 
-# # Mean Species Diversity = No Aridity Outlier! ----------------------------
-# #Mean Species Diversity - No Outlier
-# s1out = glmer(species_diversity ~ 1 + (1|site/aru), family = "poisson", data = ag_noout)
-# s2out = glmer(species_diversity ~ arid + (1|site/aru), family = "poisson", data = ag_noout)
-# s3out = glmer(species_diversity ~ altitude + (1|site/aru), family = "poisson", data = ag_noout)
-# s4out = glmer(species_diversity ~ altitude+arid + (1|site/aru), family = "poisson", data = ag_noout)
-# s5out = glmer(species_diversity ~ scale(mas) + (1|site/aru), family = "poisson", data = ag_noout)
-# s6out = glmer(species_diversity ~ scale(mas)+arid + (1|site/aru), family = "poisson", data = ag_noout)
-# 
-# AICctab(s1out,s2out,s3out,s4out,s5out,s6out, nobs = 44594, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
-# 
-# 
-# 
-# 
-# summary(s2out) #as aridity increases, species diversity decreases
-# summary(s6out) #as aridity increases, species diversity decreases, no effect of scale(mas)
-# summary(s4out) #as aridity increases, species diversity decreases, no effect of altitude
-
-
-# Water Supplementation Graphs --------------------------------------------
+# Water Supplementation Data - Date Bin - Data Organization ----------
 water_compiled$water_int = interaction(as.factor(water_compiled$ws_site),as.factor(water_compiled$water))
-
-
-# Water Supplementation Data - Summarized by Date use for Graphs ----------
-
 
 water_date = water_compiled %>%
   mutate(date = date(date_time))%>%
   dplyr::filter(is.na(arid) == FALSE) %>%
-  dplyr::filter(date < "2021-08-07") %>%
+  dplyr::filter(date < "2021-08-16") %>%
   arrange(site,date) %>%
   group_by(site,ws_site,water,date) %>%
   summarise(mean_sunalt = mean(altitude),
             mean_vocals = mean(num_vocals),
-            se_vocals = sd(num_vocals)/sqrt(n()),
+            # se_vocals = sd(num_vocals)/sqrt(n()),
             mean_species = mean(species_diversity),
-            se_species = sd(species_diversity)/sqrt(n()),
-            mean_temp = mean(temp),
-            mean_relh = mean(relh),
-            mean_dew = mean(dew),
-            mean_arid = mean(arid),
-            mean_gh = mean(abs(1/gh)))
+            # se_species = sd(species_diversity)/sqrt(n()),
+            gh_obs = mean(gh), #observed aridity in 2021
+            gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
+            arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
+            arid_across = mean(ghacross_sites), # observed aridity scaled across sites
+            hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
+            hist_across = mean(ghsite_scaled)) #%>% #historic aridity scaled across sites
 
-# SSWMA Water Supplementation Plots ---------------------------------------
+# water_date$mas_num = as.numeric(as.character(water_date$mas))
+water_date$arid_within = cut(water_date$arid_within, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled within sites
+water_date$arid_across = cut(water_date$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
+water_date$hist_within = cut(water_date$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
+water_date$hist_across = cut(water_date$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
+# water_date$mas_bin = as.factor(ifelse(water_date$mas_num < 0, 0, cut(water_date$mas_num, breaks = 3)))
+
+sswater_date = water_date %>%
+  dplyr::filter(site == "sswma")
+cbwater_date = water_date %>%
+  dplyr::filter(site == "cbma")
+
+
+# SSWMA Water Supplementation - Date Bin - Plots ---------------------------------------
 
 sswma1_rec1 <- data.frame (xmin=as_date("2021-05-17"), 
                            xmax=as_date("2021-05-30"), 
@@ -702,7 +607,7 @@ sswma2_rec2 = data.frame (xmin=as_date("2021-07-03"),
                           ymin=-Inf, ymax=Inf) #start of water at water site 2
 
 #SSWMA Vocals Graph
-wsvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "sswma"),
+ggplot(data = sswater_date,
                       # wsvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "sswma"), #uncomment to summarize by date only
                       aes(x=date, y=log(mean_vocals), 
                           color = as.factor(ws_site))) +
@@ -735,18 +640,19 @@ wsvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "sswma"),
   geom_smooth(method = "lm")+
   scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),name = "Water Station")+
   scale_x_date(name = "Date")+
-  scale_y_continuous(name = "Log\n(Mean\nNum.\nVocals)")+
+  scale_y_continuous(name = "Log\n(Mean Num. Vocals)")+
   theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_text(),
         # axis.text.x = element_blank(),
         axis.text.x = element_text(),
-        legend.position = "none");wsvocals_day
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results/")
+ggsave("sswma_water_vocals_rectangle_plots.jpg", width = 8, height = 6, units = "in")
 
 #Boxplot for Water SSWMA vocals Diversity
-boxplot_sswma_vocals = ggplot(data = water_aru %>%
-                                 dplyr::filter(site == "sswma"),
-                               aes(x=as.factor(ws_site), y=log(mean_vocals), 
+ggplot(data = sswater_date,
+       aes(x=as.factor(ws_site), y=log(mean_vocals), 
                                    color = as.factor(ws_site),
                                    fill=as.factor(water))) +
   stat_boxplot(geom ='errorbar', width = 0.6) +
@@ -772,12 +678,12 @@ boxplot_sswma_vocals = ggplot(data = water_aru %>%
         legend.box = "horizontal",
         legend.title = element_text(size = 15),
         legend.text = element_text(size = 15),
-        legend.margin=margin(t=-20));boxplot_sswma_vocals
-sswmaw_vocals_plots = plot_grid(wsvocals_day, boxplot_sswma_vocals,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));sswmaw_vocals_plots
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
-ggsave("sswmaw_vocals_boxplots.jpg",plot = boxplot_sswma_vocals, width = 8, height = 7.5, units = "in")
+        legend.margin=margin(t=-20))
+# sswmaw_vocals_plots = plot_grid(wsvocals_day, boxplot_sswma_vocals,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));sswmaw_vocals_plots
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results/")
+ggsave("sswma_water_vocals_boxplots.jpg", width = 8, height = 6, units = "in")
 
-wsspecies_day = ggplot(data = water_date %>%dplyr::filter(site == "sswma"),
+ggplot(data = sswater_date,
 # wsspecies_day = ggplot(data = water_date %>%dplyr::filter(site == "sswma"), #uncomment to summarize by date only
                        aes(x=date, y=log(mean_species), 
                            color = as.factor(ws_site))) +
@@ -806,21 +712,30 @@ wsspecies_day = ggplot(data = water_date %>%dplyr::filter(site == "sswma"),
             fill="#E69F00", 
             alpha=0.1, 
             inherit.aes = FALSE) +
-  geom_rect(data=sswma2_rec2, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="#E69F00", alpha=0.1, inherit.aes = FALSE) +
+  geom_rect(data=sswma2_rec2, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#E69F00", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
   geom_smooth(method = "lm")+
-  scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),name = "Water Station")+
+  scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),
+                     name = "Water Station")+
   scale_x_date(name = "Date")+
-  scale_y_continuous(name = "Log\n(Mean\nSpecies\nDiversity")+
+  scale_y_continuous(name = "Log\n(Mean Species Diversity")+
   theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_text(),
         # axis.text.x = element_blank(),
         axis.text.x = element_text(),
-        legend.position = "none");wsspecies_day
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results/")
+ggsave("sswma_water_species_rectangle_plots.jpg", width = 8, height = 6, units = "in")
 
 #Boxplot for Water SSWMA Species Diversity
-boxplot_sswma_species = ggplot(data = water_aru %>%
-                                 dplyr::filter(site == "sswma"),
+ggplot(data = sswater_date,
                            aes(x=as.factor(ws_site), y=log(mean_species), 
                                color = as.factor(ws_site),
                                fill=as.factor(water))) +
@@ -830,7 +745,7 @@ boxplot_sswma_species = ggplot(data = water_aru %>%
                geom = "point",
                aes(group=as.factor(water)),
                position = position_dodge(0.6)) +
-  scale_y_continuous(name = "Log\n(Mean\nSpecies\nDiversity)")+
+  scale_y_continuous(name = "Log\n(Mean Species Diversity)")+
   scale_color_manual(name = "Water Site",
                      values = c("#009E73","#D55E00","#CC79A7"))+
   scale_fill_manual(name = "Water Access", 
@@ -838,7 +753,7 @@ boxplot_sswma_species = ggplot(data = water_aru %>%
                     values = c("#ffffff", "#56B4E9"))+
   xlab(label="Water Site")+
   theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         axis.title.x=element_text(),
         # axis.text.x = element_blank(),
         axis.text.x = element_text(),
@@ -847,12 +762,12 @@ boxplot_sswma_species = ggplot(data = water_aru %>%
         legend.box = "horizontal",
         legend.title = element_text(size = 15),
         legend.text = element_text(size = 15),
-        legend.margin=margin(t=-20));boxplot_sswma_species
-sswmaw_species_plots = plot_grid(wsspecies_day, boxplot_sswma_species,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));sswmaw_species_plots
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
-ggsave("sswmaw_species_boxplots.jpg",plot = boxplot_sswma_species, width = 8, height = 7.5, units = "in")
+        legend.margin=margin(t=-20))
+# sswmaw_species_plots = plot_grid(wsspecies_day, boxplot_sswma_species,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));sswmaw_species_plots
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results/")
+ggsave("sswma_water_species_boxplots.jpg", width = 8, height = 7.5, units = "in")
 
-# CBMA Water Plots --------------------------------------------------------
+# CBMA Water Supplementation - Date Bin - Plots --------------------------------------------------------
 full_water1 = full_water %>%
   filter(aru == "wg01" | aru == "wg02" | aru == "wg03") %>%
   mutate(water = ifelse(date >= "2021-06-04" & date <"2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1),
@@ -869,7 +784,7 @@ cbma1_rec2 = data.frame (xmin=as_date("2021-06-25"), xmax=as_date("2021-07-19"),
 cbma2_rec2 = data.frame (xmin=as_date("2021-07-03"), xmax=as_date("2021-08-07"), ymin=-Inf, ymax=Inf) #start of water at water site 2
 
 #CBMA Vocals Graph
-wcvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"),
+ggplot(data = cbwater_date,
                       # wsvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"), #uncomment to summarize by date only
                       aes(x=date, y=log(mean_vocals), 
                           color = as.factor(ws_site))) +
@@ -894,27 +809,29 @@ wcvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"),
   geom_smooth(method = "lm")+
   scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),name = "Water Station")+
   scale_x_date(name = "Date")+
-  scale_y_continuous(name = "Log\n(Mean\nNum.\nVocals)")+
+  scale_y_continuous(name = "Log\n(Mean Num. Vocals)")+
   theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         # axis.title.x=element_text(),
         # axis.text.x = element_blank(),
         axis.text.x = element_text(),
-        legend.position = "none");wcvocals_day
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results/")
+ggsave("cbma_water_vocals_rectangle_plots.jpg", width = 8, height = 6, units = "in")
 
 #Boxplot for Water cbma vocals Diversity
-boxplot_cbma_vocals = ggplot(data = water_aru %>%
-                                dplyr::filter(site == "cbma"),
-                              aes(x=as.factor(ws_site), y=log(mean_vocals), 
+ggplot(data = cbwater_date,
+       aes(x=as.factor(ws_site), y=log(mean_vocals), 
                                   color = as.factor(ws_site),
                                   fill=as.factor(water))) +
   stat_boxplot(geom ='errorbar', width = 0.6) +
   geom_boxplot(width = 0.6) +
   stat_summary(fun = "mean",
                geom = "point",
+               size = 5,
                aes(group=as.factor(water)),
                position = position_dodge(0.6)) +
-  scale_y_continuous(name = "Log\n(Mean\nNum.\nVocals)")+
+  scale_y_continuous(name = "Log\n(Mean Num. Vocals)")+
   scale_color_manual(name = "Water Site",
                      values = c("#009E73","#D55E00","#CC79A7"))+
   scale_fill_manual(name = "Water Access", 
@@ -922,7 +839,7 @@ boxplot_cbma_vocals = ggplot(data = water_aru %>%
                     values = c("#ffffff", "#56B4E9"))+
   xlab(label="Water Site")+
   theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0
         axis.title.x=element_text(),
         # axis.text.x = element_blank(),
         axis.text.x = element_text(),
@@ -931,12 +848,12 @@ boxplot_cbma_vocals = ggplot(data = water_aru %>%
         legend.box = "horizontal",
         legend.title = element_text(size = 15),
         legend.text = element_text(size = 15),
-        legend.margin=margin(t=-20));boxplot_cbma_vocals
-cbmaw_vocals_plots = plot_grid(wcvocals_day, boxplot_cbma_vocals,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));cbmaw_vocals_plots
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
-ggsave("cbmaw_vocals_boxplots.jpg",plot = boxplot_cbma_vocals, width = 8, height = 7.5, units = "in")
+        legend.margin=margin(t=-20))
+# cbmaw_vocals_plots = plot_grid(wcvocals_day, boxplot_cbma_vocals,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));cbmaw_vocals_plots
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results/")
+ggsave("cbmaw_vocals_boxplots.jpg",width = 8, height = 6, units = "in")
 
-wcspecies_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"),
+ggplot(data = cbwater_date,
                        # wsspecies_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"), #uncomment to summarize by date only
                        aes(x=date, y=log(mean_species), 
                            color = as.factor(ws_site))) +
@@ -966,14 +883,341 @@ wcspecies_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"),
         # axis.title.x=element_text(),
         # axis.text.x = element_blank(),
         axis.text.x = element_text(),
-        legend.position = "none");wcspecies_day
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results/")
+ggsave("cbma_water_species_rectangle_plots.jpg", width = 8, height = 6, units = "in")
+
 
 #Boxplot for Water cbma Species Diversity
-boxplot_cbma_species = ggplot(data = water_aru %>%
-                                 dplyr::filter(site == "cbma"),
+ggplot(data = cbwater_date,
                                aes(x=as.factor(ws_site), y=log(mean_species), 
                                    color = as.factor(ws_site),
                                    fill=as.factor(water))) +
+  stat_boxplot(geom ='errorbar', width = 0.6) +
+  geom_boxplot(width = 0.6) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 5,
+               aes(group=as.factor(water)),
+               position = position_dodge(0.6)) +
+  scale_y_continuous(name = "Log\n(Mean Species Diversity)")+
+  scale_color_manual(name = "Water Site",
+                     values = c("#009E73","#D55E00","#CC79A7"))+
+  scale_fill_manual(name = "Water Access", 
+                    labels = c("Closed","Open"),
+                    values = c("#ffffff", "#56B4E9"))+
+  xlab(label="Water Site")+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        axis.title.x=element_text(),
+        # axis.text.x = element_blank(),
+        axis.text.x = element_text(),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "horizontal",
+        legend.title = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.margin=margin(t=-20))
+# cbmaw_species_plots = plot_grid(wcspecies_day, boxplot_cbma_species,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));cbmaw_species_plots
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/results")
+ggsave("cbma_water_species_boxplots.jpg",width = 8, height = 7.5, units = "in")
+
+
+
+
+# SSWMA Water Supplementation - Date Bin - Statistical Analysis -----------
+sswater_date$aridx_date = interaction(sswater_date$arid_within,as.factor(sswater_date$ws_site),as.factor(sswater_date$water))
+sswater_vocals = lm(mean_vocals ~ aridx_date, data = sswater_date)
+summary(sswater_vocals)
+assump(sswater_vocals)
+aov(sswater_vocals)
+fit_date = Anova(sswater_vocals,
+                 contrasts=list(factorA='arid_within', FactorB ='site'), 
+                 data = arid_date,
+                 type='III')
+TukeyHSD(aov(sswater_vocals))
+# date_vocals_emms = emmeans(date_vocals, "aridx", lmerTest.limit = 32094)
+# pairs(date_vocals_emms)
+
+### Date-bin Species Diversity
+
+ggplot(arid_date,
+       aes(x=arid_within,y=mean_species,color=site)) + 
+  geom_jitter() + 
+  geom_boxplot(alpha=0.2) + 
+  facet_wrap(~site)
+
+sswater_date$aridx_date = interaction(sswater_date$arid_within,as.factor(sswater_date$ws_site),as.factor(sswater_date$water))
+sswater_species = lm(mean_species ~ aridx_date, data = sswater_date)
+summary(sswater_species)
+assump(sswater_species)
+aov(sswater_species)
+fit_date = Anova(sswater_species,
+                 contrasts=list(factorA='arid_within', FactorB ='site'), 
+                 data = arid_date,
+                 type='III')
+TukeyHSD(aov(sswater_species))
+# date_species_emms = emmeans(date_species, "aridx", lmerTest.limit = 317)
+# pairs(date_species_emms)
+
+
+# CBMA Water Supplementation - Day Bin - Statistical Analysis -------------
+cbwater_date$aridx_date = interaction(cbwater_date$arid_within,as.factor(cbwater_date$ws_site),as.factor(cbwater_date$water))
+cbwater_vocals = lm(mean_vocals ~ aridx_date, data = cbwater_date)
+summary(cbwater_vocals)
+assump(cbwater_vocals)
+aov(cbwater_vocals)
+fit_date = Anova(cbwater_vocals,
+                 contrasts=list(factorA='arid_within', FactorB ='site'), 
+                 data = arid_date,
+                 type='III')
+TukeyHSD(aov(cbwater_vocals))
+# date_vocals_emms = emmeans(date_vocals, "aridx", lmerTest.limit = 32094)
+# pairs(date_vocals_emms)
+
+### Date-bin Species Diversity
+
+ggplot(arid_date,
+       aes(x=arid_within,y=mean_species,color=site)) + 
+  geom_jitter() + 
+  geom_boxplot(alpha=0.2) + 
+  facet_wrap(~site)
+
+cbwater_date$aridx_date = interaction(cbwater_date$arid_within,as.factor(cbwater_date$ws_site),as.factor(cbwater_date$water))
+cbwater_species = lm(mean_species ~ aridx_date, data = cbwater_date)
+summary(cbwater_species)
+assump(cbwater_species)
+aov(cbwater_species)
+fit_date = Anova(cbwater_species,
+                 contrasts=list(factorA='arid_within', FactorB ='site'), 
+                 data = arid_date,
+                 type='III')
+TukeyHSD(aov(cbwater_species))
+# date_species_emms = emmeans(date_species, "aridx", lmerTest.limit = 317)
+# pairs(date_species_emms)
+
+# Water Supplementation - MAS Bin - data organization-----------------------------------------
+water_mas = water_compiled %>%
+  mutate(date = date(date_time))%>%
+  dplyr::filter(is.na(arid) == FALSE) %>%
+  dplyr::filter(date < "2021-08-16") %>%
+  arrange(site,date) %>%
+  group_by(site,ws_site,water,mas) %>%
+  summarise(mean_sunalt = mean(altitude),
+            mean_vocals = mean(num_vocals),
+            # se_vocals = sd(num_vocals)/sqrt(n()),
+            mean_species = mean(species_diversity),
+            # se_species = sd(species_diversity)/sqrt(n()),
+            gh_obs = mean(gh), #observed aridity in 2021
+            gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
+            arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
+            arid_across = mean(ghacross_sites), # observed aridity scaled across sites
+            hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
+            hist_across = mean(ghsite_scaled)) #%>% #historic aridity scaled across sites
+
+water_mas$mas_num = as.numeric(as.character(water_mas$mas))
+water_mas$arid_within = cut(water_mas$arid_within, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled within sites
+water_mas$arid_across = cut(water_mas$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
+water_mas$hist_within = cut(water_mas$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
+water_mas$hist_across = cut(water_mas$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
+water_mas$mas_bin = cut(water_mas$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
+
+sswater_mas = water_mas %>%
+  dplyr::filter(site == "sswma")
+cbwater_mas = water_mas %>%
+  dplyr::filter(site == "cbma")
+
+
+# SSWMA Water Supplementation - MAS Bin - Plots ---------------------------------------
+
+#Boxplot for Water SSWMA vocals Diversity
+ggplot(data = sswater_mas,
+       aes(x=mas_bin, y=log(mean_vocals), 
+           color = as.factor(ws_site),
+           fill=as.factor(water))) +
+  # stat_boxplot(geom ='errorbar', width = 0.6) +
+  geom_boxplot(width = 0.6) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               aes(group=as.factor(ws_site)),
+               size = 2,
+               position = position_dodge(0.5), preserve = "single") +
+  scale_y_continuous(name = "Log\n(Mean Num. Vocals)")+
+  scale_color_manual(name = "Water Site",
+                     values = c("#009E73","#D55E00","#CC79A7"))+
+  scale_fill_manual(name = "Water Access", 
+                    labels = c("Closed","Open"),
+                    values = c("#ffffff", "#56B4E9"))+
+  xlab(label="Water Site")+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 0, vjust = 0),
+        axis.title.x=element_text(),
+        # axis.text.x = element_blank(),
+        axis.text.x = element_text(),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "horizontal",
+        legend.title = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.margin=margin(t=-20))
+# sswmaw_vocals_plots = plot_grid(wsvocals_day, boxplot_sswma_vocals,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));sswmaw_vocals_plots
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
+ggsave("sswma_water_vocals_boxplots.jpg",width = 8, height = 6, units = "in")
+
+
+#Boxplot for Water SSWMA Species Diversity
+ggplot(data = sswater_mas,
+       aes(x=as.factor(ws_site), y=log(mean_species), 
+           color = as.factor(ws_site),
+           fill=as.factor(water))) +
+  stat_boxplot(geom ='errorbar', width = 0.6) +
+  geom_boxplot(width = 0.6) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               aes(group=as.factor(water)),
+               position = position_dodge(0.6)) +
+  scale_y_continuous(name = "Log\n(Mean\nSpecies\nDiversity)")+
+  scale_color_manual(name = "Water Site",
+                     values = c("#009E73","#D55E00","#CC79A7"))+
+  scale_fill_manual(name = "Water Access", 
+                    labels = c("Closed","Open"),
+                    values = c("#ffffff", "#56B4E9"))+
+  xlab(label="Water Site")+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+        axis.title.x=element_text(),
+        # axis.text.x = element_blank(),
+        axis.text.x = element_text(),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "horizontal",
+        legend.title = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.margin=margin(t=-20))
+sswmaw_species_plots = plot_grid(wsspecies_day, boxplot_sswma_species,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));sswmaw_species_plots
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
+ggsave("sswmaw_species_boxplots.jpg",plot = boxplot_sswma_species, width = 8, height = 7.5, units = "in")
+
+# CBMA Water Supplementation - MAS Bin - Plots --------------------------------------------------------
+full_water1 = full_water %>%
+  filter(aru == "wg01" | aru == "wg02" | aru == "wg03") %>%
+  mutate(water = ifelse(date >= "2021-06-04" & date <"2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1),
+         ws_site = 1) #1 = water access open
+
+full_water2 = full_water %>%
+  filter(aru == "wg04" | aru == "wg05") %>%
+  mutate(water = 1,
+         ws_site = 2)
+
+
+cbma1_rec1 <- data.frame (xmin=as_date("2021-05-14"), xmax=as_date("2021-06-04"), ymin=-Inf, ymax=Inf) #start of water site 1 with water
+cbma1_rec2 = data.frame (xmin=as_date("2021-06-25"), xmax=as_date("2021-07-19"), ymin=-Inf, ymax=Inf) #start of water site 1 with water
+cbma2_rec2 = data.frame (xmin=as_date("2021-07-03"), xmax=as_date("2021-08-07"), ymin=-Inf, ymax=Inf) #start of water at water site 2
+
+#CBMA Vocals Graph
+ggplot(data = cbwater_mas,
+       # wsvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"), #uncomment to summarize by date only
+       aes(x=date, y=log(mean_vocals), 
+           color = as.factor(ws_site))) +
+  geom_point(size = 3, position = position_dodge())+
+  geom_rect(data=cbma1_rec1, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#56B4E9", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
+  geom_rect(data=cbma1_rec2, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#56B4E9", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
+  
+  geom_smooth(method = "lm")+
+  scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),name = "Water Station")+
+  scale_x_date(name = "Date")+
+  scale_y_continuous(name = "Log\n(Mean\nNum.\nVocals)")+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+        # axis.title.x=element_text(),
+        # axis.text.x = element_blank(),
+        axis.text.x = element_text(),
+        legend.position = "right")
+
+#Boxplot for Water cbma vocals Diversity
+ggplot(data = cbwater_mas,
+       aes(x=as.factor(ws_site), y=log(mean_vocals), 
+           color = as.factor(ws_site),
+           fill=as.factor(water))) +
+  stat_boxplot(geom ='errorbar', width = 0.6) +
+  geom_boxplot(width = 0.6) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               aes(group=as.factor(water)),
+               position = position_dodge(0.6)) +
+  scale_y_continuous(name = "Log\n(Mean\nNum.\nVocals)")+
+  scale_color_manual(name = "Water Site",
+                     values = c("#009E73","#D55E00","#CC79A7"))+
+  scale_fill_manual(name = "Water Access", 
+                    labels = c("Closed","Open"),
+                    values = c("#ffffff", "#56B4E9"))+
+  xlab(label="Water Site")+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+        axis.title.x=element_text(),
+        # axis.text.x = element_blank(),
+        axis.text.x = element_text(),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "horizontal",
+        legend.title = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.margin=margin(t=-20))
+cbmaw_vocals_plots = plot_grid(wcvocals_day, boxplot_cbma_vocals,align = "v", ncol = 1, rel_heights = c(0.45, 0.55));cbmaw_vocals_plots
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
+ggsave("cbmaw_vocals_boxplots.jpg",plot = boxplot_cbma_vocals, width = 8, height = 7.5, units = "in")
+
+ggplot(data = cbwater_mas,
+       # wsspecies_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"), #uncomment to summarize by date only
+       aes(x=date, y=log(mean_species), 
+           color = as.factor(ws_site))) +
+  geom_point(size = 3, position = position_dodge())+
+  geom_rect(data=cbma1_rec1, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#56B4E9", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
+  geom_rect(data=cbma1_rec2, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#56B4E9", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
+  # geom_smooth(method = "lm")+ #date not significant so no trendlines
+  scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),name = "Water Station")+
+  scale_x_date(name = "Date")+
+  scale_y_continuous(name = "Log\n(Mean\nSpecies\nDiversity")+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5),
+        # axis.title.x=element_text(),
+        # axis.text.x = element_blank(),
+        axis.text.x = element_text(),
+        legend.position = "none")
+
+#Boxplot for Water cbma Species Diversity
+ggplot(data = cbwater_mas,
+       aes(x=as.factor(ws_site), y=log(mean_species), 
+           color = as.factor(ws_site),
+           fill=as.factor(water))) +
   stat_boxplot(geom ='errorbar', width = 0.6) +
   geom_boxplot(width = 0.6) +
   stat_summary(fun = "mean",
@@ -1002,34 +1246,53 @@ cbmaw_species_plots = plot_grid(wcspecies_day, boxplot_cbma_species,align = "v",
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/results/")
 ggsave("cbmaw_species_boxplots.jpg",plot = boxplot_cbma_species, width = 8, height = 7.5, units = "in")
 
-# Water Supplementation Data Summarized by ARU use for Statistics ----------------------------
 
-water_aru = water_compiled %>%
-  mutate(date = date(date_time))%>%
-  dplyr::filter(is.na(arid) == FALSE) %>%
-  dplyr::filter(date < "2021-08-07") %>%
-  group_by(site,aru,date,hour_utc,ws_site,water,water_int) %>%
-  summarise(mean_sunalt = mean(altitude),
-            mean_vocals = mean(num_vocals),
-            se_vocals = sd(num_vocals)/sqrt(n()),
-            mean_species = mean(species_diversity),
-            se_species = sd(species_diversity)/sqrt(n()),
-            mean_temp = mean(temp),
-            mean_relh = mean(relh),
-            mean_dew = mean(dew),
-            mean_arid = mean(arid),
-            mean_gh = mean(gh), #don't need to transform because this is summary data
-            max_gh = max(gh)
-            # mean_gh = mean(abs(1/gh)),
-            # max_gh = max(abs(1/gh))
-            )
 
-# Water Supplementation - Best Random Effect ------------------------------
-hist(log(water_aru$mean_vocals))
-wre1 = lmer(log(mean_vocals) ~ mean_gh*water_int*scale(date)+ (1|ws_site), REML = TRUE, data = water_aru)
-wre2 = lmer(log(mean_vocals) ~ mean_gh*water_int*scale(date) + (1|aru), REML = TRUE, data = water_aru)
-wre3 = lmer(log(mean_vocals) ~ mean_gh*water_int*scale(date) + (1|ws_site/aru), REML = TRUE, data = water_aru)
-AICctab(wre1,wre2,wre3, nobs = 845, base=TRUE,delta=TRUE, sort=TRUE, weights=TRUE)
+
+# SSWMA Water Supplementation - MAS Bin - Statistical Analyses ------------
+
+sswater_vocals = lm(mean_vocals ~ mas_bin*as.factor(ws_site)*as.factor(water), data = sswater_mas)
+summary(sswater_vocals)
+aov(sswater_vocals)
+Anova(sswater_vocals, type = "III")
+TukeyHSD(aov(sswater_vocals))
+# anova(mas_vocals)
+# ranef(mas_vocals)
+# mas_vocals_emms = emmeans(mas_vocals, "mas_bin", lmerTest.limit = 418)
+# pairs(mas_vocals_emms)
+
+### MAS-bin Species Diversity
+# arid_mas$aridx = interaction(arid_mas$mas_bin, arid_mas$site)
+sswater_species = lm(mean_species ~ mas_bin*as.factor(ws_site)*as.factor(water), data = sswater_mas)
+summary(sswater_species)
+aov(sswater_species)
+Anova(sswater_species, type = "III")
+TukeyHSD(aov(sswater_species))
+# mas_species_emms = emmeans(mas_species, "aridx", lmerTest.limit = 418)
+# pairs(mas_species_emms)
+
+
+# CBMA Water Supplementation - MAS Bin - Statistical Analysis -------------
+cbwater_mas$aridx = interaction(cbwater_mas$mas_bin,as.factor(cbwater_mas$ws_site),as.factor(cbwater_mas$water))
+cbwater_vocals = lm(mean_vocals ~ aridx, data = cbwater_mas)
+summary(cbwater_vocals)
+aov(cbwater_vocals)
+Anova(cbwater_vocals, type = "III")
+TukeyHSD(aov(cbwater_vocals))
+# anova(mas_vocals)
+# ranef(mas_vocals)
+# mas_vocals_emms = emmeans(mas_vocals, "mas_bin", lmerTest.limit = 418)
+# pairs(mas_vocals_emms)
+
+### MAS-bin Species Diversity
+cbwater_mas$aridx = interaction(cbwater_mas$mas_bin,as.factor(cbwater_mas$ws_site),as.factor(cbwater_mas$water))
+cbwater_species = lm(mean_species ~ aridx, data = cbwater_mas)
+summary(cbwater_species)
+aov(cbwater_species)
+Anova(cbwater_species, type = "III")
+TukeyHSD(aov(cbwater_species))
+# cbwater_species_emms = emmeans(cbwater_species, "aridx", lmerTest.limit = 306)
+# pairs(mas_species_emms)
 
 # Running Water Supplementation SSWMA and CBMA Separately LMMs!!! Data Summarized by ARU-----------------
 water_aru$water_int = interaction(as.factor(water_aru$ws_site),as.factor(water_aru$water))
@@ -1120,13 +1383,7 @@ AICctab(wv1,wv2,wv3,wv4,wv5,wv6, nobs = 35106, base=TRUE,delta=TRUE, sort=TRUE, 
 
 summary(wv6)
 # Running Water Supplementation SSWMA and CBMA Separately -----------------
-water_compiled$water_int = interaction(as.factor(water_compiled$ws_site),as.factor(water_compiled$water))
 
-
-sswma_water = water_compiled %>%
-  dplyr::filter(site == "sswma")
-cbma_water = water_compiled %>%
-  dplyr::filter(site == "cbma")
 wre1 = glmer(num_vocals ~ abs((1/gh))*water_int + (1|aru), family = "poisson", data = sswma_water) #best fit
 wre2 = glmer(num_vocals ~ abs((1/gh))*water_int + (1|ws_site), family = "poisson", data = sswma_water)
 wre3 = glmer(num_vocals ~ abs((1/gh))*water_int + (1|ws_site/aru), family = "poisson", data = sswma_water)
@@ -1199,139 +1456,3 @@ Anova(cwsd5, type = "III")
 contrasts = glht(cwsd5, linfct = mcp(water_int = "Tukey"))
 summary(contrasts) #presence of water increases species diversity across ws_site 1, and ws_site 2 has higher species diversity than ws_site 1 with restrected access, but is not significantly different (p = 0.0698) from ws_site 1 with access to water
 
-# Comparing against Manual Detections in Validation Files -----------------
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/")
-arus = as.list(c("aru01","aru04","aru05","ws01","ws02","ws03","ws04","ws05","ws06","ws11","ws12","ws13","ws14","ws15"))
-valid_final = NULL
-for(i in arus){
-   setwd(paste0("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/sswma/",
-                i))
-   birdnet = list.files(pattern = ".txt")
-   for(j in 1:length(birdnet)){
-      
-      valid_temp = read.table(birdnet[[j]], header = FALSE, sep = "", fill = TRUE)
-      names(valid_temp) = c("start","end","id") 
-      valid_temp$id = substr(valid_temp$id,1,4)
-      valid_temp$date_time = as_datetime(substr(birdnet[[j]],1,15))
-      valid_temp$date = date(valid_temp$date_time)
-      valid_temp$time = hms(substr(valid_temp$date_time,12,19))
-      valid_temp$aru = i   
-      valid_temp$site = "sswma"
-      valid_final= rbind(valid_final,valid_temp)
-   }
-   
-}
-
-#Saving validation data
-sswma_valid = valid_final
-valid_species_hour = sswma_valid %>%
-   filter(time@hour <=13) %>% 
-   group_by(date_time,aru,site) %>%
-   summarise(n = n(),
-species_diversity = n_distinct(id))
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean/")
-write.csv(valid_species_hour, "validation_diversity.csv", row.names = FALSE)
-# rename(time = "time@hour") %>%
-
-mmp_valid = full_join(valid_species_hour,species_hour, by = c("date_time","aru")) %>%
-   rename("mmp_num_vocals" = n,
-          "mmp_species_diversity" = species_diversity.x,
-          "birdnet_num_vocals" = num_vocals,
-          "birdnet_species_diversity" = species_diversity.y) %>%
-   select(mmp_num_vocals,
-          mmp_species_diversity,
-          birdnet_num_vocals,
-          birdnet_species_diversity) %>%
-   mutate(mmp_num_vocals = as.numeric(mmp_num_vocals),
-          mmp_species_diversity = as.numeric(mmp_species_diversity),
-          birdnet_num_vocals = as.numeric(birdnet_num_vocals),
-          birdnet_species_diversity = as.numeric(birdnet_species_diversity)) %>%
-   na.omit()
-mmp_cor = cor(mmp_valid[, 3:6], use ="everything")
-cor.test(mmp_valid$mmp_species_diversity,mmp_valid$birdnet_species_diversity)
-cor.test(mmp_valid$mmp_num_vocals, mmp_valid$birdnet_num_vocals)
-
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/")
-write.csv(mmp_valid, "mmp_valid_data.csv", row.names = FALSE)
-
-# Correlating Validation Data ---------------------------------------------
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/validation_data/")
-
-valid_data = read.csv("validation_acoustic_indices.csv", header = TRUE) %>%
-   na.omit()
-
-
-valid_cor = cor(valid_data[, 4:17], use ="everything")
-cor.test(valid_data$user_num_vocals,valid_data$birdnet_unfiltered_num_vocals) #r = 0.244 (0.091-0.386), p = 0.002, 
-cor.test(valid_data$num_vocals,valid_data$pabu_aei) #r =-0.463, p = 0.035
-
-melted_valid <- melt(valid_cor)
-head(melted_valid)
-# lower_valid <- valid_cor
-# 
-# # Make lower triangular matrix by setting NA to upper triangular part:
-# lower_valid[upper.tri(lower_valid)] <- NA
-# lower_m_valid <- melt(lower_valid, na.rm = TRUE)
-
-
-# Ggplot lower triangular correlation matrix:
-
-ggplot(data = melted_valid, aes(x = Var1, y = Var2, fill = value)) +
-   geom_tile() +
-   scale_fill_gradient2(midpoint = 0.5, mid ="grey70", 
-                        limits = c(-1, +1)) +
-   labs(title = "Correlation Matrix of Validation Data, Acoustic Indices, and BirdNet-Lite Analysis", 
-        x = "", y = "", fill = "Correlation \n Measure") +
-   theme(plot.title = element_text(hjust = 0.5, colour = "blue"), 
-         axis.title.x = element_text(face="bold", colour="darkgreen", size = 12),
-         axis.title.y = element_text(face="bold", colour="darkgreen", size = 12),
-         legend.title = element_text(face="bold", colour="brown", size = 10)) +
-   geom_text(aes(x = Var1, y = Var2, label = round(value, 2)), color = "black", 
-             fontface = "bold", size = 5)+
-   theme_classic(base_size = 20) +
-   theme(axis.text.x = element_text(angle = 45, hjust=1))
-
-
-
-cbma_data$date_time = cbma_data$local_time
-miss_weather = anti_join(results_final, cbma_data, by = "date_time")
-combined = full_join(results_final, cbma_data, by = "date_time")
-combined2 = combined %>%
-  filter(year(date_time) != 1970)
-combined2$temperature = na.approx(combined2$temperature) #approximate dewpoint temperatuer
-combined2$relh = na.approx(combined2$relh) #approximate air temperature
-combined2$pressure = na.approx(combined2$pressure) #approximate relative humidity
-
-
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/birdnet_analysis/data_clean")
- # save(combined, file = "cbma_aru_species_results.Rdata")
-save(combined2, file = "cbma_wg_spcecies_results.Rdata")
-write.csv(combined2, file = "cbma_wg_spcecies_results.csv", row.names = FALSE)
-
-cbma_wg_aci = read.csv("aci_water_cbma.csv", header = TRUE)
-cbma_comb_data = full_join(combined2%>%dplyr::filter(aru == "wg01"),cbma_wg_aci%>%dplyr::filter(aru == "wgo1"), by = "aru")
-
-
- combined %>%
-   group_by(Common.name) %>%
-   filter(date_time == max(date_time)) %>%
-   ungroup()
-
- species_hour = combined2 %>%
-   group_by(date, time@hour, Common.name) %>%
-   summarise(n = n(),
-             temp = mean(temperature),
-             relh = mean(relh)) %>%
-   rename(time = "time@hour") %>%
-   filter(time <=13) %>% filter(is.na(Common.name) == FALSE)
- 
- ggplot(data = species_hour, aes(x = time, y = n, color = Common.name))+
-   geom_line()+
-   # geom_bar(stat = "identity", position = position_dodge(0.2))+
-   scale_y_continuous(limits = c(0,1250)) +
-   facet_wrap(~Common.name)
-   
-m1 = lmer(n ~ scale(date) * time + (1|Common.name), data = species_hour, REML= FALSE)
-summary(m1)
-m2 = lmer(n ~ temp*relh*scale(date) + (1|Common.name), data = species_hour, REML= FALSE)
-summary(m2)

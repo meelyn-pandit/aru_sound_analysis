@@ -15,7 +15,7 @@ library(suncalc) #cacluate sunrise time and sun position
 library(lubridate) #date manipulation
 library(hms) #time manipulation
 library(bbmle) #AIC
-library(lsmeans)
+library(emmeans)
 
 
 # Loading Clean Data ------------------------------------------------------
@@ -34,10 +34,8 @@ aci = aci_full #ghmean_time = within site historic aridity summarized across mon
 aci$ghobs_acrsite = scale(aci$gh_obs) #observed aridity in 2021 scaled across sites
 aci$ghhobs_acrsite = scale(aci$gh_hobs) #historic aridity scaled across sites
 
-ggplot(data = aci, aes(x = mas, y = ghobs_scaledwin, color = site))+ #facet wrap graph of observed aridity in 2021 scaled within sites plotted against minutes after sunrise
-  geom_point()+
-  facet_wrap(~month_day)
 
+# ACI - Day Bin - Organization --------------------------------------------
 
 aci_dt = aci %>%
   dplyr::filter(is.na(left_channel) == FALSE) %>%
@@ -55,6 +53,20 @@ aci_dt = aci %>%
             aci_all = mean(aci_all)) 
 
 
+# ACI - MAS Bin - Data Organization ---------------------------------------
+
+aci_mas = aci %>%
+  dplyr::filter(is.na(left_channel) == FALSE) %>%
+  dplyr::filter(is.na(gh_obs) == FALSE)%>%
+  mutate(date = date(date_time),
+         aci_all = scale(aci_obs))%>%
+  group_by(site,mas) %>%
+  summarise(gh_obs= mean(gh_obs),
+            gh_site = mean(ghsite_scaled), #aridity scaled within sites
+            gh_across = mean(ghobs_acrsite), #aridity scaled across sites
+            aci_obs = mean(aci_obs),
+            aci_site = mean(aci_scaled),
+            aci_all = mean(aci_all)) 
 ### Within site observed aridity (2021) plotted against within site historic aridity (2005-2021)
 ggplot(data = aci_dt, aes(x = gh_scaled, 
                           y = ghhobs_site, 

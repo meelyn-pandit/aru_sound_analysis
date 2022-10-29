@@ -314,14 +314,39 @@ ggplot(data = bio_hour, aes(x = hour.y, y = mean_gh, color = site.y))+
 # Adding Weather data and Approximating missing values --------------------
 ws_sites = as.list(c("sswma","cbma"))
 aci_ws = lapply(ws_sites, function(x){
-  setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/")
+
  if(x == "sswma"){
-    load("sswma_mesonet.Rdata")
-    weather_data = sswma_mesonet
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
+    wd = sswma_mesonet
+    wd = sswma_mesonet%>%
+      mutate(ghobs_scaled = scale(gh))
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     tz = "US/Central"
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/sswma_wh.Rdata")
+    hd = sswma_wh %>%
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Central"
+    
   } else if(x == "cbma"){
-    load("cbma_mesonet.Rdata")
-    weather_data = cbma_mesonet
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
+    wd = cbma_mesonet
+    tz = "US/Central"
+    wd = cbma_mesonet %>%
+      mutate(ghobs_scaled = scale(gh))
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/cbma_wh.Rdata")
+    hd = cbma_wh %>% 
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
     tz = "US/Central"
   } 
   
@@ -338,21 +363,6 @@ aci_ws = lapply(ws_sites, function(x){
   aci_full$date = as.character(paste0(aci_full$year,"-",aci_full$month,"-",aci_full$day)) #combine year, month, and day to get date
   aci_full$time = as.character(paste0(aci_full$hour,":",aci_full$min,":",aci_full$second)) #combine hour, minute, and seconds to get time
   aci_full$local_time = as.POSIXct(as.character(paste0(aci_full$date," ", aci_full$time), format = "%Y-%m-%d %H:%M:%S"), tz = tz)#create local datetime variable
-  
-  if(x == "kiowa"){
-    kiowa_time_bad = aci_full %>% dplyr::filter(hour ==12)%>%
-      mutate(local_time = local_time-3600
-             # ,
-             # time = as_hms(local_time),
-             # hour = hour(local_time)
-      )
-    kiowa_time_good = aci_full %>% dplyr::filter(hour !=12)
-    aci_full = rbind(kiowa_time_bad,kiowa_time_good) 
-    
-  } else {
-    
-  }
-  
   
   aci_full$date_time = as_datetime(aci_full$local_time, tz = "UTC")
   aci_full_weather = left_join(aci_full, weather_data, by = c("date_time")) 
