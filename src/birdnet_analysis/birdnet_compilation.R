@@ -377,7 +377,34 @@ ggplot(data = arid_date %>%
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
 ggsave("results/arid_date_bin_vocals_boxplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
 
-### Boxplot Graph of Number of Vocalizations - Date bin
+graph_arid_date = arid_date %>%
+  dplyr::filter(is.na(date) == FALSE)%>%
+  group_by(site,arid_within) %>%
+  summarise(n = n(),
+            vocals_mean = mean(mean_vocals),
+            vocals_se = (sd(mean_vocals))/sqrt(n()),
+            species_mean = mean(mean_species),
+            species_se = sd(mean_species)/sqrt(n()))
+
+### Aridity Gradient - Day Bin - Dot Plot - Number of Vocals
+ggplot(data = graph_arid_date,
+       aes(x=arid_within, y= vocals_mean, color = as.factor(site))) +
+  geom_point(size = 2, position = position_dodge(0.2))+
+  geom_errorbar(aes(ymin = vocals_mean-vocals_se, 
+                    ymax = vocals_mean+vocals_se), width = 0.2,
+                position = position_dodge())+
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_y_continuous(name = "Number of Vocals")+
+  theme_classic(base_size = 20) +
+  # ggtitle(paste0("Species: Northern Cardinal")) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "right")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+ggsave("results/aridity_gradient_masbin_vocals_dotplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
+
+### Boxplot Graph of Species Diversity - Date bin
 ggplot(data = arid_date %>% 
          dplyr::filter(is.na(arid_within)==FALSE), 
        aes(x=arid_within, y= mean_species, color = as.factor(site))) +

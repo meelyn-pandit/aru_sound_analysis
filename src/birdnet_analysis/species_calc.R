@@ -537,27 +537,27 @@ ggplot(data = a3,aes(x=gh_obs, y=gh_hist, color = site)) +
 # Day bin - Water supplementation Statistical Analyses ------------------------------
 ### SSWMA Site
 ws_sswma$waridx = interaction(ws_sswma$arid_within,ws_sswma$ws_site,ws_sswma$water)
-zwss_nomo <- glm.nb(num_nomo ~ waridx, data = ws_sswma)
-summary(zwss_nomo)
-check_zeroinflation(zwss_nomo)
-aov(zwss_nomo)
-Anova(zwss_nomo,
+zwss_lasp <- glm.nb(num_lasp ~ waridx, data = ws_sswma)
+summary(zwss_lasp)
+check_zeroinflation(zwss_lasp)
+aov(zwss_lasp)
+Anova(zwss_lasp,
       contrasts=list(factorA='arid_within', FactorB ='site'), 
       data = ws_sswma,
       type='III')
-TukeyHSD(aov(zwss_nomo))
+TukeyHSD(aov(zwss_lasp))
 
 ### CBMA Site
 ws_cbma$waridx = interaction(ws_cbma$arid_within,ws_cbma$ws_site,ws_cbma$water)
-zwsc_nomo <- glm.nb(num_nomo ~ waridx, data = ws_cbma)
-summary(zwsc_nomo)
-check_zeroinflation(zwsc_nomo)
-aov(zwsc_nomo)
-Anova(zwsc_nomo,
+zwsc_lasp <- glm.nb(num_lasp ~ waridx, data = ws_cbma)
+summary(zwsc_lasp)
+check_zeroinflation(zwsc_lasp)
+aov(zwsc_lasp)
+Anova(zwsc_lasp,
       contrasts=list(factorA='arid_within',factorB='ws_site',factorC='water'), 
       data = ws_cbma,
       type='III')
-TukeyHSD(aov(zwsc_nomo))
+TukeyHSD(aov(zwsc_lasp))
 
 
 # MAS Bin - Aridity Gradient Data Organization -------------------------
