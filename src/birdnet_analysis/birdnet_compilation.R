@@ -389,20 +389,21 @@ graph_arid_date = arid_date %>%
 ### Aridity Gradient - Day Bin - Dot Plot - Number of Vocals
 ggplot(data = graph_arid_date,
        aes(x=arid_within, y= vocals_mean, color = as.factor(site))) +
-  geom_point(size = 2, position = position_dodge(0.2))+
+  geom_point(size = 2, position = position_dodge(0.5))+
   geom_errorbar(aes(ymin = vocals_mean-vocals_se, 
                     ymax = vocals_mean+vocals_se), width = 0.2,
-                position = position_dodge())+
+                position = position_dodge(0.5))+
   scale_color_manual(values = cbpalette,name = "Site")+
+  scale_x_discrete(name = "Aridity", labels = c("Extremely\nHumid","Humid","Normal","Arid","Extremely\nArid"))+
   scale_y_continuous(name = "Number of Vocals")+
   theme_classic(base_size = 20) +
   # ggtitle(paste0("Species: Northern Cardinal")) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
-        legend.position = "right")
+        legend.position = "bottom")
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
-ggsave("results/aridity_gradient_masbin_vocals_dotplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
+ggsave("results/aridity_gradient_datebin_vocals_dotplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
 
 ### Boxplot Graph of Species Diversity - Date bin
 ggplot(data = arid_date %>% 
@@ -422,9 +423,28 @@ ggplot(data = arid_date %>%
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
-        legend.position = "right")
+        legend.position = "bottom")
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
 ggsave("results/arid_date_bin_species_boxplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
+
+### Aridity Gradient - Day Bin - Dot Plot - Species Diversity
+ggplot(data = graph_arid_date,
+       aes(x=arid_within, y= species_mean, color = as.factor(site))) +
+  geom_point(size = 2, position = position_dodge(0.5))+
+  geom_errorbar(aes(ymin = species_mean-species_se, 
+                    ymax = species_mean+species_se), width = 0.2,
+                position = position_dodge(0.5))+
+  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_x_discrete(name = "Aridity", labels = c("Extremely\nHumid","Humid","Normal","Arid","Extremely\nArid"))+
+  scale_y_continuous(name = "Mean\nNumber of Species")+
+  theme_classic(base_size = 20) +
+  # ggtitle(paste0("Species: Northern Cardinal")) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_blank(),
+        # axis.text.x = element_blank(),
+        legend.position = "bottom")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+ggsave("results/aridity_gradient_datebin_species_dotplot.jpg", width = 8, height = 6, units = "in", dpi = 600)
 
 # Aridity Gradient Date-bin - Statistical Analyses ------------------------------------------
 library(emmeans)
