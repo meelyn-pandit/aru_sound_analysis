@@ -393,6 +393,13 @@ aw$hist_across = na.approx(aw$hist_across, na.rm = FALSE)
 aw2 = aw %>%
   dplyr::filter(is.na(num_vocals) == FALSE)
 
+aw2$mas_num = as.numeric(as.character(aw2$mas))
+aw2$arid_within = cut(aw2$arid_within, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled within sites
+aw2$arid_across = cut(aw2$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
+aw2$hist_within = cut(aw2$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
+aw2$hist_across = cut(aw2$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
+aw2$mas_bin = cut(aw2$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
+
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
 save(aw2, file = "audio_and_weather_data.R")
 ```
