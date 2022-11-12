@@ -235,6 +235,11 @@ for(s in sites){
   
 }
 
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
+save(arid_full, file = "birdnet_data/aridity_gradient_ml_raw.Rdata")
+save(water_full, file = "birdnet_data/water_supp_ml_raw.Rdata")
+
+
 # Saving Aridity Gradient Data Results ----------------------------------------------
 #Aridity Gradient Data for statistical analyses
 full_arid = arid_full %>% #saving it a different name so you don't overwrite it
