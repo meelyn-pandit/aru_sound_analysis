@@ -126,6 +126,10 @@ lapply(aru_list, function(x){
   })
 
 
+
+
+
+
 # Adding Weather data and Approximating missing values --------------------
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 aci = lapply(sites, function(x){
