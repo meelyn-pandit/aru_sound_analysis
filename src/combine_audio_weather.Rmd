@@ -186,7 +186,7 @@ for(s in sites){
   if(s == "lwma"){
     # load lwma bird data
     load("birdnet_data/lwma_aru_results.Rdata")
-    data = lwma_aru_results
+    data = lwma_aru_results %>%
     tz = "US/Central"
     
   } else if(s == "sswma"){
@@ -242,9 +242,6 @@ for(s in sites){
                time = as_hms(date_time),
                hour_local = hour(local_time),
                hour_utc = hour(date_time))
-      
-      # data_temp = rbind(kiowa_time_bad,kiowa_time_good) %>%
-        # arrange(date_time)
 
     } else {
     
@@ -277,10 +274,135 @@ acoustic2 = full_join(acoustic, arid_full, by = c("site", "aru", "date_time")) %
   dplyr::select(-local_time.x) %>%
 dplyr::select(filename, samplingrate, bit, fft_w, db_threshold, site, aru, lat, lon, local_time, date_time, aci, bio, adi, aei, num_vocals, species_diversity)
 
+# acoustic2$month_day = format(as.Date(acoustic2$date_time), "%m-%d")
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
 save(acoustic2, file = "acoustic_and_birdnet_data.R")
 
 ```
+
+## Combine 2021 Mesonet and Historic Weather Data
+``` {r }
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+load("acoustic_and_birdnet_data.R")
+
+sites = as.list(c("lwma","sswma","cbma","kiowa"))
+wfull = NULL
+for(s in sites){
+  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
+  if(s == "lwma"){
+    
+    #load 2021 mesonet data
+    load("mesonet_data/lwma_mesonet.Rdata")
+    wd = lwma_mesonet %>%
+      mutate(arid_within = scale(gh),
+             month_day = format(as.Date(date_time), "%m-%d"))
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    #load historic data from 2005-2021
+    load("historic_weather_data/lwma_wh.Rdata")
+    hd = lwma_wh %>%
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghsite_scaled) %>%
+      rename(gh_hist = "gh_hobs", hist_within = "ghhobs_scaled", hist_across = "ghsite_scaled") %>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Central"
+    
+  } else if(s == "sswma"){
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
+    wd = sswma_mesonet%>%
+      mutate(arid_within = scale(gh),
+             month_day = format(as.Date(date_time), "%m-%d"))
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/sswma_wh.Rdata")
+    hd = sswma_wh %>%
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghsite_scaled) %>%
+      rename(gh_hist = "gh_hobs", hist_within = "ghhobs_scaled", hist_across = "ghsite_scaled") %>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Central"
+    
+  } else if(s == "cbma"){
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
+    wd = cbma_mesonet%>%
+      mutate(arid_within = scale(gh),
+             month_day = format(as.Date(date_time), "%m-%d"))
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/cbma_wh.Rdata")
+    hd = cbma_wh %>% 
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghsite_scaled) %>%
+      rename(gh_hist = "gh_hobs", hist_within = "ghhobs_scaled", hist_across = "ghsite_scaled") %>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Central"
+    
+    
+  } else if(s == "kiowa"){
+    # load kiowa bird data
+    load("birdnet_data/kiowa_aru_results.Rdata")
+    data = kiowa_aru_results
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/kiowa_mesonet.Rdata")
+    wd = kiowa_mesonet%>%
+      mutate(arid_within = scale(gh),
+             month_day = format(as.Date(date_time), "%m-%d"))
+    wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+    
+    #load historic data from 2005-2021
+    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/kiowa_wh.Rdata")
+    hd = kiowa_wh %>% 
+      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghsite_scaled) %>%
+      rename(gh_hist = "gh_hobs", hist_within = "ghhobs_scaled", hist_across = "ghsite_scaled") %>%
+      dplyr::filter(is.na(mas)==FALSE)  %>%
+      group_by(month_day, mas) %>%
+      summarise_all(funs(mean))
+    tz = "US/Mountain"
+    
+  }
+  
+  weather_temp = left_join(wd, hd, by = c("month_day","mas"))
+  wfull = rbind(weather_temp, wfull) %>%
+    arrange(month_day, mas)
+}
+
+wfull$gh_hist = na.approx(wfull$gh_hist, na.rm = FALSE) 
+wfull$hist_within = na.approx(wfull$hist_within, na.rm = FALSE) 
+wfull$hist_across = na.approx(wfull$hist_across, na.rm = FALSE) 
+
+wfull$arid_across = scale(wfull$gh)
+
+wfull = wfull %>%
+  dplyr::select(-arid)
+```
+## Combine Acoustic and Weather Dataset
+```{r }
+aw = full_join(acoustic2, wfull, by = c("site","date_time")) %>%
+  arrange(site,aru,date_time)
+
+aw$gh_hist = na.approx(aw$gh_hist, na.rm = FALSE) 
+aw$arid_within = na.approx(aw$arid_within, na.rm = FALSE)
+aw$arid_across = na.approx(aw$arid_across, na.rm = FALSE)
+aw$hist_within = na.approx(aw$hist_within, na.rm = FALSE) 
+aw$hist_across = na.approx(aw$hist_across, na.rm = FALSE) 
+
+aw2 = aw %>%
+  dplyr::filter(is.na(num_vocals) == FALSE)
+
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+save(aw2, file = "audio_and_weather_data.R")
+```
+
+## Water Supplementation Data Organization
+``` {r}
+
+```
+
+
 ## Including Plots
 
 You can also embed plots, for example:
