@@ -1,0 +1,89 @@
+---
+title: "aru_statistical_analysis"
+author: "Meelyn M. Pandit"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr) #data manipulation
+library(tibble) #data manipulation
+library(lubridate) #manipulating date and time
+library(hms) #manipulate time
+library(zoo) #for na.approx to approximate missing values in weather dataset
+library(ggplot2) #graphs
+library(gridExtra) #ggplot multi panels
+library(cowplot)
+library(lme4) #lmm and glmm analysis
+library(lmerTest) #get p-values for lmm tests
+library(reshape2) #???
+library(suncalc) #calculate sunrise time and sun altitude 
+library(zoo)#approximating rows with NA in the weather data
+library(car)#ANOVAs
+library(multcomp) #posthoc tests for ANOVA type III effects
+library(bbmle) #AIC comparisons
+library(performance) #performance
+
+```
+
+## Linear Models
+```{r linear model}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+load("audio_and_weather_data.R")
+
+## Create PCA of Audio Variables
+aw3 = aw2 %>%
+  dplyr::filter(is.na(aci) == FALSE) %>%
+  dplyr::filter(aci < 3000)
+
+audio_pca = prcomp(aw3[,c(12:17)], center = TRUE, scale. = TRUE)
+summary(audio_pca) #PC1 and PC2 have highest proportion of variance
+
+audio_pcadf = as.data.frame(audio_pca[["x"]])
+
+aw3$pc1 = audio_pcadf$PC1
+aw3$pc2 = audio_pcadf$PC2
+
+## Plot Principal Componenents
+library(ggbiplot)
+ggbiplot(audio_pca)
+ggbiplot(audio_pca, ellipse = TRUE, alpha = 0, groups = aw3$site)
+
+## Statistical Analysis
+m1 = lmer(pc1 ~ mas_bin + (1|site), data = aw3)
+summary(m1)
+assump(m1)
+aov(m1)
+m1_ht = glht(m1, linfct = mcp(mas_bin = "Tukey"))
+summary(m1_ht)
+# m1_emms = emmeans(m1, "arid_within")
+# pairs(m1_emms)
+
+
+fit_date = Anova(date_vocals,
+         contrasts=list(factorA='arid_within', FactorB ='site'), 
+         data = arid_date,
+         type='III')
+TukeyHSD(aov(date_vocals))
+
+
+m2 = lmer(pc2 ~ mas_bin + (1|site), data = aw3)
+summary(m2)
+assump(m2)
+m2_ht = glht(m2, linfct = mcp(mas_bin = "Tukey"))
+summary(m1_ht)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
