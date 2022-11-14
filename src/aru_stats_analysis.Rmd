@@ -25,20 +25,24 @@ library(car)#ANOVAs
 library(multcomp) #posthoc tests for ANOVA type III effects
 library(bbmle) #AIC comparisons
 library(performance) #performance
+library(emmeans)
 
 ```
 
-## Linear Models
+## Data Summarized by Datetime - Statistical Analyses
 ```{r linear model}
 knitr::opts_chunk$set(echo = TRUE)
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 load("audio_and_weather_data.R")
 
-## Create PCA of Audio Variables
+## Create PCA of Audio Variables, filter out files with NA ACI and greater than 3000
 aw3 = aw2 %>%
   dplyr::filter(is.na(aci) == FALSE) %>%
-  dplyr::filter(aci < 3000)
+  dplyr::filter(aci < 3000) %>%
+  dplyr::filter(year(date_time)==2021)
+
+aw3$site = factor(aw3$site, levels = c("lwma","sswma","cbma","kiowa"))
 
 audio_pca = prcomp(aw3[,c(12:17)], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
@@ -53,31 +57,112 @@ library(ggbiplot)
 ggbiplot(audio_pca)
 ggbiplot(audio_pca, ellipse = TRUE, alpha = 0, groups = aw3$site)
 
+### Summarize by site
+aw4 = aw3 %>%
+  mutate(date = as_date(date_time)) %>%
+  group_by(site, date_time) %>%
+  dplyr::summarise(n = n(),
+                   aci_mean = mean(aci),
+                   bio_mean = mean(bio),
+                   adi_mean = mean(adi),
+                   aei_mean = mean(aei),
+                   vocals_mean = mean(num_vocals),
+                   species_mean = mean(species_diversity),
+            mean_aridwithin = as.factor(round(mean(as.numeric(arid_within)))),
+            mean_aridacross = as.factor(round(mean(as.numeric(arid_across)))),
+            mean_histwithin = as.factor(round(mean(as.numeric(hist_within)))),
+            mean_histacross = as.factor(round(mean(as.numeric(hist_across)))))
+
+audio_pca2 = prcomp(aw4[,c(4:9)], center = TRUE, scale. = TRUE)
+# audio_pca2 = prcomp(aw4[,c(5:10)], center = TRUE, scale. = TRUE) # use if summarize by date and mas_bin
+summary(audio_pca2) #PC1 and PC2 have highest proportion of variance
+
+audio_pcadf2 = as.data.frame(audio_pca2[["x"]])
+
+ggbiplot(audio_pca2, ellipse = TRUE, alpha = 0, groups = aw4$site)
+
+aw4$pc1 = audio_pcadf2$PC1
+aw4$pc2 = audio_pcadf2$PC2
+
 ## Statistical Analysis
-m1 = lmer(pc1 ~ mas_bin + (1|site), data = aw3)
+# PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
+m1 = lm(pc1 ~ site*mean_aridwithin + scale(date_time), data = aw4)
 summary(m1)
 assump(m1)
-aov(m1)
-m1_ht = glht(m1, linfct = mcp(mas_bin = "Tukey"))
-summary(m1_ht)
-# m1_emms = emmeans(m1, "arid_within")
-# pairs(m1_emms)
+Anova(m1)
+pairs(emmeans(m1, ~site|mean_aridwithin, data = aw4)) #across site comparisions
+pairs(emmeans(m1, ~mean_aridwithin|site, data = aw4)) # within site comparisons
 
-
-fit_date = Anova(date_vocals,
-         contrasts=list(factorA='arid_within', FactorB ='site'), 
-         data = arid_date,
-         type='III')
-TukeyHSD(aov(date_vocals))
-
-
-m2 = lmer(pc2 ~ mas_bin + (1|site), data = aw3)
+# PC2: ACI, BIO, Vocalization Number, Species Diversity
+m2 = lm(pc2 ~ site*mean_aridwithin + date_time, data = aw4)
 summary(m2)
 assump(m2)
-m2_ht = glht(m2, linfct = mcp(mas_bin = "Tukey"))
-summary(m1_ht)
+Anova(m2)
+pairs(emmeans(m2, ~site|mean_aridwithin, data = aw4)) #across site comparisions
+pairs(emmeans(m2, ~mean_aridwithin|site, data = aw4)) # within site comparisons
 ```
 
+## Data Summarized by Date and MAS - Statistical Analyses
+```{r linear model}
+knitr::opts_chunk$set(echo = TRUE,
+                      output = FALSE)
+
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+load("audio_and_weather_data.R")
+
+## Create PCA of Audio Variables, filter out files with NA ACI and greater than 3000
+aw3 = aw2 %>%
+  dplyr::filter(is.na(aci) == FALSE) %>%
+  dplyr::filter(aci < 3000) %>%
+  dplyr::filter(year(date_time)==2021)
+
+aw3$site = factor(aw3$site, levels = c("lwma","sswma","cbma","kiowa"))
+
+### Summarize by site
+aw5 = aw3 %>%
+  mutate(date = as_date(date_time)) %>%
+  dplyr::filter(is.na(mas_bin) == FALSE) %>%
+  dplyr::filter(date < "2021-08-16") %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise(n = n(),
+                   aci_mean = mean(aci),
+                   bio_mean = mean(bio),
+                   adi_mean = mean(adi),
+                   aei_mean = mean(aei),
+                   vocals_mean = mean(num_vocals),
+                   species_mean = mean(species_diversity),
+            mean_aridwithin = as.factor(round(mean(as.numeric(arid_within)))),
+            mean_aridacross = as.factor(round(mean(as.numeric(arid_across)))),
+            mean_histwithin = as.factor(round(mean(as.numeric(hist_within)))),
+            mean_histacross = as.factor(round(mean(as.numeric(hist_across)))))
+
+audio_pca3 = prcomp(aw5[,c(5:10)], center = TRUE, scale. = TRUE)
+summary(audio_pca3) #PC1 and PC2 have highest proportion of variance
+
+audio_pcadf3 = as.data.frame(audio_pca3[["x"]])
+
+ggbiplot(audio_pca3, ellipse = TRUE, alpha = 0, groups = aw5$site)
+
+aw5$pc1 = audio_pcadf3$PC1
+aw5$pc2 = audio_pcadf3$PC2*-1 # multiplied by -1 to reverse direction of PC2, higher PC2 values indicate higher ACI, BIO, num vocals, and species diversity
+
+## Statistical Analysis
+# PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
+m1 = lmer(pc1 ~ site*mas_bin + scale(date) + (1|site), data = aw5)
+summary(m1)
+assump(m1)
+Anova(m1)
+pairs(emmeans(m1, ~site|mas_bin, data = aw5)) #across site comparisions
+pairs(emmeans(m1, ~mas_bin|site, data = aw5)) # within site comparisons
+
+# PC2: ACI, BIO, Vocalization Number, Species Diversity
+m2 = lmer(pc2 ~ site*mas_bin + scale(date) + (1|site), data = aw5)
+summary(m2)
+assump(m2)
+Anova(m2)
+pairs(emmeans(m2, ~site|mas_bin, data = aw5)) #across site comparisions
+pairs(emmeans(m2, ~mas_bin|site, data = aw5)) # within site comparisons
+```
 ## Including Plots
 
 You can also embed plots, for example:
