@@ -162,7 +162,7 @@ ggplot(data = graph_biodate,
   geom_errorbar(aes(ymin = bio_mean-bio_se, ymax = bio_mean+bio_se), width = 0.2,
                 position = position_dodge(0.5))+
   # geom_smooth(method = "lm")+
-  scale_color_manual(values = cbpalette,name = "Site")+
+  scale_color_manual(values = cbpalette,name = "Site", labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
   scale_x_discrete(name = "Aridity", labels = c("Extremely\nHumid","Humid","Normal","Arid","Extremely\nArid"))+
   scale_y_continuous(name = "Mean Bio")+
   theme_classic(base_size = 20) +
@@ -641,13 +641,40 @@ sswma_waci = aci_water %>%
   cbma_wbio3$ghsite_scaled = na.approx(cbma_wbio3$ghsite_scaled, na.rm = TRUE)
   
   cbma_wbio3 = cbma_wbio3 %>%
-    # rename(
-    #   # arid_within = "ghobs_scaled",
-    #        hist_within = "ghhobs_scaled",
-    #        hist_across = "ghsite_scaled") %>%
+    rename(
+      arid_within = "ghobs_scaled",
+           hist_within = "ghhobs_scaled",
+           hist_across = "ghsite_scaled") %>%
     dplyr::filter(is.na(bio)==FALSE)
   
+  ##CBMA water supplementation
+  cbma_wbio4 = cbma_wbio3 %>%
+    dplyr::filter(site == "cbma") %>% #creating water sites (ws)
+    mutate(ws_site = if_else(aru == "wg01_" | aru == "wg02_" | aru == "wg03_", 1, 2)) %>%
+    group_by(ws_site,water,date)%>%
+    summarise(mean_bio = mean(bio),
+              arid_within = mean(arid_within) # observed aridity scaled within sites
+              # arid_across = mean(arid_across)
+    ) %>%
+    mutate(arid_within = cut(arid_within, breaks = 5, labels = c(1,2,3,4,5))
+           # arid_across = cut(arid_across, breaks = 5, labels = c(1,2,3,4,5))
+    )
+  # hist_within = cut(hist_within, breaks = 5, labels = c(1,2,3,4,5)),
+  # hist_across = cut(hist_across, breaks = 5, labels = c(1,2,3,4,5)),
+  # creating water site (ws_site) 1,2# observed aridity scaled across sites
+  # hist_within = mean(hist_within), #historic aridity scaled within sites
+  # hist_across = mean(hist_across) #%>% #historic aridity scaled across sites
   
+  #Separating out CBMA water sites
+  ws_cbma1 = cbma_wbio4 %>%
+    dplyr::filter(ws_site == 1) %>%
+    mutate(water = ifelse(date >= "2021-06-04" & date <"2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1)) #1 = water access open
+  
+  ws_cbma2 = cbma_wbio4 %>%
+    filter(ws_site == 2) %>%
+    mutate(water = 1)
+  
+  wbio_cbma = rbind(ws_cbma1, ws_cbma2)
 # Day bin - ACI Water supplementation - Data Organization -----------------------------
   sswma_waci4 = sswma_waci3 %>%
     mutate(ws_site = if_else(aru == "ws01_" | aru == "ws02_" | aru == "ws03_" | aru == "ws04_" | aru == "ws05_", 1, if_else(aru == "ws06_" | aru == "ws07_" | aru == "ws08_" | aru == "ws09_" | aru == "ws10_", 2,3))) %>%
@@ -745,34 +772,7 @@ ws_sswma3 = sswma_wbio4 %>%
 wbio_sswma = rbind(ws_sswma1, ws_sswma2, ws_sswma3)
 
 
-##CBMA water supplementation
-cbma_wbio4 = cbma_wbio3 %>%
-  dplyr::filter(site == "cbma") %>% #creating water sites (ws)
-  mutate(ws_site = if_else(aru == "wg01_" | aru == "wg02_" | aru == "wg03_", 1, 2)) %>%
-  group_by(ws_site,water,date)%>%
-  summarise(mean_bio = mean(bio),
-            arid_within = mean(arid_within) # observed aridity scaled within sites
-            # arid_across = mean(arid_across)
-            ) %>%
-  mutate(arid_within = cut(arid_within, breaks = 5, labels = c(1,2,3,4,5)),
-         # arid_across = cut(arid_across, breaks = 5, labels = c(1,2,3,4,5))
-         )
-# hist_within = cut(hist_within, breaks = 5, labels = c(1,2,3,4,5)),
-# hist_across = cut(hist_across, breaks = 5, labels = c(1,2,3,4,5)),
-# creating water site (ws_site) 1,2# observed aridity scaled across sites
-# hist_within = mean(hist_within), #historic aridity scaled within sites
-# hist_across = mean(hist_across) #%>% #historic aridity scaled across sites
 
-#Separating out CBMA water sites
-ws_cbma1 = cbma_wbio4 %>%
-  dplyr::filter(ws_site == 1) %>%
-  mutate(water = ifelse(date >= "2021-06-04" & date <"2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1)) #1 = water access open
-
-ws_cbma2 = cbma_wbio4 %>%
-  filter(ws_site == 2) %>%
-  mutate(water = 1)
-
-wbio_cbma = rbind(ws_cbma1, ws_cbma2)
 
 save(wbio_sswma, file = "water_bio_sswma_day_bin.Rdata")
 save(wbio_cbma, file = "water_bio_cbma_day_bin.Rdata")

@@ -235,6 +235,11 @@ for(s in sites){
   
 }
 
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
+save(arid_full, file = "birdnet_data/aridity_gradient_ml_raw.Rdata")
+save(water_full, file = "birdnet_data/water_supp_ml_raw.Rdata")
+
+
 # Saving Aridity Gradient Data Results ----------------------------------------------
 #Aridity Gradient Data for statistical analyses
 full_arid = arid_full %>% #saving it a different name so you don't overwrite it
@@ -343,12 +348,15 @@ save(arid_date, file = "birdnet_totals_arid_date.Rdata")
 
 # Aridity Gradient Date-Bin - Plots ---------------------------------------
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999")
+
 graph_arid_date = arid_date %>%
-  # dplyr::filter(is.na(mas_bin) == FALSE)%>%
+  dplyr::filter(is.na(date) == FALSE)%>%
   group_by(site,arid_within) %>%
   summarise(n = n(),
             vocals_mean = mean(mean_vocals),
-            vocals_se = (sd(mean_vocals))/sqrt(n()))
+            vocals_se = (sd(mean_vocals))/sqrt(n()),
+            species_mean = mean(mean_species),
+            species_se = sd(mean_species)/sqrt(n()))
 
 ### Boxplot Graph of Number of Vocalizations - Date bin
 ggplot(data = arid_date %>% 
@@ -833,7 +841,7 @@ cbma2_rec2 = data.frame (xmin=as_date("2021-07-03"), xmax=as_date("2021-08-07"),
 #CBMA Vocals Graph
 ggplot(data = cbwater_date,
                       # wsvocals_day = ggplot(data = water_date %>%dplyr::filter(site == "cbma"), #uncomment to summarize by date only
-                      aes(x=date, y=log(mean_vocals), 
+                      aes(x=date, y=mean_species, 
                           color = as.factor(ws_site))) +
   geom_point(size = 3, position = position_dodge())+
   geom_rect(data=cbma1_rec1, 
@@ -856,7 +864,7 @@ ggplot(data = cbwater_date,
   geom_smooth(method = "lm")+
   scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),name = "Water Station")+
   scale_x_date(name = "Date")+
-  scale_y_continuous(name = "Log\n(Mean Num. Vocals)")+
+  scale_y_continuous(name = "Mean Species Diversity)")+
   theme_classic(base_size = 20) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         # axis.title.x=element_text(),
@@ -868,17 +876,17 @@ ggsave("cbma_water_vocals_rectangle_plots.jpg", width = 8, height = 6, units = "
 
 #Boxplot for Water cbma vocals Diversity
 ggplot(data = cbwater_date,
-       aes(x=as.factor(ws_site), y=log(mean_vocals), 
+       aes(x=as.factor(ws_site), y=mean_species, 
                                   color = as.factor(ws_site),
                                   fill=as.factor(water))) +
   stat_boxplot(geom ='errorbar', width = 0.6) +
   geom_boxplot(width = 0.6) +
   stat_summary(fun = "mean",
                geom = "point",
-               size = 5,
+               size = 2,
                aes(group=as.factor(water)),
                position = position_dodge(0.6)) +
-  scale_y_continuous(name = "Log\n(Mean Num. Vocals)")+
+  scale_y_continuous(name = "Mean Species Diversity")+
   scale_color_manual(name = "Water Site",
                      values = c("#009E73","#D55E00","#CC79A7"))+
   scale_fill_manual(name = "Water Access", 
