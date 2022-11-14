@@ -408,8 +408,10 @@ aw2$hist_within = cut(aw2$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #histo
 aw2$hist_across = cut(aw2$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
 aw2$mas_bin = cut(aw2$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
 
-# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+aw2$site = factor(aw2$site, levels = c("lwma","sswma","cbma","kiowa"))
+
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 save(aw2, file = "audio_and_weather_data.Rdata")
 ```
 
