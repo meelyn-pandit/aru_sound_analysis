@@ -410,7 +410,7 @@ aw2$mas_bin = cut(aw2$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255
 
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
-save(aw2, file = "audio_and_weather_data.R")
+save(aw2, file = "audio_and_weather_data.Rdata")
 ```
 
 ## Water Supplementation Data Organization
