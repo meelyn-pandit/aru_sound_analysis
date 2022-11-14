@@ -33,8 +33,8 @@ When you click the **Knit** button a document will be generated that includes bo
 ## Load Aridity Gradient Broad acoustic data
 ```{r load aridity gradient data}
 getwd()
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data")
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 aru = as.list(c("aru01","aru02","aru03","aru04","aru05"))
 
@@ -174,19 +174,20 @@ save(acoustic, file = "acoustic_metrics.Rdata")
 
 ```{r }
 knitr::opts_chunk$set
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 # sites = as.list(c("lwma"))
 arid_full = NULL
 water_full = NULL
 for(s in sites){
-  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
   labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
   if(s == "lwma"){
     # load lwma bird data
     load("birdnet_data/lwma_aru_results.Rdata")
-    data = lwma_aru_results %>%
+    data = lwma_aru_results
     tz = "US/Central"
     
   } else if(s == "sswma"){
@@ -216,7 +217,7 @@ for(s in sites){
     mutate(date = as_date(date),
            local_time = force_tz(date_time, tz = tz),
            date_time = as_datetime(local_time, tz = "UTC"),
-           time = as_hms(date_time),
+           time = hms::as_hms(date_time),
            hour_local = hour(local_time),
            hour_utc = hour(date_time)
            ) %>%
@@ -239,7 +240,7 @@ for(s in sites){
       kiowa_time_bad = kiowa_time_bad %>%
         mutate(date_time = date_time-3600,
                local_time = local_time-3600,
-               time = as_hms(date_time),
+               time = hms::as_hms(date_time),
                hour_local = hour(local_time),
                hour_utc = hour(date_time))
 
@@ -264,10 +265,15 @@ for(s in sites){
   
 }
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data/birdnet_data")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data/birdnet_data")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data/birdnet_data")
 save(arid_full, file = "aridity_gradient_ml_raw.Rdata")
 save(water_full, file = "water_supp_ml_raw.Rdata")
 # load("data/birdnet_data/aridity_gradient_ml_raw.Rdata")
+
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+#Load broad acoustic metrics
+load("acoustic_metrics.Rdata")
 
 acoustic2 = full_join(acoustic, arid_full, by = c("site", "aru", "date_time")) %>%
   rename(local_time = "local_time.y") %>%
@@ -275,20 +281,24 @@ acoustic2 = full_join(acoustic, arid_full, by = c("site", "aru", "date_time")) %
 dplyr::select(filename, samplingrate, bit, fft_w, db_threshold, site, aru, lat, lon, local_time, date_time, aci, bio, adi, aei, num_vocals, species_diversity)
 
 # acoustic2$month_day = format(as.Date(acoustic2$date_time), "%m-%d")
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-save(acoustic2, file = "acoustic_and_birdnet_data.R")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+save(acoustic2, file = "acoustic_and_birdnet_data.Rdata")
 
 ```
 
 ## Combine 2021 Mesonet and Historic Weather Data
 ``` {r }
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-load("acoustic_and_birdnet_data.R")
+knitr::opts_chunk$set(echo = TRUE)
+
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+load("acoustic_and_birdnet_data.Rdata")
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 wfull = NULL
 for(s in sites){
-  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
   labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
   if(s == "lwma"){
     
@@ -309,14 +319,14 @@ for(s in sites){
     tz = "US/Central"
     
   } else if(s == "sswma"){
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
+    load("mesonet_data/sswma_mesonet.Rdata")
     wd = sswma_mesonet%>%
       mutate(arid_within = scale(gh),
              month_day = format(as.Date(date_time), "%m-%d"))
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/sswma_wh.Rdata")
+    load("historic_weather_data/sswma_wh.Rdata")
     hd = sswma_wh %>%
       dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghsite_scaled) %>%
       rename(gh_hist = "gh_hobs", hist_within = "ghhobs_scaled", hist_across = "ghsite_scaled") %>%
@@ -326,14 +336,14 @@ for(s in sites){
     tz = "US/Central"
     
   } else if(s == "cbma"){
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
+    load("mesonet_data/cbma_mesonet.Rdata")
     wd = cbma_mesonet%>%
       mutate(arid_within = scale(gh),
              month_day = format(as.Date(date_time), "%m-%d"))
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/cbma_wh.Rdata")
+    load("historic_weather_data/cbma_wh.Rdata")
     hd = cbma_wh %>% 
       dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghsite_scaled) %>%
       rename(gh_hist = "gh_hobs", hist_within = "ghhobs_scaled", hist_across = "ghsite_scaled") %>%
@@ -345,16 +355,14 @@ for(s in sites){
     
   } else if(s == "kiowa"){
     # load kiowa bird data
-    load("birdnet_data/kiowa_aru_results.Rdata")
-    data = kiowa_aru_results
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/kiowa_mesonet.Rdata")
+    load("mesonet_data/kiowa_mesonet.Rdata")
     wd = kiowa_mesonet%>%
       mutate(arid_within = scale(gh),
              month_day = format(as.Date(date_time), "%m-%d"))
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/kiowa_wh.Rdata")
+    load("historic_weather_data/kiowa_wh.Rdata")
     hd = kiowa_wh %>% 
       dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghsite_scaled) %>%
       rename(gh_hist = "gh_hobs", hist_within = "ghhobs_scaled", hist_across = "ghsite_scaled") %>%
@@ -400,7 +408,8 @@ aw2$hist_within = cut(aw2$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #histo
 aw2$hist_across = cut(aw2$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
 aw2$mas_bin = cut(aw2$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 save(aw2, file = "audio_and_weather_data.R")
 ```
 
