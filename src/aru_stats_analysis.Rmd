@@ -30,15 +30,17 @@ library(emmeans)
 ```
 
 ## Data Summarized by Datetime - Statistical Analyses
-```{r linear model}
-knitr::opts_chunk$set(echo = TRUE)
+```{r linear model - datetime}
+knitr::opts_chunk$set(echo = TRUE, 
+                      results = TRUE,
+                      root.dir = "/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
-load("audio_and_weather_data.R")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+# load("audio_and_weather_data.Rdata")
 
 ## Create PCA of Audio Variables, filter out files with NA ACI and greater than 3000
 aw3 = aw2 %>%
-  dplyr::filter(is.na(aci) == FALSE) %>%
+  # dplyr::filter(is.na(aci) == FALSE) %>%
   dplyr::filter(aci < 3000) %>%
   dplyr::filter(year(date_time)==2021)
 
@@ -62,13 +64,13 @@ aw4 = aw3 %>%
   mutate(date = as_date(date_time)) %>%
   group_by(site, date_time) %>%
   dplyr::summarise(n = n(),
-                   aci_mean = mean(aci),
-                   bio_mean = mean(bio),
-                   adi_mean = mean(adi),
-                   aei_mean = mean(aei),
+                   aci_mean = mean(aci, na.rm = FALSE),
+                   bio_mean = mean(bio, na.rm = FALSE),
+                   adi_mean = mean(adi, na.rm = FALSE),
+                   aei_mean = mean(aei, na.rm = FALSE),
                    vocals_mean = mean(num_vocals),
                    species_mean = mean(species_diversity),
-            mean_aridwithin = as.factor(round(mean(as.numeric(arid_within)))),
+            mean_aridwithin = factor(round(mean(as.numeric(arid_within))),levels = c(1,2,3,4,5)),
             mean_aridacross = as.factor(round(mean(as.numeric(arid_across)))),
             mean_histwithin = as.factor(round(mean(as.numeric(hist_within)))),
             mean_histacross = as.factor(round(mean(as.numeric(hist_across)))))
@@ -81,17 +83,29 @@ audio_pcadf2 = as.data.frame(audio_pca2[["x"]])
 
 ggbiplot(audio_pca2, ellipse = TRUE, alpha = 0, groups = aw4$site)
 
-aw4$pc1 = audio_pcadf2$PC1
-aw4$pc2 = audio_pcadf2$PC2
+aw4$pc1 = audio_pcadf2$PC1 # Higher PC1 leads to higher ADI i.e. acoustic diversity
+aw4$pc2 = audio_pcadf2$PC2 # Higher PC2 leads to higher num_vocals and species_diversity
 
 ## Statistical Analysis
 # PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
 m1 = lm(pc1 ~ site*mean_aridwithin + scale(date_time), data = aw4)
+m1emmeans = emmeans(m1, ~ site|mean_aridwithin)
 summary(m1)
 assump(m1)
 Anova(m1)
-pairs(emmeans(m1, ~site|mean_aridwithin, data = aw4)) #across site comparisions
-pairs(emmeans(m1, ~mean_aridwithin|site, data = aw4)) # within site comparisons
+m1_across_sites = pairs(emmeans(m1, ~site|mean_aridwithin, data = aw4)) #across site comparisions
+m1_within_sites = pairs(emmeans(m1, ~mean_aridwithin|site, data = aw4)) # within site comparisons
+
+summary(m1_across_sites)
+library(tidyverse)
+library(kableExtra)
+
+kbl(m1_across_sites, caption = "Aridity Gradient\nSummarized by Datetime\nAcross Sites\nAcoustic Diversity") %>%
+  kable_classic(full_width = F, html_font = "Calibri")
+
+kbl(m1_within_sites, caption = "Aridity Gradient\nSummarized by Datetime\nWithin Sites\nAcoustic Diversity") %>%
+  kable_classic(full_width = F, html_font = "Calibri")
+
 
 # PC2: ACI, BIO, Vocalization Number, Species Diversity
 m2 = lm(pc2 ~ site*mean_aridwithin + date_time, data = aw4)
@@ -103,7 +117,7 @@ pairs(emmeans(m2, ~mean_aridwithin|site, data = aw4)) # within site comparisons
 ```
 
 ## Data Summarized by Date and MAS - Statistical Analyses
-```{r linear model}
+```{r linear model - date and mas}
 knitr::opts_chunk$set(echo = TRUE,
                       output = FALSE)
 
@@ -143,7 +157,7 @@ audio_pcadf3 = as.data.frame(audio_pca3[["x"]])
 
 ggbiplot(audio_pca3, ellipse = TRUE, alpha = 0, groups = aw5$site)
 
-aw5$pc1 = audio_pcadf3$PC1
+aw5$pc1 = audio_pcadf3$PC1*-1 # multiplied by -1 to reverse direction of PC1
 aw5$pc2 = audio_pcadf3$PC2*-1 # multiplied by -1 to reverse direction of PC2, higher PC2 values indicate higher ACI, BIO, num vocals, and species diversity
 
 ## Statistical Analysis
