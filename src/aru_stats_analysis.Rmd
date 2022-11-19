@@ -30,6 +30,8 @@ library(emmeans)
 ```
 
 ## Data Summarized by Datetime - Statistical Analyses
+
+
 ```{r linear model - datetime}
 knitr::opts_chunk$set(echo = TRUE, 
                       results = TRUE,
@@ -88,13 +90,13 @@ aw4$pc2 = audio_pcadf2$PC2 # Higher PC2 leads to higher num_vocals and species_d
 
 ## Statistical Analysis
 # PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
-m1 = lm(pc1 ~ site*mean_aridwithin + scale(date_time), data = aw4)
+m1 = lm(pc1 ~ site*mean_aridwithin + scale(date_time), data = aw5)
 m1emmeans = emmeans(m1, ~ site|mean_aridwithin)
 summary(m1)
 assump(m1)
 Anova(m1)
-m1_across_sites = pairs(emmeans(m1, ~site|mean_aridwithin, data = aw4)) #across site comparisions
-m1_within_sites = pairs(emmeans(m1, ~mean_aridwithin|site, data = aw4)) # within site comparisons
+m1_across_sites = pairs(emmeans(m1, ~site|mean_aridwithin, data = aw5)) #across site comparisions
+m1_within_sites = pairs(emmeans(m1, ~mean_aridwithin|site, data = aw5)) # within site comparisons
 
 summary(m1_across_sites)
 library(tidyverse)
@@ -162,7 +164,7 @@ aw5$pc2 = audio_pcadf3$PC2*-1 # multiplied by -1 to reverse direction of PC2, hi
 
 ## Statistical Analysis
 # PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
-m1 = lmer(pc1 ~ site*mas_bin + scale(date) + (1|site), data = aw5)
+m1 = lm(pc1 ~ site*mas_bin + scale(date), data = aw6)
 summary(m1)
 assump(m1)
 Anova(m1)
@@ -170,7 +172,7 @@ pairs(emmeans(m1, ~site|mas_bin, data = aw5)) #across site comparisions
 pairs(emmeans(m1, ~mas_bin|site, data = aw5)) # within site comparisons
 
 # PC2: ACI, BIO, Vocalization Number, Species Diversity
-m2 = lmer(pc2 ~ site*mas_bin + scale(date) + (1|site), data = aw5)
+m2 = lm(pc2 ~ site*mas_bin + scale(date), data = aw6)
 summary(m2)
 assump(m2)
 Anova(m2)
