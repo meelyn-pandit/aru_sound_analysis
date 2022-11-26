@@ -16,10 +16,14 @@ library(multcomp) #posthoc tests for ANOVA type III effects
 library(bbmle) #AIC comparisons
 library(performance) #performance
 library(emmeans)
-library(ggbiplot)
 library(pca3d)
 
+### Install ggbiplot ###
+library(devtools)
+install_github("vqv/ggbiplot")
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+library(ggbiplot)
+
 load("audio_and_weather_data.Rdata")
 
 # Create PCA of Audio Variables, filter out files with NA ACI and  --------
@@ -45,33 +49,48 @@ aw4 = aw3 %>%
 
 aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 
-audio_pca = prcomp(aw4[,c(12,13,16,17)], center = TRUE, scale. = TRUE)
+audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
-ggbiplot(audio_pca, ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+
+#3D pCA Plot
+pca3d(audio_pca, biplot = true)
+snapshotPCA3d("audio_pca.png")
+
+### PC1: ADI and AEI 
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO
 
 aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
 aw4$pc2 = audio_pcadf$PC2 
+aw4$pc3 = audio_pcadf$PC3
 
-# PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
 m1 = lmer(pc1 ~ site*arid_within + scale(date_time) + (1|site), data = aw4)
 summary(m1)
 assump(m1)
-
 # emm_options(pbkrtest.limit = 54931) # run this R will crash
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
 pairs(emmeans(m1, ~ site|arid_within), data = aw4)
 pairs(emmeans(m1, ~ arid_within|site), data = aw4)
 
+# PC2: Num vocals and species diversity
+m2 = lmer(pc2 ~ site*arid_within + scale(date_time) + (1|site), data = aw4)
+summary(m2)
+assump(m2)
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+pairs(emmeans(m2, ~ site|arid_within), data = aw4)
+pairs(emmeans(m2, ~ arid_within|site), data = aw4)
+
+
+
 # Plot Principal Componenets ----------------------------------------------
 
-library(ggbiplot)
-library(pca3d)
-ggbiplot(audio_pca, ellipse = TRUE, alpha = 0, groups = aw4$site)
-
 # Aridity Gradient - Summarized by Datetime -------------------------------
-aw5 = aw3 %>%
+aw5 = aw4 %>%
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   mutate(date = as_date(date_time)) %>%
@@ -81,6 +100,9 @@ aw5 = aw3 %>%
                    bio_mean = mean(bio, na.rm = TRUE),
                    adi_mean = mean(adi, na.rm = TRUE),
                    aei_mean = mean(aei, na.rm = TRUE),
+                   pc1_mean = mean(pc1),
+                   pc2_mean = mean(pc2),
+                   pc3_mean = mean(pc3),
                    vocals_mean = mean(num_vocals),
                    species_mean = mean(species_diversity),
             mean_aridwithin = factor(round(mean(as.numeric(arid_within))),levels = c(1,2,3,4,5)),
@@ -88,13 +110,14 @@ aw5 = aw3 %>%
             mean_histwithin = as.factor(round(mean(as.numeric(hist_within)))),
             mean_histacross = as.factor(round(mean(as.numeric(hist_across)))))
 
-audio_pca2 = prcomp(aw5[,c(4:9)], center = TRUE, scale. = TRUE, scores = TRUE)
+# audio_pca2 = prcomp(aw5[,c(4:9)], center = TRUE, scale. = TRUE)
 # audio_pca2 = prcomp(aw5[,c(5:10)], center = TRUE, scale. = TRUE) # use if summarize by date and mas_bin
 
+ggbiplot(audio_pca2, choices = c(2,3),ellipse = TRUE, alpha = 0, groups = aw5$site) # Plot PCs
 #3D Plot of PCAs
-site = factor(aw5$site)
-pca3d(audio_pca2, group = site)
-snapshotPCA3d(file = "dt_pca.png")
+pca3d(audio_pca2, biplot = true)
+snapshotPCA3d("audio_pca_datetime.png")
+
 summary(audio_pca2) #PC1 and PC2 have highest proportion of variance
 audio_pcadf2 = as.data.frame(audio_pca2[["x"]]) # Creating dataframe of PCA variance table
 ggbiplot(audio_pca2, ellipse = TRUE, alpha = 0, groups = aw5$site) #Plotting PCAs to see directions
@@ -107,7 +130,7 @@ aw5$pc2 = audio_pcadf2$PC2 # Higher PC2 leads to higher num_vocals and species_d
 
 ## Statistical Analysis
 # PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
-m1 = lm(pc1 ~ site*mean_aridwithin + scale(date_time), data = aw5)
+m1 = lm(pc1_mean ~ site*mean_aridwithin + scale(date_time), data = aw5)
 m1emmeans = emmeans(m1, ~ site|mean_aridwithin)
 summary(m1)
 assump(m1)
@@ -120,6 +143,7 @@ summary(m1dt_within_sites)
 # Make Good Statistics Tables
 
 library(tidyverse)
+library(kable)
 library(kableExtra)
 
 kbl(m1_across_sites, caption = "Aridity Gradient\nSummarized by Datetime\nAcross Sites\nAcoustic Diversity") %>%
@@ -128,8 +152,8 @@ kbl(m1_across_sites, caption = "Aridity Gradient\nSummarized by Datetime\nAcross
 kbl(m1_within_sites, caption = "Aridity Gradient\nSummarized by Datetime\nWithin Sites\nAcoustic Diversity") %>%
   kable_classic(full_width = F, html_font = "Calibri")
 
-# PC2: ACI, BIO, Vocalization Number, Species Diversity
-m2 = lm(pc2 ~ site*mean_aridwithin + scale(date_time), data = aw5)
+# PC2: Vocalization Number, Species Diversity
+m2 = lm(pc2_mean ~ site*mean_aridwithin + scale(date_time), data = aw5)
 summary(m2)
 assump(m2)
 Anova(m2)
@@ -177,8 +201,10 @@ summary(audio_pca3) #PC1 and PC2 have highest proportion of variance
 
 audio_pcadf3 = as.data.frame(audio_pca3[["x"]])
 
-ggbiplot(audio_pca3, ellipse = TRUE, alpha = 0, groups = aw6$site)
-
+ggbiplot(audio_pca3, choices = c(2,3),ellipse = TRUE, alpha = 0, groups = aw6$site) # Plot PCs
+#3D Plot of PCAs
+pca3d(audio_pca3, biplot = true)
+snapshotPCA3d("audio_pca_datetime.png")
 aw6$pc1 = audio_pcadf3$PC1*-1 # multiplied by -1 to reverse direction of PC1
 aw6$pc2 = audio_pcadf3$PC2*-1 # multiplied by -1 to reverse direction of PC2, higher PC2 values indicate higher ACI, BIO, num vocals, and species diversity
 
