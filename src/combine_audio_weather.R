@@ -404,8 +404,8 @@ save(aw2, file = "audio_and_weather_data.Rdata")
 # Water Supplementation Data ----------------------------------------------
 
 ## Water Supplementation - Load broad acoustic Data ----------------------------------------
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data")
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
 
 ws_sites = as.list(c("sswma","cbma"))
 aci = NULL
@@ -435,7 +435,27 @@ aci2$local_time = ifelse(aci2$site == "kiowa",force_tz(aci2$local_time, tz = "US
 aci2$date_time = as_datetime(aci2$local_time, tz = "UTC")
 aci2$aru = substr(aci2$aru,1,4)
 
-## ADI
+## ADI - Compile all SSWMA files
+# ws_sites = "sswma"
+# aru = as.list(c("ws01","ws02","ws03","ws04","ws05","ws06","ws07","ws08","ws09","ws10","ws11","ws12","ws13","ws14","ws15"))
+# adi_sswma = NULL
+# for(s in ws_sites){
+#   for(a in aru){
+#     # print(paste0("broad_acoustic_data/",s,"_wlg_raw/adi_",s,"_full.csv"))
+#     # metric_temp = read.csv(paste0("broad_acoustic_data/",s,"_wlg_raw/adi_wlg_",s,"_full.csv"), header = TRUE)
+#     print(paste0("broad_acoustic_data/",s,"_wlg_raw/",a,"_adi_results.csv"))
+#     metric_temp = read.csv(paste0("broad_acoustic_data/",s,"_wlg_raw/",a,"_adi_results.csv"))
+#     names(metric_temp) = tolower(names(metric_temp))
+#     metric_temp$site = s
+#     metric_temp$aru = a
+#     # metric_temp$tz = if_else(site == "kiowa", "US/Mountain","US/Central")
+#     adi_sswma = rbind(metric_temp, adi_sswma)
+#   }
+# }
+# 
+# setwd("broad_acoustic_data/sswma_wlg_raw")
+# write.csv(adi_sswma, file = "adi_sswma_full.csv", row.names = FALSE)
+
 adi = NULL
 for(s in ws_sites){
   print(paste0("broad_acoustic_data/",s,"_wlg_raw/adi_",s,"_full.csv"))
@@ -445,6 +465,7 @@ for(s in ws_sites){
   # metric_temp$tz = if_else(site == "kiowa", "US/Mountain","US/Central")
   adi = rbind(metric_temp, adi)
 }
+
 
 adi2 = adi %>%
   mutate(year = substr(filename,1,4),
@@ -461,6 +482,28 @@ adi2 = adi %>%
 adi2$local_time = ifelse(adi2$site == "kiowa",force_tz(adi2$local_time, tz = "US/Mountain"),force_tz(adi2$local_time, tz = "US/Central"))
 adi2$date_time = as_datetime(adi2$local_time, tz = "UTC")
 adi2$aru = substr(adi2$aru,1,4)
+
+## aei - Compile all SSWMA files
+# ws_sites = "sswma"
+# aru = as.list(c("ws01","ws02","ws03","ws04","ws05","ws06","ws07","ws08","ws09","ws10","ws11","ws12","ws13","ws14","ws15"))
+# aei_sswma = NULL
+# for(s in ws_sites){
+#   for(a in aru){
+#     # print(paste0("broad_acoustic_data/",s,"_wlg_raw/aei_",s,"_full.csv"))
+#     # metric_temp = read.csv(paste0("broad_acoustic_data/",s,"_wlg_raw/aei_wlg_",s,"_full.csv"), header = TRUE)
+#     print(paste0("broad_acoustic_data/",s,"_wlg_raw/",a,"_aei_results.csv"))
+#     metric_temp = read.csv(paste0("broad_acoustic_data/",s,"_wlg_raw/",a,"_aei_results.csv"))
+#     names(metric_temp) = tolower(names(metric_temp))
+#     metric_temp$site = s
+#     metric_temp$aru = a
+#     # metric_temp$tz = if_else(site == "kiowa", "US/Mountain","US/Central")
+#     aei_sswma = rbind(metric_temp, aei_sswma)
+#   }
+# }
+# 
+# setwd("broad_acoustic_data/sswma_wlg_raw")
+# write.csv(aei_sswma, file = "aei_wlg_sswma_full.csv", row.names = FALSE)
+
 
 ## AEI
 aei = NULL
@@ -537,8 +580,8 @@ aco3 = full_join(aco2, aei3, by = c("filename", "site", "aru", "samplingrate", "
 
 water_acoustics = aco3
 
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 save(water_acoustics, file = "water_acoustic_metrics.Rdata")
 
 
@@ -547,7 +590,6 @@ save(water_acoustics, file = "water_acoustic_metrics.Rdata")
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 
 sites = as.list(c("sswma","cbma"))
-# sites = as.list(c("lwma"))
 arid_full = NULL
 water_full = NULL
 for(s in sites){
@@ -599,6 +641,8 @@ for(s in sites){
     arrange(date_time) %>%
     mutate(num_vocals = replace(num_vocals, is.na(lat)==TRUE && num_vocals == 1, 0),
            species_diversity = replace(species_diversity, is.na(lat)==TRUE && species_diversity == 1, 0))
+  # wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
+  
   
   if(s == "kiowa"){
     kiowa_time_bad = data_temp %>% 
@@ -634,8 +678,8 @@ for(s in sites){
   
 }
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data/birdnet_data")
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data/birdnet_data")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data/birdnet_data")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data/birdnet_data")
 save(water_full, file = "water_supp_ml_raw.Rdata")
 # load("data/birdnet_data/aridity_gradient_ml_raw.Rdata")
 
@@ -648,10 +692,37 @@ water_acoustics2 = full_join(water_acoustics, water_full, by = c("site", "aru", 
   dplyr::select(-local_time.x) %>%
   dplyr::select(filename, samplingrate, bit, fft_w, db_threshold, site, aru, lat, lon, local_time, date_time, aci, bio, adi, aei, num_vocals, species_diversity)
 
-# acoustic2$month_day = format(as.Date(acoustic2$date_time), "%m-%d")
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
-save(water_acoustics2, file = "water_acoustic_and_birdnet_data.Rdata")
+# Rounding datetime for cbma audio files that were recording every 2 min
+wac2bad = water_acoustics2 %>%
+  dplyr::filter(site == "cbma") %>%
+  dplyr::filter(date(date_time) == "2021-06-17" | date(date_time) == "2021-06-18" | date(date_time) == "2021-06-19") %>%
+  dplyr::filter(aru == "wg01")
+
+wac2good = setdiff(water_acoustics2, wac2bad)
+
+wac2bad = wac2bad %>%
+  mutate(date_time = round_date(date_time, "10 mins")) %>%
+  # group_by(filename, samplingrate, bit, fft_w, db_threshold, site, aru, lat, lon, date_time) %>%
+  group_by(date_time) %>%
+  summarise_at(c("aci", "bio", "adi", "aei", "num_vocals", "species_diversity"), mean) %>%
+  mutate(local_time = as_datetime(date_time, tz = "US/Central"),
+         filename = NA,
+         samplingrate = 48000,
+         bit = 16,
+         fft_w = 512,
+         db_threshold = "-",
+         site = "cbma",
+         aru = "wg01",
+         lat = 35.3965,
+         lon = -101.9742)
+
+water_acoustics3 = rbind(wac2good,wac2bad)
+# %>%
+  # dplyr::filter(date(date_time) == "2021-06-17" | date(date_time) == "2021-06-18" | date(date_time) == "2021-06-19")
+
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+save(water_acoustics3, file = "water_acoustic_and_birdnet_data.Rdata")
 
 
 
@@ -664,7 +735,7 @@ setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
 sites = as.list(c("sswma","cbma"))
 wfull = NULL
 for(s in sites){
-  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
   labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
     
   if(s == "sswma"){
@@ -719,9 +790,12 @@ save(water_wfull, file = "water_mesonet_historic_weather.Rdata")
 
 
 ## Water Supplementation - Combine Acoustic and Weather Data --------------------
-
-water_weather = full_join(water_acoustics2, water_wfull, by = c("site","date_time")) %>%
-  arrange(site,aru,date_time)
+load("water_mesonet_historic_weather.Rdata")
+load("water_acoustic_and_birdnet_data.Rdata")
+water_weather = full_join(water_acoustics3, water_wfull, by = c("site","date_time")) %>%
+  arrange(site,aru,date_time) 
+# %>%
+#   dplyr::filter(date(date_time) == "2021-06-17" | date(date_time) == "2021-06-18" | date(date_time) == "2021-06-19")
 
 water_weather$gh_hist = na.approx(water_weather$gh_hist, na.rm = FALSE) 
 water_weather$arid_within = na.approx(water_weather$arid_within, na.rm = FALSE)
@@ -741,7 +815,7 @@ water_weather2$mas_bin = cut(water_weather2$mas_num, include.lowest = TRUE, brea
 
 water_weather2$site = factor(water_weather2$site, levels = c("lwma","sswma","cbma","kiowa"))
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 save(water_weather2, file = "water_audio_and_weather_data.Rdata")
 

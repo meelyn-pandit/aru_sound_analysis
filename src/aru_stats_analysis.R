@@ -26,7 +26,7 @@ library(ggbiplot)
 
 load("audio_and_weather_data.Rdata")
 
-# Create PCA of Audio Variables, filter out files with NA ACI and  --------
+# Aridity Gradient - Create PCA of Audio Variables, filter out files with NA ACI and  --------
 
 aw_bad = aw2 %>%
   dplyr::filter(as_date(date_time) == "2021-07-09" & site == "lwma" & aru == "aru04") 
@@ -131,7 +131,7 @@ aw5 = aw4 %>%
 # aw5$pc1 = audio_pcadf2$PC1 # Higher PC1 leads to higher ADI i.e. acoustic diversity
 # aw5$pc2 = audio_pcadf2$PC2 # Higher PC2 leads to higher num_vocals and species_diversity
 
-## Statistical Analysis
+# Aridity Gradient - Datetime - Statistical Analysis ----------------------
 # PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
 m1 = lm(pc1_mean ~ site*mean_aridwithin + scale(date_time), data = aw5)
 m1emmeans = emmeans(m1, ~ site|mean_aridwithin)
@@ -142,6 +142,7 @@ pairs(emmeans(m1, ~site|mean_aridwithin, data = aw5)) #across site comparisions
 summary(m1dt_across_sites)
 pairs(emmeans(m1, ~mean_aridwithin|site, data = aw5)) # within site comparisons
 summary(m1dt_within_sites)
+
 
 # PC2: Vocalization Number, Species Diversity
 m2 = lm(pc2_mean ~ site*mean_aridwithin + scale(date_time), data = aw5)
@@ -389,3 +390,81 @@ ggplot(data = mas_graphs,
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
         legend.position = "right")
+
+
+
+# Water Supplementation - Load Data ---------------------------------------
+
+load("water_audio_and_weather_data.Rdata")
+
+ww = water_weather2 %>%
+  dplyr::filter(date_time < "2021-08-16") %>%
+  dplyr::filter(year(date_time) == 2021) %>%
+  dplyr::filter(aci < 3000) # check audio files to see if they actually need to be filtered and if certain dates have damaged files
+
+# Water Supplementation - Create PCA of Audio Variables, filter out files with NA ACI and  --------
+
+# aw_bad = aw2 %>%
+#   dplyr::filter(as_date(date_time) == "2021-07-09" & site == "lwma" & aru == "aru04") 
+# aw_bad2 = aw2 %>% dplyr::filter(as_date(date_time) == "2021-07-10" & site == "lwma" & aru == "aru04")
+# aw_bad3 = aw2 %>% dplyr::filter(as_date(date_time) == "2021-06-28" & site == "kiowa" & aru == "aru05") 
+# aw_bad4 = aw2 %>% dplyr::filter(as_date(date_time) == "2021-06-29" & site == "kiowa" & aru == "aru05")
+# aw_bad5 = aw2 %>% dplyr::filter(as_date(date_time) == "2021-06-30" & site == "kiowa" & aru == "aru05")
+# aw_bad6 = aw2 %>% dplyr::filter(as_date(date_time) == "2021-05-28" & site == "cbma" & aru == "aru03")
+# 
+# aw_bad_total = rbind(aw_bad,aw_bad2,aw_bad3,aw_bad4,aw_bad5,aw_bad6)
+# aw3 = setdiff(aw2, aw_bad_total)
+ww$site = factor(ww$site, levels = c("lwma","sswma","cbma","kiowa"))
+ww2 = ww %>% dplyr::filter(is.na(mas_bin) == FALSE)
+
+aw4 = aw3 %>%
+  dplyr::filter(is.na(aci) == FALSE) %>%
+  # dplyr::filter(aci < 3000) %>%
+  dplyr::filter(year(date_time)==2021) %>%
+  dplyr::filter(as_date(date_time) < "2021-08-16")
+
+aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
+
+audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+summary(audio_pca) #PC1 and PC2 have highest proportion of variance
+audio_pcadf = as.data.frame(audio_pca[["x"]])
+ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+
+#3D pCA Plot
+pca3d(audio_pca, biplot = true) # only run this on windows machine
+snapshotPCA3d("audio_pca.png")
+
+### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO, higher values = higher ACI
+
+aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
+aw4$pc2 = audio_pcadf$PC2 
+aw4$pc3 = audio_pcadf$PC3
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lmer(pc1 ~ site*arid_within + mas_bin + scale(date_time) + (1|site), data = aw4)
+summary(m1)
+assump(m1)
+# emm_options(pbkrtest.limit = 54931) # run this R will crash
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+pairs(emmeans(m1, ~ site|arid_within), data = aw4)
+pairs(emmeans(m1, ~ arid_within|site), data = aw4)
+
+# PC2: Num vocals and species diversity
+m2 = lmer(pc2 ~ site*arid_within + scale(date_time) + (1|site), data = aw4)
+summary(m2)
+assump(m2)
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+pairs(emmeans(m2, ~ site|arid_within), data = aw4)
+pairs(emmeans(m2, ~ arid_within|site), data = aw4)
+
+# PC3: ACI and BIO
+m3 = lmer(pc3 ~ site*arid_within + scale(date_time) + (1|site), data = aw4)
+summary(m3)
+assump(m3)
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+pairs(emmeans(m3, ~ site|arid_within), data = aw4)
+pairs(emmeans(m3, ~ arid_within|site), data = aw4)
+
