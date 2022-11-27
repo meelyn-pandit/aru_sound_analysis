@@ -695,7 +695,7 @@ water_acoustics2 = full_join(water_acoustics, water_full, by = c("site", "aru", 
 # Rounding datetime for cbma audio files that were recording every 2 min
 wac2bad = water_acoustics2 %>%
   dplyr::filter(site == "cbma") %>%
-  dplyr::filter(date(date_time) == "2021-06-17" | date(date_time) == "2021-06-18" | date(date_time) == "2021-06-19") %>%
+  dplyr::filter(date(date_time) == "2021-06-16" | date(date_time) == "2021-06-17" | date(date_time) == "2021-06-18" | date(date_time) == "2021-06-19" | date(date_time) == "2021-06-20") %>%
   dplyr::filter(aru == "wg01")
 
 wac2good = setdiff(water_acoustics2, wac2bad)
@@ -717,8 +717,7 @@ wac2bad = wac2bad %>%
          lon = -101.9742)
 
 water_acoustics3 = rbind(wac2good,wac2bad)
-# %>%
-  # dplyr::filter(date(date_time) == "2021-06-17" | date(date_time) == "2021-06-18" | date(date_time) == "2021-06-19")
+
 
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
@@ -793,7 +792,7 @@ save(water_wfull, file = "water_mesonet_historic_weather.Rdata")
 load("water_mesonet_historic_weather.Rdata")
 load("water_acoustic_and_birdnet_data.Rdata")
 water_weather = full_join(water_acoustics3, water_wfull, by = c("site","date_time")) %>%
-  arrange(site,aru,date_time) 
+  arrange(site,aru,date_time)
 # %>%
 #   dplyr::filter(date(date_time) == "2021-06-17" | date(date_time) == "2021-06-18" | date(date_time) == "2021-06-19")
 
@@ -815,7 +814,45 @@ water_weather2$mas_bin = cut(water_weather2$mas_num, include.lowest = TRUE, brea
 
 water_weather2$site = factor(water_weather2$site, levels = c("lwma","sswma","cbma","kiowa"))
 
+
+# Separating Sites and Designating Water Sites ----------------------------
+
+#Separating out CBMA water sites
+full_water1 = water_weather2 %>%
+  filter(aru == "wg01" | aru == "wg02" | aru == "wg03") %>%
+  mutate(water = ifelse(date(date_time) >= "2021-06-04" & date(date_time) <"2021-06-25"| date(date_time) >= "2021-07-19" & date(date_time) < "2021-08-02", 0,1),
+         ws_site = 1) #1 = water access open
+
+full_water2 = water_weather2 %>%
+  filter(aru == "wg04" | aru == "wg05") %>%
+  mutate(water = 1,
+         ws_site = 2)
+
+cbma_full_water = rbind(full_water1, full_water2)
+
+#Separating out SSWMA water sites
+sswma_full_water1 = water_weather2 %>%
+  filter(aru == "ws01"| aru == "ws02"| aru == "ws03"| aru == "ws04"| aru == "ws05")%>%
+  mutate(water = ifelse(date(date_time) >= "2021-05-17" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-13" & date(date_time) < "2021-07-02", 1,0),
+         ws_site = 1)
+
+sswma_full_water2 = water_weather2 %>%
+  filter(aru == "ws06"| aru == "ws07"| aru == "ws08"| aru == "ws09"| aru == "ws10") %>%
+  mutate(water = ifelse(date(date_time) >= "2021-05-30" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-03" & date(date_time) < "2021-08-07", 1,0),
+         ws_site = 2)
+
+sswma_full_water3 = water_weather2 %>%
+  filter(aru == "ws11"| aru == "ws12"| aru == "ws13"| aru == "ws14"| aru == "ws15") %>%
+  mutate(water = 0,
+         ws_site = 3)
+
+sswma_full_water = rbind(sswma_full_water1, sswma_full_water2, sswma_full_water3)
+water_weather3 = rbind(cbma_full_water,sswma_full_water)
+
+# water_weather3 = water_weather2 %>%
+#   dplyr::filter(is.na(mas_bin) == FALSE)
+
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
-save(water_weather2, file = "water_audio_and_weather_data.Rdata")
+save(water_weather3, file = "water_audio_and_weather_data.Rdata")
 

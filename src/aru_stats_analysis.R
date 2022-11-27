@@ -417,40 +417,35 @@ ww = water_weather2 %>%
 ww$site = factor(ww$site, levels = c("lwma","sswma","cbma","kiowa"))
 ww2 = ww %>% dplyr::filter(is.na(mas_bin) == FALSE)
 
-aw4 = aw3 %>%
-  dplyr::filter(is.na(aci) == FALSE) %>%
-  # dplyr::filter(aci < 3000) %>%
-  dplyr::filter(year(date_time)==2021) %>%
-  dplyr::filter(as_date(date_time) < "2021-08-16")
+ww3 = ww2 %>%
+  dplyr::filter(is.na(aci) == FALSE)
 
-aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
-
-audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
-summary(audio_pca) #PC1 and PC2 have highest proportion of variance
-audio_pcadf = as.data.frame(audio_pca[["x"]])
-ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+water_pca = prcomp(ww3[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+summary(water_pca) #PC1 and PC2 have highest proportion of variance
+water_pcadf = as.data.frame(water_pca[["x"]])
+ggbiplot(water_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = ww3$site) # Plot PCs
 
 #3D pCA Plot
-pca3d(audio_pca, biplot = true) # only run this on windows machine
-snapshotPCA3d("audio_pca.png")
+pca3d(water_pca, biplot = true) # only run this on windows machine
+snapshotPCA3d("water_pca.png")
 
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
-### PC3: ACI and BIO, higher values = higher ACI
+### PC3: ACI and BIO, higher values = higher ACI and higher BIO
 
-aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
-aw4$pc2 = audio_pcadf$PC2 
-aw4$pc3 = audio_pcadf$PC3
+ww3$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
+ww3$pc2 = audio_pcadf$PC2 
+ww3$pc3 = audio_pcadf$PC3
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
-m1 = lmer(pc1 ~ site*arid_within + mas_bin + scale(date_time) + (1|site), data = aw4)
+m1 = lmer(pc1 ~ site*arid_within + mas_bin + scale(date_time) + (1|site), data = ww3)
 summary(m1)
 assump(m1)
 # emm_options(pbkrtest.limit = 54931) # run this R will crash
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
-pairs(emmeans(m1, ~ site|arid_within), data = aw4)
-pairs(emmeans(m1, ~ arid_within|site), data = aw4)
+pairs(emmeans(m1, ~ site|arid_within), data = ww3)
+pairs(emmeans(m1, ~ arid_within|site), data = ww3)
 
 # PC2: Num vocals and species diversity
 m2 = lmer(pc2 ~ site*arid_within + scale(date_time) + (1|site), data = aw4)
