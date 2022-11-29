@@ -5,9 +5,9 @@ library(predictmeans)
 library(tidyverse)
 library(broom)
 
-outlierTest(m3) # Bonferonni p-value for most extreme obs
-qqPlot(m3, main="QQ Plot") #qq plot for studentized resid 
-leveragePlots(m3) # leverage plots
+# outlierTest(m3) # Bonferonni p-value for most extreme obs
+# qqPlot(m3, main="QQ Plot") #qq plot for studentized resid 
+# leveragePlots(m3) # leverage plots
 
 assump<-function(x) {       #graphs for checking assumptions
 r<-residuals(x)

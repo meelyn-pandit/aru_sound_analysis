@@ -6,7 +6,8 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      root.dir = "/home/meelyn/Documents/dissertation/aru_sound_analysis/")
 
 library(rmarkdown)
 library(soundecology) #obtain broad scale acoustic metrics
@@ -173,7 +174,7 @@ save(acoustic, file = "acoustic_metrics.Rdata")
 ## Combine the broad acoustic metrics with BirdNET data (with NAs!!!)
 
 ```{r }
-knitr::opts_chunk$set
+knitr::opts_chunk$set(root.dir = "/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
@@ -182,7 +183,7 @@ arid_full = NULL
 water_full = NULL
 for(s in sites){
   # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-  setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+  # setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
   labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
   if(s == "lwma"){
     # load lwma bird data
@@ -243,6 +244,7 @@ for(s in sites){
                time = hms::as_hms(date_time),
                hour_local = hour(local_time),
                hour_utc = hour(date_time))
+      data_temp = rbind(kiowa_time_good,kiowa_time_bad)
 
     } else {
     
@@ -289,16 +291,17 @@ save(acoustic2, file = "acoustic_and_birdnet_data.Rdata")
 
 ## Combine 2021 Mesonet and Historic Weather Data
 ``` {r }
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      root.dor = "/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
-load("acoustic_and_birdnet_data.Rdata")
+# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+# acoustic2 = import("acoustic_and_birdnet_data.Rdata")
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 wfull = NULL
 for(s in sites){
-  # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
   labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
   if(s == "lwma"){
     
@@ -386,6 +389,8 @@ wfull$arid_across = scale(wfull$gh)
 
 wfull = wfull %>%
   dplyr::select(-arid)
+
+save(wfull, file = "mesonet_historic_weather.Rdata")
 ```
 ## Combine Acoustic and Weather Dataset
 ```{r }
