@@ -397,7 +397,7 @@ ggplot(data = mas_graphs,
 
 load("water_audio_and_weather_data.Rdata")
 
-ww = water_weather2 %>%
+ww = water_weather3 %>%
   dplyr::filter(date_time < "2021-08-16") %>%
   dplyr::filter(year(date_time) == 2021) %>%
   dplyr::filter(aci < 3000) # check audio files to see if they actually need to be filtered and if certain dates have damaged files
@@ -423,7 +423,7 @@ ww3 = ww2 %>%
 water_pca = prcomp(ww3[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(water_pca) #PC1 and PC2 have highest proportion of variance
 water_pcadf = as.data.frame(water_pca[["x"]])
-ggbiplot(water_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = ww3$site) # Plot PCs
+ggbiplot(water_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = ww3$site) # Plot PCs
 
 #3D pCA Plot
 pca3d(water_pca, biplot = true) # only run this on windows machine
@@ -437,29 +437,123 @@ ww3$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 ww3$pc2 = audio_pcadf$PC2 
 ww3$pc3 = audio_pcadf$PC3
 
+
+# SSWMA Water Supp Statisical Analysis ------------------------------------
+
+sswma_water = ww3 %>%
+  dplyr::filter(site == "sswma") %>%
+  mutate(ws_site = as.factor(ws_site),
+         water = as.factor(water),
+         date = date(date_time),
+         week = week(date_time)) %>%
+  arrange(date_time,ws_site,water)
+
+### Convert SSWMA df from long to wide
+
+sswater_wide = sswma_water %>% 
+  dplyr::select(date_time,ws_site,water,pc1,pc2,pc3) %>%
+  pivot_wider(names_from = c(ws_site, water), 
+              values_from = c(pc1,pc2,pc3),
+              values_fn = mean)
+
+t.test(sswater_wide$pc1_1_0, sswater_wide$pc1_2_1, paired = TRUE)
+
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
-m1 = lmer(pc1 ~ site*arid_within + mas_bin + scale(date_time) + (1|site), data = ww3)
+m1 = lmer(pc1 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
 summary(m1)
 assump(m1)
-# emm_options(pbkrtest.limit = 54931) # run this R will crash
-emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
-pairs(emmeans(m1, ~ site|arid_within), data = ww3)
-pairs(emmeans(m1, ~ arid_within|site), data = ww3)
+emmeans(m1, pairwise ~ ws_site:water|arid_within)
+# emm_options(pbkrtest.limit = 54931) # run this R will crash
+# emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
 
 # PC2: Num vocals and species diversity
-m2 = lmer(pc2 ~ site*arid_within + scale(date_time) + (1|site), data = aw4)
+m2 = lmer(pc2 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
 summary(m2)
 assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
-pairs(emmeans(m2, ~ site|arid_within), data = aw4)
-pairs(emmeans(m2, ~ arid_within|site), data = aw4)
+
 
 # PC3: ACI and BIO
-m3 = lmer(pc3 ~ site*arid_within + scale(date_time) + (1|site), data = aw4)
+m3 = lmer(pc3 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
 summary(m3)
 assump(m3)
+emmeans(m3, pairwise ~ ws_site:water|arid_within)
+
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
-pairs(emmeans(m3, ~ site|arid_within), data = aw4)
-pairs(emmeans(m3, ~ arid_within|site), data = aw4)
+
+
+# Water Supplementation - Datetime - Statistical Analyses -----------------
+
+sswma_watermas = sswma_water %>%
+  mutate(date = date(date_time)) %>%
+  group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
+  summarise_at(c("pc1","pc2","pc3"), mean) 
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lmer(pc1 ~ ws_site*water*arid_within + date + (1|ws_site), data = sswma_watermas)
+summary(m1)
+assump(m1)
+
+emmeans(m1, pairwise ~ ws_site:water|arid_within)
+emm_options(pbkrtest.limit = 3000) # run this R will crash
+emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+
+
+# PC2: Num vocals and species diversity
+m2 = lmer(pc2 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+summary(m2)
+assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+
+# PC3: ACI and BIO
+m3 = lmer(pc3 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+summary(m3)
+assump(m3)
+emmeans(m3, pairwise ~ ws_site:water|arid_within)
+
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+
+# Water Supplementation - Date and MAS - Statistical Analysis -------------
+sswma_watermas = sswma_water %>%
+  mutate(date = date(date_time)) %>%
+  group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
+  summarise_at(c("pc1","pc2","pc3"), mean) 
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_watermas)
+summary(m1)
+assump(m1)
+###stick with lms over lmer
+emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# emm_options(pbkrtest.limit = 3000) # run this R will crash
+# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+
+
+# PC2: Num vocals and species diversity
+m2 = lmer(pc2 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+summary(m2)
+assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+
+# PC3: ACI and BIO
+m3 = lmer(pc3 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+summary(m3)
+assump(m3)
+emmeans(m3, pairwise ~ ws_site:water|arid_within)
+
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
 
