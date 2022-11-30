@@ -560,8 +560,10 @@ emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the withi
 
 
 
-# Water Supplementation - Date and MAS - Statistical Analysis - Lag Analysis --------
+# Water Supplementation - SSWMA - Data Organization - Lag Analysis --------
 ### Only analyzing half of water supplementation period
+load("raw_water_audio_weather.Rdata")
+
 ### SSWMA
 #Separating out SSWMA water sites
 sswma_wlag1 = water_weather2 %>%
@@ -600,13 +602,45 @@ sswmawl$pc1 = sswma_waterpcadf$PC1 # Higher ADI increases with positive values a
 sswmawl$pc2 = sswma_waterpcadf$PC2 
 sswmawl$pc3 = sswma_waterpcadf$PC3
 
+
+# Water Supplementation - SSWMA - Datetime - Stats Analysis - Lag -----------------
+
+sswma_dtlag = sswmawl %>%
+  mutate(ws_site = as.factor(ws_site),
+         water = as.factor(water)) %>%
+  group_by(site, ws_site, water, arid_within, date_time) %>%
+  summarise_at(c("pc1","pc2","pc3"), mean) 
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lm(pc1 ~ ws_site*water*arid_within + scale(date_time), data = sswma_dtlag)
+summary(m1)
+assump(m1)
+###stick with lms over lmer
+emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# emm_options(pbkrtest.limit = 3000) # run this R will crash
+# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+
+# PC2: Num vocals and species diversity
+m2 = lm(pc2 ~ ws_site*water*arid_within + date_time, data = sswma_dtlag)
+summary(m2)
+assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
+# PC3: ACI and BIO
+m3 = lm(pc3 ~ ws_site*water*arid_within + date_time, data = sswma_dtlag)
+summary(m3)
+assump(m3)
+emmeans(m3, pairwise ~ ws_site*water|arid_within)
+
+# Water Supplementation - SSWMA - Date and MAS - Statistical Analysis - Lag ----------------------
+
 sswma_maslag = sswmawl %>%
   mutate(date = date(date_time),
          ws_site = as.factor(ws_site),
          water = as.factor(water)) %>%
   group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
   summarise_at(c("pc1","pc2","pc3"), mean) 
-
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_maslag)
@@ -616,7 +650,6 @@ assump(m1)
 emmeans(m1, pairwise ~ ws_site*water|arid_within)
 # emm_options(pbkrtest.limit = 3000) # run this R will crash
 # emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
-
 
 # PC2: Num vocals and species diversity
 m2 = lm(pc2 ~ ws_site*water*arid_within + date, data = sswma_maslag)
@@ -630,3 +663,86 @@ summary(m3)
 assump(m3)
 emmeans(m3, pairwise ~ ws_site*water|arid_within)
 
+
+
+# Water Supplementation - CBMA - Data Organization - Lag ------------------
+### Only analyzing half of water supplementation period
+load("raw_water_audio_weather.Rdata")
+
+####REDO Lag on CBMA site!!!!!!!
+#Separating out CBMA water sites
+cbma_wlag1 = water_weather2 %>%
+  dplyr::filter(year(date_time) == 2021) %>%
+  mutate(date = date(date_time)) %>%
+  filter(aru == "wg01" | aru == "wg02" | aru == "wg03") %>%
+  mutate(water = ifelse(date >= "2021-06-04" & date < "2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1),
+         ws_site = 1) #1 = water access open
+
+cbma_wlag2 = water_weather2 %>%
+  mutate(date = date(date_time)) %>%
+  filter(aru == "wg04" | aru == "wg05") %>%
+  mutate(water = 1,
+         ws_site = 2)
+
+# cbmawl = rbind(cbma_wlag1, cbma_wlag2) %>% 
+#     dplyr::filter(date >="2021-05-24"  & date < "2021-06-15" | # ws1 water open, closed on 2021-06-04
+#                   date >= "2021-06-15" & date < "2021-06-25" | # ws1 water closed, opened on 2021-06-25
+#                   date >= "2021-07-07" & date < "2021-07-19" | # ws1 water open, closed on 2021-07-19
+#                   date >= "2021-07-26" & date < "2021-08-02" | # ws1 water closed, open on 2021-08-02
+#                   date >= "2021-08-08" & date < "2021-08-16") # ws1 water open, end of experiment on 2021-08-15
+# Lag by week
+cbmawl = rbind(cbma_wlag1, cbma_wlag2) %>% 
+  dplyr::filter(date >="2021-05-28"  & date < "2021-06-04" | # ws1 water open, closed on 2021-06-04
+                  date >= "2021-06-18" & date < "2021-06-25" | # ws1 water closed, opened on 2021-06-25
+                  date >= "2021-07-12" & date < "2021-07-19" | # ws1 water open, closed on 2021-07-19
+                  date >= "2021-07-27" & date < "2021-08-02" | # ws1 water closed, open on 2021-08-02
+                  date >= "2021-08-09" & date < "2021-08-16") # ws1 water open, end of experiment on 2021-08-15
+
+cbma_waterlagpca = prcomp(cbmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+
+cbma_waterpcadf = as.data.frame(cbma_waterlagpca[["x"]])
+ggbiplot(cbma_waterlagpca, choices = c(1,3),ellipse = TRUE, alpha = 0) # Plot PCs
+
+#3D pCA Plot
+pca3d(cbmawl, biplot = true) # only run this on windows machine
+snapshotPCA3d("cbma_water_lag_pca.png")
+
+### PC1: ADI, AEI, ACI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity higher positive values = higher num vocals and species diversity (after running line 699)
+### PC3: BIO, higher values = higher BIO
+
+cbmawl$pc1 = cbma_waterpcadf$PC1 # Higher ADI increases with positive values already
+cbmawl$pc2 = cbma_waterpcadf$PC2 * -1 # switching direction of Num Vocals/Species Diversity so that it is positive
+cbmawl$pc3 = cbma_waterpcadf$PC3 # Higher ACI and BIO with higher positive values
+
+# Water Supplementation - CBMA - Date and MAS - Statistical Analysis - Lag ----------------------
+
+cbma_maslag = cbmawl %>%
+  mutate(date = date(date_time),
+         ws_site = as.factor(ws_site),
+         water = as.factor(water)) %>%
+  group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
+  summarise_at(c("pc1","pc2","pc3"), mean) 
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = cbma_maslag)
+summary(m1)
+assump(m1)
+###stick with lms over lmer
+emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# emm_options(pbkrtest.limit = 3000) # run this R will crash
+# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+
+# PC2: Num vocals and species diversity
+m2 = lm(pc2 ~ ws_site*water*arid_within + mas_bin+ date, data = cbma_maslag)
+summary(m2)
+assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
+# PC3: ACI and BIO
+m3 = lm(pc3 ~ ws_site*water*arid_within + mas_bin + date, data = cbma_maslag)
+summary(m3)
+assump(m3)
+emmeans(m3, pairwise ~ ws_site*water|arid_within)
+
+library(gt)
