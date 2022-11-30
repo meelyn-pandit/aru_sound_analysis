@@ -814,6 +814,7 @@ water_weather2$mas_bin = cut(water_weather2$mas_num, include.lowest = TRUE, brea
 
 water_weather2$site = factor(water_weather2$site, levels = c("lwma","sswma","cbma","kiowa"))
 
+save(water_weather2, file = "raw_water_audio_weather.Rdata")
 
 # Separating Sites and Designating Water Sites ----------------------------
 

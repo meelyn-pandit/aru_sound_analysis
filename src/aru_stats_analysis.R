@@ -438,7 +438,7 @@ ww3$pc2 = audio_pcadf$PC2
 ww3$pc3 = audio_pcadf$PC3
 
 
-# SSWMA Water Supp Statisical Analysis ------------------------------------
+# SSWMA Water Supp - Statisical Analysis - Pairwise ------------------------------------
 
 sswma_water = ww3 %>%
   dplyr::filter(site == "sswma") %>%
@@ -486,7 +486,7 @@ emmeans(m3, pairwise ~ ws_site:water|arid_within)
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
 
-# Water Supplementation - Datetime - Statistical Analyses -----------------
+# Water Supplementation - Datetime - Statistical Analyses  - Pairwise -----------------
 
 sswma_watermas = sswma_water %>%
   mutate(date = date(date_time)) %>%
@@ -522,7 +522,7 @@ emmeans(m3, pairwise ~ ws_site:water|arid_within)
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
 
-# Water Supplementation - Date and MAS - Statistical Analysis -------------
+# Water Supplementation - Date and MAS - Statistical Analysis - Pairwise-------------
 sswma_watermas = sswma_water %>%
   mutate(date = date(date_time)) %>%
   group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
@@ -556,4 +556,77 @@ emmeans(m3, pairwise ~ ws_site:water|arid_within)
 
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
+
+
+
+
+# Water Supplementation - Date and MAS - Statistical Analysis - Lag Analysis --------
+### Only analyzing half of water supplementation period
+### SSWMA
+#Separating out SSWMA water sites
+sswma_wlag1 = water_weather2 %>%
+  filter(aru == "ws01"| aru == "ws02"| aru == "ws03"| aru == "ws04"| aru == "ws05")%>%
+  mutate(water = ifelse(date(date_time) >= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02", 1,0),
+         ws_site = 1)
+
+sswma_wlag2 = water_weather2 %>%
+  filter(aru == "ws06"| aru == "ws07"| aru == "ws08"| aru == "ws09"| aru == "ws10") %>%
+  mutate(water = ifelse(date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07", 1,0),
+         ws_site = 2)
+
+sswma_wlag3 = water_weather2 %>%
+  filter(aru == "ws11"| aru == "ws12"| aru == "ws13"| aru == "ws14"| aru == "ws15") %>%
+  mutate(water = 0,
+         ws_site = 3)
+
+sswma_wlag = rbind(sswma_wlag1, sswma_wlag2, sswma_wlag3)
+sswmawl = sswma_wlag %>%
+  dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07")
+
+sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+
+sswma_waterpcadf = as.data.frame(sswma_waterpca[["x"]])
+ggbiplot(sswma_waterpca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = sswmawl$site) # Plot PCs
+
+#3D pCA Plot
+pca3d(sswma_waterpca, biplot = true) # only run this on windows machine
+snapshotPCA3d("sswma_water_lag_pca.png")
+
+### PC1: ADI and AEI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO, higher values = higher ACI and BIO
+
+sswmawl$pc1 = sswma_waterpcadf$PC1 # Higher ADI increases with positive values already
+sswmawl$pc2 = sswma_waterpcadf$PC2 
+sswmawl$pc3 = sswma_waterpcadf$PC3
+
+sswma_maslag = sswmawl %>%
+  mutate(date = date(date_time),
+         ws_site = as.factor(ws_site),
+         water = as.factor(water)) %>%
+  group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
+  summarise_at(c("pc1","pc2","pc3"), mean) 
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_maslag)
+summary(m1)
+assump(m1)
+###stick with lms over lmer
+emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# emm_options(pbkrtest.limit = 3000) # run this R will crash
+# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+
+
+# PC2: Num vocals and species diversity
+m2 = lm(pc2 ~ ws_site*water*arid_within + date, data = sswma_maslag)
+summary(m2)
+assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
+# PC3: ACI and BIO
+m3 = lm(pc3 ~ ws_site*water*arid_within + date, data = sswma_maslag)
+summary(m3)
+assump(m3)
+emmeans(m3, pairwise ~ ws_site*water|arid_within)
 
