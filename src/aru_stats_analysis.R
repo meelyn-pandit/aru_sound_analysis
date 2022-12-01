@@ -433,9 +433,9 @@ snapshotPCA3d("water_pca.png")
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI and higher BIO
 
-ww3$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
-ww3$pc2 = audio_pcadf$PC2 
-ww3$pc3 = audio_pcadf$PC3
+ww3$pc1 = water_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
+ww3$pc2 = water_pcadf$PC2 
+ww3$pc3 = water_pcadf$PC3*-1
 
 
 # SSWMA Water Supp - Statisical Analysis - Pairwise ------------------------------------
@@ -450,13 +450,13 @@ sswma_water = ww3 %>%
 
 ### Convert SSWMA df from long to wide
 
-sswater_wide = sswma_water %>% 
-  dplyr::select(date_time,ws_site,water,pc1,pc2,pc3) %>%
-  pivot_wider(names_from = c(ws_site, water), 
-              values_from = c(pc1,pc2,pc3),
-              values_fn = mean)
-
-t.test(sswater_wide$pc1_1_0, sswater_wide$pc1_2_1, paired = TRUE)
+# sswater_wide = sswma_water %>% 
+#   dplyr::select(date_time,ws_site,water,pc1,pc2,pc3) %>%
+#   pivot_wider(names_from = c(ws_site, water), 
+#               values_from = c(pc1,pc2,pc3),
+#               values_fn = mean)
+# 
+# t.test(sswater_wide$pc1_1_0, sswater_wide$pc1_2_1, paired = TRUE)
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 m1 = lmer(pc1 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
@@ -522,7 +522,7 @@ emmeans(m3, pairwise ~ ws_site:water|arid_within)
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
 
-# Water Supplementation - Date and MAS - Statistical Analysis - Pairwise-------------
+# Water Supplementation - SSWMA - Date and MAS - Statistical Analysis - Pairwise-------------
 sswma_watermas = sswma_water %>%
   mutate(date = date(date_time)) %>%
   group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
@@ -534,31 +534,65 @@ m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_watermas)
 summary(m1)
 assump(m1)
 ###stick with lms over lmer
-emmeans(m1, pairwise ~ ws_site*water|arid_within)
-# emm_options(pbkrtest.limit = 3000) # run this R will crash
-# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+emm1 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# Setting up comparisons for emmeans contrast function
+ws1w0 = c(1,0,0,0,0,0)
+ws2w0 = c(0,1,0,0,0,0)
+ws3w0 = c(0,0,1,0,0,0)
+ws1w1 = c(0,0,0,1,0,0)
+ws2w1 = c(0,0,0,0,1,0)
+ws3w1 = c(0,0,0,0,0,1)
+emm1_cntrst = contrast(emm1,
+                       method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
+                                     "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
+                                     "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
+                                     "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
+
+summary(emm1_cntrst)
+plot(emm1_cntrst)
 
 
 # PC2: Num vocals and species diversity
-m2 = lmer(pc2 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+m2 = lm(pc2 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_water)
 summary(m2)
 assump(m2)
-emmeans(m2, pairwise ~ ws_site:water|arid_within)
+emm2 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# Setting up comparisons for emmeans contrast function
+ws1w0 = c(1,0,0,0,0,0)
+ws2w0 = c(0,1,0,0,0,0)
+ws3w0 = c(0,0,1,0,0,0)
+ws1w1 = c(0,0,0,1,0,0)
+ws2w1 = c(0,0,0,0,1,0)
+ws3w1 = c(0,0,0,0,0,1)
+emm2_cntrst = contrast(emm2,
+                       method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
+                                     "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
+                                     "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
+                                     "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
 
-emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
-
+summary(emm2_cntrst)
+plot(emm2_cntrst)
 
 # PC3: ACI and BIO
-m3 = lmer(pc3 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+m3 = lm(pc3 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_water)
 summary(m3)
 assump(m3)
-emmeans(m3, pairwise ~ ws_site:water|arid_within)
+emm3 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# Setting up comparisons for emmeans contrast function
+ws1w0 = c(1,0,0,0,0,0)
+ws2w0 = c(0,1,0,0,0,0)
+ws3w0 = c(0,0,1,0,0,0)
+ws1w1 = c(0,0,0,1,0,0)
+ws2w1 = c(0,0,0,0,1,0)
+ws3w1 = c(0,0,0,0,0,1)
+emm3_cntrst = contrast(emm3,
+                       method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
+                                     "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
+                                     "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
+                                     "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
 
-emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
-
-
-
-
+summary(emm3_cntrst)
+plot(emm3_cntrst)
 
 # Water Supplementation - SSWMA - Data Organization - Lag Analysis --------
 ### Only analyzing half of water supplementation period
@@ -660,6 +694,7 @@ emm1_cntrst = contrast(emm1,
                        "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
                        "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
                        "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
+
 
 plot(emm1_cntrst)
 
