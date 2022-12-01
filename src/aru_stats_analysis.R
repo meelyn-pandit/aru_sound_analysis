@@ -647,24 +647,46 @@ m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_maslag)
 summary(m1)
 assump(m1)
 ###stick with lms over lmer
-emmeans(m1, pairwise ~ ws_site*water|arid_within)
-# emm_options(pbkrtest.limit = 3000) # run this R will crash
-# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+emm1 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# Setting up comparisons for emmeans contrast function
+ws1w0 = c(1,0,0,0,0,0)
+ws2w0 = c(0,1,0,0,0,0)
+ws3w0 = c(0,0,1,0,0,0)
+ws1w1 = c(0,0,0,1,0,0)
+ws2w1 = c(0,0,0,0,1,0)
+ws3w1 = c(0,0,0,0,0,1)
+emm1_cntrst = contrast(emm1,
+         method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
+                       "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
+                       "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
+                       "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
+
+plot(emm1_cntrst)
 
 # PC2: Num vocals and species diversity
 m2 = lm(pc2 ~ ws_site*water*arid_within + date, data = sswma_maslag)
 summary(m2)
 assump(m2)
-emmeans(m2, pairwise ~ ws_site:water|arid_within)
+emm2 = emmeans(m2, pairwise ~ ws_site:water|arid_within)
+contrast(emm2,
+         method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
+                       "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
+                       "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
+                       "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
 
 # PC3: ACI and BIO
 m3 = lm(pc3 ~ ws_site*water*arid_within + date, data = sswma_maslag)
 summary(m3)
 assump(m3)
-emmeans(m3, pairwise ~ ws_site*water|arid_within)
+emm3 = emmeans(m3, pairwise ~ ws_site*water|arid_within)
+emm3_cntrst = contrast(emm3,
+         method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
+                       "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
+                       "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
+                       "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
 
-
-
+xtable::xtable(emm3_cntrst, type = "response") # latex table
+plot(emm3_cntrst)
 # Water Supplementation - CBMA - Data Organization - Lag ------------------
 ### Only analyzing half of water supplementation period
 load("raw_water_audio_weather.Rdata")
@@ -730,20 +752,20 @@ summary(m1)
 assump(m1)
 ###stick with lms over lmer
 emm1= emmeans(m1, pairwise ~ ws_site*water|arid_within)
-contrast(emm1, "trt.vs.ctrl",ref = "ws_site2 water1")
-# emm_options(pbkrtest.limit = 3000) # run this R will crash
-# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+contrast(emm1, "trt.vs.ctrl", ref = "ws_site2 water1", exclude = 2)
 
 # PC2: Num vocals and species diversity
 m2 = lm(pc2 ~ ws_site*water*arid_within + mas_bin+ date, data = cbma_maslag)
 summary(m2)
 assump(m2)
-emmeans(m2, pairwise ~ ws_site:water|arid_within)
+emm2 = emmeans(m2, pairwise ~ ws_site:water|arid_within)
+contrast(emm2, "trt.vs.ctrl", ref = "ws_site2 water1", exclude = 2)
 
 # PC3: ACI and BIO
 m3 = lm(pc3 ~ ws_site*water*arid_within + mas_bin + date, data = cbma_maslag)
 summary(m3)
 assump(m3)
-emmeans(m3, pairwise ~ ws_site*water|arid_within)
+emm3 = emmeans(m3, pairwise ~ ws_site*water|arid_within)
+contrast(emm3, "trt.vs.ctrl", ref = "ws_site2 water1", exclude = 2)
 
 library(gt)
