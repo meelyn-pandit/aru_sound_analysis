@@ -729,7 +729,8 @@ m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = cbma_maslag)
 summary(m1)
 assump(m1)
 ###stick with lms over lmer
-emmeans(m1, pairwise ~ ws_site*water|arid_within)
+emm1= emmeans(m1, pairwise ~ ws_site*water|arid_within)
+contrast(emm1, "trt.vs.ctrl",ref = "ws_site2 water1")
 # emm_options(pbkrtest.limit = 3000) # run this R will crash
 # emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
 
