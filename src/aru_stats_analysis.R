@@ -524,6 +524,7 @@ emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the withi
 
 
 # Water Supplementation - SSWMA - Date and MAS - Statistical Analysis - Pairwise-------------
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
 sswma_watermas = sswma_water %>%
   mutate(date = date(date_time)) %>%
   group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
@@ -533,19 +534,19 @@ sswma_watermas = sswma_water %>%
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 sswma_pairwise_pc1 = sswma_water_contrasts(data = sswma_watermas,
                                            pc = sswma_watermas$pc1); sswma_pairwise_pc1
-sswma_pairwise_pc1[[5]] %>% gtsave("sswma_water_pc1_pairwise.png")
+sswma_pairwise_pc1[[5]] %>% gtsave("results/sswma_water_pc1_pairwise.png")
 plot(sswma_pairwise_pc1[[4]])
 
 # PC2: Num vocals and species diversity
 sswma_pairwise_pc2 = sswma_water_contrasts(data = sswma_watermas,
                                            pc = sswma_watermas$pc2); sswma_pairwise_pc2
-sswma_pairwise_pc2[[5]] %>% gtsave("sswma_water_pc2_pairwise.png")
+sswma_pairwise_pc2[[5]] %>% gtsave("results/sswma_water_pc2_pairwise.png")
 plot(sswma_pairwise_pc2[[4]])
 
 # PC3: ACI and BIO
 sswma_pairwise_pc3 = sswma_water_contrasts(data = sswma_watermas,
                                   pc = sswma_watermas$pc3); sswma_pairwise_pc3
-sswma_pairwise_pc3[[5]] %>% gtsave(paste0("sswma_water_pc3_pairwise.png"))
+sswma_pairwise_pc3[[5]] %>% gtsave(paste0("results/sswma_water_pc3_pairwise.png"))
 plot(sswma_pairwise_pc3[[4]])
 
 # Water Supplementation - SSWMA - Data Organization - Lag Analysis --------
@@ -633,20 +634,55 @@ sswma_maslag = sswmawl %>%
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
                                            pc = sswma_maslag$pc1); sswma_lag_pc1
-sswma_lag_pc1[[5]] %>% gtsave("sswma_water_pc1_lag.png")
+sswma_lag_pc1[[5]] %>% gtsave("results/sswma_water_pc1_lag.png")
 plot(sswma_lag_pc1[[4]])
 
 # PC2: Num vocals and species diversity
 sswma_lag_pc2 = sswma_water_contrasts(data = sswma_maslag,
                                            pc = sswma_maslag$pc2); sswma_lag_pc2
-sswma_lag_pc2[[5]] %>% gtsave("sswma_water_pc2_lag.png")
+sswma_lag_pc2[[5]] %>% gtsave("results/sswma_water_pc2_lag.png")
 plot(sswma_lag_pc2[[4]])
 
 # PC3: ACI and BIO
 sswma_lag_pc3 = sswma_water_contrasts(data = sswma_maslag,
                                            pc = sswma_maslag$pc3); sswma_lag_pc3
-sswma_lag_pc3[[5]] %>% gtsave(paste0("sswma_water_pc3_lag.png"))
+sswma_lag_pc3[[5]] %>% gtsave(paste0("results/sswma_water_pc3_lag.png"))
 plot(sswma_lag_pc3[[4]])
+
+# Water Supplementation - CBMA - Date and MAS - Statistical Analysis - Pairwise-------------
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
+cbma_water = ww3 %>%
+  dplyr::filter(site == "cbma") %>%
+  mutate(ws_site = as.factor(ws_site),
+         water = as.factor(water),
+         date = date(date_time),
+         week = week(date_time)) %>%
+  arrange(date_time,ws_site,water)
+
+cbma_watermas = cbma_water %>%
+  mutate(date = date(date_time)) %>%
+  group_by(site, ws_site, water, arid_within, date, mas_bin) %>%
+  summarise_at(c("pc1","pc2","pc3"), mean) 
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+cbma_pairwise_pc1 = cbma_water_contrasts(data = cbma_watermas,
+                                           pc = cbma_watermas$pc1); cbma_pairwise_pc1
+cbma_pairwise_pc1[[5]] %>% gtsave("results/cbma_water_pc1_pairwise.png")
+plot(cbma_pairwise_pc1[[4]])
+
+# PC2: Num vocals and species diversity
+cbma_pairwise_pc2 = cbma_water_contrasts(data = cbma_watermas,
+                                           pc = cbma_watermas$pc2); cbma_pairwise_pc2
+cbma_pairwise_pc2[[5]] %>% gtsave("results/cbma_water_pc2_pairwise.png")
+plot(cbma_pairwise_pc2[[4]])
+
+# PC3: ACI and BIO
+cbma_pairwise_pc3 = cbma_water_contrasts(data = cbma_watermas,
+                                           pc = cbma_watermas$pc3); cbma_pairwise_pc3
+cbma_pairwise_pc3[[5]] %>% gtsave(paste0("results/cbma_water_pc3_pairwise.png"))
+plot(cbma_pairwise_pc3[[4]])
+
 
 # Water Supplementation - CBMA - Data Organization - Lag ------------------
 ### Only analyzing half of water supplementation period
@@ -708,25 +744,19 @@ cbma_maslag = cbmawl %>%
   summarise_at(c("pc1","pc2","pc3"), mean) 
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
-m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = cbma_maslag)
-summary(m1)
-assump(m1)
-###stick with lms over lmer
-emm1= emmeans(m1, pairwise ~ ws_site*water|arid_within)
-contrast(emm1, "trt.vs.ctrl", ref = "ws_site2 water1", exclude = 2)
+cbma_lag_pc1 = cbma_water_contrasts(data = cbma_maslag,
+                                      pc = cbma_maslag$pc1); cbma_lag_pc1
+cbma_lag_pc1[[5]] %>% gtsave("results/cbma_water_pc1_lag.png")
+plot(cbma_lag_pc1[[4]])
 
 # PC2: Num vocals and species diversity
-m2 = lm(pc2 ~ ws_site*water*arid_within + mas_bin+ date, data = cbma_maslag)
-summary(m2)
-assump(m2)
-emm2 = emmeans(m2, pairwise ~ ws_site:water|arid_within)
-contrast(emm2, "trt.vs.ctrl", ref = "ws_site2 water1", exclude = 2)
+cbma_lag_pc2 = cbma_water_contrasts(data = cbma_maslag,
+                                      pc = cbma_maslag$pc2); cbma_lag_pc2
+cbma_lag_pc2[[5]] %>% gtsave("results/cbma_water_pc2_lag.png")
+plot(cbma_lag_pc2[[4]])
 
 # PC3: ACI and BIO
-m3 = lm(pc3 ~ ws_site*water*arid_within + mas_bin + date, data = cbma_maslag)
-summary(m3)
-assump(m3)
-emm3 = emmeans(m3, pairwise ~ ws_site*water|arid_within)
-contrast(emm3, "trt.vs.ctrl", ref = "ws_site2 water1", exclude = 2)
-
-library(gt)
+cbma_lag_pc3 = cbma_water_contrasts(data = cbma_maslag,
+                                      pc = cbma_maslag$pc3); cbma_lag_pc3
+cbma_lag_pc3[[5]] %>% gtsave(paste0("results/cbma_water_pc3_lag.png"))
+plot(cbma_lag_pc3[[4]])

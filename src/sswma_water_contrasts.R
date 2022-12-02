@@ -1,3 +1,4 @@
+load("src/sswma_water_table.R")
 sswma_water_contrasts = function(data,
                                  pc){
   m = lm(pc ~ ws_site*water*arid_within + mas_bin + date, data = data)
