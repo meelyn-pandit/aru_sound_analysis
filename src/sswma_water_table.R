@@ -1,6 +1,6 @@
 sswma_water_table = function(contrast_table) {
   ### Making good tables in R
-  table <- emm1_cntrst %>%
+  table <- contrast_table %>%
     data.frame(stringsAsFactors = FALSE) %>%
     mutate(contrast = dplyr::recode(contrast, 
                                     "ws_site1 water 1 - ws_site2 water0" = "Site1:Open - Site2:Closed",

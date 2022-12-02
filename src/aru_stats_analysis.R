@@ -531,79 +531,22 @@ sswma_watermas = sswma_water %>%
 
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
-m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_watermas)
-summary(m1)
-assump(m1)
-###stick with lms over lmer
-emm1 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
-
-# Setting up comparisons for emmeans contrast function
-ws1w0 = c(1,0,0,0,0,0)
-ws2w0 = c(0,1,0,0,0,0)
-ws3w0 = c(0,0,1,0,0,0)
-ws1w1 = c(0,0,0,1,0,0)
-ws2w1 = c(0,0,0,0,1,0)
-ws3w1 = c(0,0,0,0,0,1)
-
-emm1_cntrst = contrast(emm1,
-                       method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
-                                     "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
-                                     "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
-                                     "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
-
-summary(emm1_cntrst)
-confint(emm1_cntrst) # run this for confidence intervals, will need to change the table function
-sswma_pairwise_pc1 = sswma_water_table(emm1_cntrst);sswma_pairwise_pc1
-sswma_pairwise_pc1 %>% gtsave("sswma_water_pc1_pairwise.png")
-
-# Plot Estimates with Standard Error
-plot(emm1_cntrst)
+sswma_pairwise_pc1 = sswma_water_contrasts(data = sswma_watermas,
+                                           pc = sswma_watermas$pc1); sswma_pairwise_pc1
+sswma_pairwise_pc1[[5]] %>% gtsave("sswma_water_pc1_pairwise.png")
+plot(sswma_pairwise_pc1[[4]])
 
 # PC2: Num vocals and species diversity
-m2 = lm(pc2 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_water)
-summary(m2)
-assump(m2)
-emm2 = emmeans(m2, pairwise ~ ws_site*water|arid_within)
-# Setting up comparisons for emmeans contrast function
-ws1w0 = c(1,0,0,0,0,0)
-ws2w0 = c(0,1,0,0,0,0)
-ws3w0 = c(0,0,1,0,0,0)
-ws1w1 = c(0,0,0,1,0,0)
-ws2w1 = c(0,0,0,0,1,0)
-ws3w1 = c(0,0,0,0,0,1)
-emm2_cntrst = contrast(emm2,
-                       method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
-                                     "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
-                                     "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
-                                     "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
-
-summary(emm2_cntrst)
-confint(emm2_cntrst) # run this for confidence intervals, will need to change the table function
-sswma_pairwise_pc2 = sswma_water_table(emm2_cntrst);sswma_pairwise_pc2
-sswma_pairwise_pc2 %>% gtsave("sswma_water_pc1_pairwise.png")
-summary(emm2_cntrst)
-plot(emm2_cntrst)
+sswma_pairwise_pc2 = sswma_water_contrasts(data = sswma_watermas,
+                                           pc = sswma_watermas$pc2); sswma_pairwise_pc2
+sswma_pairwise_pc2[[5]] %>% gtsave("sswma_water_pc2_pairwise.png")
+plot(sswma_pairwise_pc2[[4]])
 
 # PC3: ACI and BIO
-m3 = lm(pc3 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_water)
-summary(m3)
-assump(m3)
-emm3 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
-# Setting up comparisons for emmeans contrast function
-ws1w0 = c(1,0,0,0,0,0)
-ws2w0 = c(0,1,0,0,0,0)
-ws3w0 = c(0,0,1,0,0,0)
-ws1w1 = c(0,0,0,1,0,0)
-ws2w1 = c(0,0,0,0,1,0)
-ws3w1 = c(0,0,0,0,0,1)
-emm3_cntrst = contrast(emm3,
-                       method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
-                                     "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
-                                     "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
-                                     "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
-
-summary(emm3_cntrst)
-plot(emm3_cntrst)
+sswma_pairwise_pc3 = sswma_water_contrasts(data = sswma_watermas,
+                                  pc = sswma_watermas$pc3); sswma_pairwise_pc3
+sswma_pairwise_pc3[[5]] %>% gtsave(paste0("sswma_water_pc3_pairwise.png"))
+plot(sswma_pairwise_pc3[[4]])
 
 # Water Supplementation - SSWMA - Data Organization - Lag Analysis --------
 ### Only analyzing half of water supplementation period
@@ -688,56 +631,27 @@ sswma_maslag = sswmawl %>%
   summarise_at(c("pc1","pc2","pc3"), mean) 
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
-m1 = lm(pc1 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_maslag)
-summary(m1)
-assump(m1)
-###stick with lms over lmer
-emm1 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
-# Setting up comparisons for emmeans contrast function
-ws1w0 = c(1,0,0,0,0,0)
-ws2w0 = c(0,1,0,0,0,0)
-ws3w0 = c(0,0,1,0,0,0)
-ws1w1 = c(0,0,0,1,0,0)
-ws2w1 = c(0,0,0,0,1,0)
-ws3w1 = c(0,0,0,0,0,1)
-emm1_cntrst = contrast(emm1,
-         method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
-                       "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
-                       "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
-                       "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
-
-
-plot(emm1_cntrst)
+sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
+                                           pc = sswma_maslag$pc1); sswma_lag_pc1
+sswma_lag_pc1[[5]] %>% gtsave("sswma_water_pc1_lag.png")
+plot(sswma_lag_pc1[[4]])
 
 # PC2: Num vocals and species diversity
-m2 = lm(pc2 ~ ws_site*water*arid_within + date, data = sswma_maslag)
-summary(m2)
-assump(m2)
-emm2 = emmeans(m2, pairwise ~ ws_site:water|arid_within)
-contrast(emm2,
-         method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
-                       "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
-                       "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
-                       "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
+sswma_lag_pc2 = sswma_water_contrasts(data = sswma_maslag,
+                                           pc = sswma_maslag$pc2); sswma_lag_pc2
+sswma_lag_pc2[[5]] %>% gtsave("sswma_water_pc2_lag.png")
+plot(sswma_lag_pc2[[4]])
 
 # PC3: ACI and BIO
-m3 = lm(pc3 ~ ws_site*water*arid_within + date, data = sswma_maslag)
-summary(m3)
-assump(m3)
-emm3 = emmeans(m3, pairwise ~ ws_site*water|arid_within)
-emm3_cntrst = contrast(emm3,
-         method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
-                       "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
-                       "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
-                       "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
+sswma_lag_pc3 = sswma_water_contrasts(data = sswma_maslag,
+                                           pc = sswma_maslag$pc3); sswma_lag_pc3
+sswma_lag_pc3[[5]] %>% gtsave(paste0("sswma_water_pc3_lag.png"))
+plot(sswma_lag_pc3[[4]])
 
-xtable::xtable(emm3_cntrst, type = "response") # latex table
-plot(emm3_cntrst)
 # Water Supplementation - CBMA - Data Organization - Lag ------------------
 ### Only analyzing half of water supplementation period
 load("raw_water_audio_weather.Rdata")
 
-####REDO Lag on CBMA site!!!!!!!
 #Separating out CBMA water sites
 cbma_wlag1 = water_weather2 %>%
   dplyr::filter(year(date_time) == 2021) %>%
@@ -758,6 +672,7 @@ cbma_wlag2 = water_weather2 %>%
 #                   date >= "2021-07-07" & date < "2021-07-19" | # ws1 water open, closed on 2021-07-19
 #                   date >= "2021-07-26" & date < "2021-08-02" | # ws1 water closed, open on 2021-08-02
 #                   date >= "2021-08-08" & date < "2021-08-16") # ws1 water open, end of experiment on 2021-08-15
+
 # Lag by week
 cbmawl = rbind(cbma_wlag1, cbma_wlag2) %>% 
   dplyr::filter(date >="2021-05-28"  & date < "2021-06-04" | # ws1 water open, closed on 2021-06-04
