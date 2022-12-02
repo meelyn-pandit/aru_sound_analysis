@@ -17,6 +17,9 @@ library(bbmle) #AIC comparisons
 library(performance) #performance
 library(emmeans)
 library(pca3d)
+library(gt)
+library(htmltools)
+library(webshot2)
 
 ### Install ggbiplot ###
 library(devtools)
@@ -464,8 +467,6 @@ summary(m1)
 assump(m1)
 
 emmeans(m1, pairwise ~ ws_site:water|arid_within)
-# emm_options(pbkrtest.limit = 54931) # run this R will crash
-# emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
 
 # PC2: Num vocals and species diversity
@@ -535,6 +536,7 @@ summary(m1)
 assump(m1)
 ###stick with lms over lmer
 emm1 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
+
 # Setting up comparisons for emmeans contrast function
 ws1w0 = c(1,0,0,0,0,0)
 ws2w0 = c(0,1,0,0,0,0)
@@ -542,6 +544,7 @@ ws3w0 = c(0,0,1,0,0,0)
 ws1w1 = c(0,0,0,1,0,0)
 ws2w1 = c(0,0,0,0,1,0)
 ws3w1 = c(0,0,0,0,0,1)
+
 emm1_cntrst = contrast(emm1,
                        method = list("ws_site1 water 1 - ws_site2 water0" = ws1w1-ws2w0,
                                      "ws_site2 water 1 - ws_site1 water0" = ws2w1-ws1w0,
@@ -549,14 +552,18 @@ emm1_cntrst = contrast(emm1,
                                      "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
 
 summary(emm1_cntrst)
-plot(emm1_cntrst)
+confint(emm1_cntrst) # run this for confidence intervals, will need to change the table function
+sswma_pairwise_pc1 = sswma_water_table(emm1_cntrst);sswma_pairwise_pc1
+sswma_pairwise_pc1 %>% gtsave("sswma_water_pc1_pairwise.png")
 
+# Plot Estimates with Standard Error
+plot(emm1_cntrst)
 
 # PC2: Num vocals and species diversity
 m2 = lm(pc2 ~ ws_site*water*arid_within + mas_bin + date, data = sswma_water)
 summary(m2)
 assump(m2)
-emm2 = emmeans(m1, pairwise ~ ws_site*water|arid_within)
+emm2 = emmeans(m2, pairwise ~ ws_site*water|arid_within)
 # Setting up comparisons for emmeans contrast function
 ws1w0 = c(1,0,0,0,0,0)
 ws2w0 = c(0,1,0,0,0,0)
@@ -570,6 +577,10 @@ emm2_cntrst = contrast(emm2,
                                      "ws_site1 water 1 - ws_site3 water0" = ws1w1-ws3w0,
                                      "ws_site2 water 1 - ws_site3 water0" = ws2w1-ws3w0))
 
+summary(emm2_cntrst)
+confint(emm2_cntrst) # run this for confidence intervals, will need to change the table function
+sswma_pairwise_pc2 = sswma_water_table(emm2_cntrst);sswma_pairwise_pc2
+sswma_pairwise_pc2 %>% gtsave("sswma_water_pc1_pairwise.png")
 summary(emm2_cntrst)
 plot(emm2_cntrst)
 
