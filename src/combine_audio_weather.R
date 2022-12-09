@@ -368,6 +368,7 @@ save(wfull, file = "mesonet_historic_weather.Rdata")
 
 
 ## Aridity Gradient - Combine Acoustic and Weather Data --------------------
+load("acoustic_and_birdnet_data.Rdata")
 
 aw = full_join(acoustic2, wfull, by = c("site","date_time")) %>%
   arrange(site,aru,date_time)
@@ -404,8 +405,8 @@ save(aw2, file = "audio_and_weather_data.Rdata")
 # Water Supplementation Data ----------------------------------------------
 
 ## Water Supplementation - Load broad acoustic Data ----------------------------------------
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data")
-# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
+# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
 
 ws_sites = as.list(c("sswma","cbma"))
 aci = NULL
@@ -853,7 +854,7 @@ water_weather3 = rbind(cbma_full_water,sswma_full_water)
 # water_weather3 = water_weather2 %>%
 #   dplyr::filter(is.na(mas_bin) == FALSE)
 
-# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 save(water_weather3, file = "water_audio_and_weather_data.Rdata")
 
