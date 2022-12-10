@@ -368,7 +368,9 @@ save(wfull, file = "mesonet_historic_weather.Rdata")
 
 
 ## Aridity Gradient - Combine Acoustic and Weather Data --------------------
-load("acoustic_and_birdnet_data.Rdata")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
+load("data_clean/acoustic_and_birdnet_data.Rdata")
+load("data_clean/mesonet_historic_weather.Rdata")
 
 aw = full_join(acoustic2, wfull, by = c("site","date_time")) %>%
   arrange(site,aru,date_time)
@@ -383,15 +385,41 @@ aw2 = aw %>%
   dplyr::filter(is.na(num_vocals) == FALSE)
 
 aw2$mas_num = as.numeric(as.character(aw2$mas))
-aw2$arid_within = factor(cut(aw2$arid_within, breaks = 5, labels = c(1,2,3,4,5)), levels = c(1,2,3,4,5)) # observed aridity scaled within sites
-aw2$arid_across = cut(aw2$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
-aw2$hist_within = cut(aw2$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
-aw2$hist_across = cut(aw2$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
+
+# observed aridity scaled within sites
+aw2 = aw2 %>% 
+  arrange(arid_within) %>%
+  mutate(arid_within = cut(arid_within,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+# observed aridity scaled across sites
+aw2 = aw2 %>% 
+  arrange(arid_across) %>%
+  mutate(arid_across = cut(arid_across,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+# historic aridity scaled within sites
+aw2 = aw2 %>% 
+  arrange(hist_within) %>%
+  mutate(hist_within = cut(hist_within,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+#%>% #historic aridity scaled across sites
+aw2 = aw2 %>% 
+  arrange(hist_across) %>%
+  mutate(hist_across = cut(hist_across,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+# cutting minutes after sunrise (mas) into bins based on breaks
 aw2$mas_bin = cut(aw2$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
 
 aw2$site = factor(aw2$site, levels = c("lwma","sswma","cbma","kiowa"))
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+setwd("data_clean")
 # setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 save(aw2, file = "audio_and_weather_data.Rdata")
 
@@ -807,12 +835,39 @@ water_weather2 = water_weather %>%
   dplyr::filter(is.na(num_vocals) == FALSE)
 
 water_weather2$mas_num = as.numeric(as.character(water_weather2$mas))
-water_weather2$arid_within = factor(cut(water_weather2$arid_within, breaks = 5, labels = c(1,2,3,4,5)), levels = c(1,2,3,4,5)) # observed aridity scaled within sites
-water_weather2$arid_across = cut(water_weather2$arid_across, breaks = 5, labels = c(1,2,3,4,5)) # observed aridity scaled across sites
-water_weather2$hist_within = cut(water_weather2$hist_within, breaks = 5, labels = c(1,2,3,4,5)) #historic aridity scaled within sites
-water_weather2$hist_across = cut(water_weather2$hist_across, breaks = 5, labels = c(1,2,3,4,5)) #%>% #historic aridity scaled across sites
+
+# observed aridity scaled within sites
+water_weather2 = water_weather2 %>% 
+  arrange(arid_within) %>%
+  mutate(arid_within = cut(arid_within,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+# observed aridity scaled across sites
+water_weather2 = water_weather2 %>% 
+  arrange(arid_across) %>%
+  mutate(arid_across = cut(arid_across,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+# historic aridity scaled within sites
+water_weather2 = water_weather2 %>% 
+  arrange(hist_within) %>%
+  mutate(hist_within = cut(hist_within,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+# historic aridity scaled across sites
+water_weather2 = water_weather2 %>% 
+  arrange(hist_across) %>%
+  mutate(hist_across = cut(hist_across,
+                           breaks = 5, 
+                           labels = c(1,2,3,4,5)))
+
+# cutting minutes after sunrise (mas) into bins based on breaks
 water_weather2$mas_bin = cut(water_weather2$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
 
+# recode sites so they are ordered east to west
 water_weather2$site = factor(water_weather2$site, levels = c("lwma","sswma","cbma","kiowa"))
 
 save(water_weather2, file = "raw_water_audio_weather.Rdata")

@@ -1,9 +1,7 @@
-library(dplyr) #data manipulation
-library(tibble) #data manipulation
+library(tidyverse) #data manipulation
 library(lubridate) #manipulating date and time
 library(hms) #manipulate time
 library(zoo) #for na.approx to approximate missing values in weather dataset
-library(ggplot2) #graphs
 library(gridExtra) #ggplot multi panels
 library(cowplot)
 library(lme4) #lmm and glmm analysis
@@ -21,7 +19,6 @@ library(gt)
 library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
-
 
 ### Install ggbiplot ###
 library(devtools)
@@ -53,29 +50,39 @@ aw4 = aw3 %>%
   dplyr::filter(rain == 0) %>% # filtering out 5 min bins with rain
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate(date = date(date_time))
+  mutate(date = date(date_time),
+         pres = na.approx(pres, na.rm = FALSE), # approximating missing pressure data
+         sound_atten04 = att_coef(4000, temp, relh, (pres/1000)),
+         sound_atten08 = att_coef(8000, temp, relh, (pres/1000)),
+         sound_atten12 = att_coef(12000, temp, relh, (pres/1000)))
 aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 
 aw4 = aw4 %>%
   group_by(site) %>%
   mutate(gh_within = scale_this(gh))
 
+# Audio Variable PCAs
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
-ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
-
-#3D pCA Plot
-pca3d(audio_pca, biplot = true) # only run this on windows machine
-snapshotPCA3d("audio_pca.png")
+ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
-### PC3: ACI and BIO, higher values = higher ACI after line 69 (multiplying by -1 to make higher ACI have positive values)
+### PC3: ACI and BIO, higher values = higher ACI
 
 aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
-aw4$pc2 = audio_pcadf$PC2*-1
-aw4$pc3 = audio_pcadf$PC3*-1
+aw4$pc2 = audio_pcadf$PC2
+aw4$pc3 = audio_pcadf$PC3
+
+# # Sound Attenuation PCAs - all pcs in the same direction
+# atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
+# summary(atten_pca)
+# ggbiplot(atten_pca, choices = c(2,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+
+# #3D pCA Plot
+# pca3d(audio_pca, biplot = true) # only run this on windows machine
+# snapshotPCA3d("audio_pca.png")
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 arid_pc1 = aridity_contrasts_lmer(aw4, aw4$pc1)
@@ -184,7 +191,7 @@ pwpp(emmeans(m3, ~mean_aridwithin|site, data = aw5)) # Pairwise p-value plots
 # Aridity Gradient - Summarized by Date and MAS ---------------------------
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
-load("audio_and_weather_data.R")
+# load("audio_and_weather_data.R")
 
 ## Create PCA of Audio Variables, filter out files with NA ACI and greater than 3000
 ### Summarize by site
@@ -205,6 +212,7 @@ aw6 = aw4 %>%
                            gh, 
                            arid_within, 
                            hist_within:arid_across,
+                           sound_atten04:sound_atten12,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
   mutate_at(c("arid_within",
               "arid_across",
@@ -220,24 +228,37 @@ aw6 = aw4 %>%
 # aw6$pc1 = audio_pcadf3$PC1*-1 # multiplied by -1 to reverse direction of PC1
 # aw6$pc2 = audio_pcadf3$PC2*-1 # multiplied by -1 to reverse direction of PC2, higher PC2 values indicate higher ACI, BIO, num vocals, and species diversity
 
+save(aw6, file = "aridity_gradient_mas.Rdata")
 # Aridity Gradient - Date and MAS - Statistical Analysis ------------------
 # PC1: ADI, AEI, positive values more likely to have higher ADI 
 # (after being multiplied by -1)
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
-arid_pc1_mas = aridity_contrasts_mas(aw6, aw6$pc1)
+arid_pc1_mas = aridity_contrasts_mas(aw6,
+                                     aw6$arid_within,
+                                     aw6$mas_bin,
+                                     aw6$site,
+                                     aw6$pc1)
 
 arid_pc1_mas[[5]] %>% gtsave("results/arid_gradient_pc1_mas.png")
 plot(arid_pc1_mas[[6]])
 
 # PC2: Vocalization Number, Species Diversity higher with positive values
 # (after being multiplied by -1)
-arid_pc2_mas = aridity_contrasts_mas(aw6, aw6$pc2)
+arid_pc2_mas = aridity_contrasts_mas(aw6,
+                                     aw6$arid_within,
+                                     aw6$mas_bin,
+                                     aw6$site,
+                                     aw6$pc2)
 arid_pc2_mas[[5]] %>% gtsave("results/arid_gradient_pc2_mas.png")
 plot(arid_pc2_mas[[6]])
 
 # PC3: ACI, BIO higher positive values have higher ACI and lower BIO
 # (after being multiplied by -1)
-arid_pc3_mas = aridity_contrasts_mas(aw6, aw6$pc3)
+arid_pc3_mas = aridity_contrasts_mas(aw6,
+                                     aw6$arid_within,
+                                     aw6$mas_bin,
+                                     aw6$site,
+                                     aw6$pc3)
 arid_pc3_mas[[5]] %>% gtsave("results/arid_gradient_pc3_mas.png")
 plot(arid_pc3_mas[[6]])
 
@@ -426,7 +447,10 @@ ww2 = setdiff(ww, ww_badtotal)
 ww2$site = factor(ww2$site, levels = c("lwma","sswma","cbma","kiowa"))
 ww3 = ww2 %>% 
   dplyr::filter(is.na(mas_bin) == FALSE) %>%
-  dplyr::filter(is.na(aci) == FALSE)
+  dplyr::filter(is.na(aci) == FALSE) %>%
+  mutate(sound_atten04 = att_coef(4000, temp, relh, (pres/1000)),
+         sound_atten08 = att_coef(8000, temp, relh, (pres/1000)),
+         sound_atten12 = att_coef(12000, temp, relh, (pres/1000)))
 
 # Water Supplementation - Create PCA of Audio Variables, filter out files with NA ACI and  --------
 
@@ -436,8 +460,8 @@ water_pcadf = as.data.frame(water_pca[["x"]])
 ggbiplot(water_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = ww3$site) # Plot PCs
 
 #3D pCA Plot
-pca3d(water_pca, biplot = true) # only run this on windows machine
-snapshotPCA3d("water_pca.png")
+# pca3d(water_pca, biplot = true) # only run this on windows machine
+# snapshotPCA3d("water_pca.png")
 
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
@@ -447,7 +471,7 @@ ww3$pc1 = water_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 ww3$pc2 = water_pcadf$PC2*-1 # Multiply PC2 by -1 to make num-vocals and species diversity have positive values
 ww3$pc3 = water_pcadf$PC3*-1 # multiply pc3 by -1 to make aci values have positive values
 
-
+save(ww3, file = "filtered_water_supp_data.Rdata")
 # SSWMA Water Supp - Statisical Analysis - Pairwise ------------------------------------
 
 sswma_water = ww3 %>%
@@ -482,7 +506,7 @@ summary(m2)
 assump(m2)
 emmeans(m2, pairwise ~ ws_site:water|arid_within)
 
-emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+# emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
 
 # PC3: ACI and BIO
@@ -491,7 +515,7 @@ summary(m3)
 assump(m3)
 emmeans(m3, pairwise ~ ws_site:water|arid_within)
 
-emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+# emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
 
 
 # Water Supplementation - Datetime - Statistical Analyses  - Pairwise -----------------
@@ -561,7 +585,7 @@ plot(sswma_pairwise_pc3[[4]])
 load("data_clean/raw_water_audio_weather.Rdata")
 
 ### SSWMA
-#Separating out SSWMA water sites
+# Separating out SSWMA water sites
 sswma_wlag1 = water_weather2 %>%
   filter(aru == "ws01"| aru == "ws02"| aru == "ws03"| aru == "ws04"| aru == "ws05")%>%
   mutate(water = ifelse(date(date_time) >= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02", 1,0),
@@ -584,18 +608,18 @@ sswmawl = sswma_wlag %>%
 sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 
 sswma_waterpcadf = as.data.frame(sswma_waterpca[["x"]])
-ggbiplot(sswma_waterpca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = sswmawl$site) # Plot PCs
+ggbiplot(sswma_waterpca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = sswmawl$site) # Plot PCs
 
-#3D pCA Plot
-pca3d(sswma_waterpca, biplot = true) # only run this on windows machine
-snapshotPCA3d("sswma_water_lag_pca.png")
+# #3D pCA Plot
+# pca3d(sswma_waterpca, biplot = true) # only run this on windows machine
+# snapshotPCA3d("sswma_water_lag_pca.png")
 
 ### PC1: ADI and AEI, higher values mean higher diversity
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI and BIO
 
-sswmawl$pc1 = sswma_waterpcadf$PC1 # Higher ADI increases with positive values already
-sswmawl$pc2 = sswma_waterpcadf$PC2 
+sswmawl$pc1 = sswma_waterpcadf$PC1*-1
+sswmawl$pc2 = sswma_waterpcadf$PC2*-1
 sswmawl$pc3 = sswma_waterpcadf$PC3
 
 
@@ -606,7 +630,6 @@ sswma_dtlag = sswmawl %>%
          water = as.factor(water)) %>%
   group_by(site, ws_site, water, arid_within, date_time) %>%
   summarise_at(c("pc1","pc2","pc3"), mean) 
-
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 m1 = lm(pc1 ~ ws_site*water*arid_within + scale(date_time), data = sswma_dtlag)
