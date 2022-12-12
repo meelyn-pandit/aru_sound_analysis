@@ -75,6 +75,7 @@ aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 aw4$pc2 = audio_pcadf$PC2
 aw4$pc3 = audio_pcadf$PC3
 
+save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -86,8 +87,8 @@ aw4$pc3 = audio_pcadf$PC3
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 arid_pc1 = aridity_contrasts_lmer(aw4, aw4$pc1)
-sswma_lag_pc1[[5]] %>% gtsave("results/sswma_water_pc1_lag.png")
-plot(sswma_lag_pc1[[4]])
+arid_pc1[[5]] %>% gtsave("results/arid_grad_pc1_lag.png")
+plot(arid_pc1[[4]])
 
 m1 = lmer(pc1 ~ site*arid_within + mas_bin + scale(date_time) + (1|site), data = aw4)
 summary(m1)
