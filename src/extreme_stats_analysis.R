@@ -121,72 +121,55 @@ summary(ex3mas)
 assump(ex3mas)
 emmeans(ex3mas, pairwise ~ site)
 
-# Threshold - ECE - Threshold Modelling - Piece wise -----------------------------------------------------
 
-library(segmented)
-library(nlme)
-
-# Full Dataset - Site affects slope, aridity (z) affects changepoint
-## U = random effects in the slope-difference parameter
-## G0 = random effects in the breakpoints
-# does not give breakpoints for each individual site, have to analyze each site separately
-# MAS
-m1 = lm(pc ~ gh, data = data %>%
-          dplyr::filter(site == site))
-m1s = segmented(m1, seg.Z=~gh,
-                # npsi = 2
-                # psi = psi1
-                psi = list(gh = c(psi1,psi2))
-)
-m1s_summary = summary(m1s) 
-m1s_slope = slope(m1s)
-# get the fitted data
-my.fitted <- fitted(m1s)
-my.model <- data.frame(data %>% 
-                         dplyr::filter(site == site) %>%
-                         dplyr::select(gh), pc = my.fitted)
-
-thres_lwma = thres_seg(data = aw6,
-                      pc = aw6$pc2,
-                      site = "lwma",
-                      psi1 = -24,
-                      psi2 = -14
-                      ); thres_lwma[[2]];thres_lwma[[3]]
-
-thres_sswma = thres_seg(data = aw6,
-                      pc = aw6$pc2,
-                      site = "sswma",
-                      psi1 = -18,
-                      psi2 = -10
-                      ); thres_sswma[[2]];thres_sswma[[3]]
-
-thres_cbma = thres_seg(data = aw6,
-                      pc = aw6$pc2,
-                      site = "cbma",
-                      psi1 = -18,
-                      psi2 = -10
-                      ); thres_cbma[[1]];thres_cbma[[2]];thres_cbma[[3]]
-
-thres_kiowa = thres_seg(data = aw6,
-                       pc = aw6$pc2,
-                       site = "kiowa",
-                       psi1 = -15,
-                       psi2 = -10
-                       ); thres_kiowa[[1]];thres_kiowa[[2]];thres_kiowa[[3]]
+# Threshold - ECE - Multi-piecewise linear regression ---------------------
 
 ### Estimating continuous piecewise linear regression ###
 # https://www.r-bloggers.com/2013/04/estimating-continuous-piecewise-linear-regression/
 # N <- 325 # number of sampled points, lwma = 325, sswma = 354, cbma = 368, kiowa = 367
 
+# Fixing Within-normalized aridity
+aw4 = aw4 %>%
+  group_by(site) %>%
+  dplyr::mutate(gh_within = scale_this(gh))
+
+# checking it against separating sites and scaling aridity 
+
+aw4lwma = aw4 %>%
+  dplyr::filter(site == "lwma") %>%
+  dplyr::mutate(gh_within2 = scale_this(gh))
+
+aw4sswma = aw4 %>%
+  dplyr::filter(site == "sswma") %>%
+  dplyr::mutate(gh_within2 = scale_this(gh))
+
+aw4cbma = aw4 %>%
+  dplyr::filter(site == "cbma") %>%
+  dplyr::mutate(gh_within2 = scale_this(gh))
+
+aw4kiowa = aw4 %>%
+  dplyr::filter(site == "kiowa") %>%
+  dplyr::mutate(gh_within2 = scale_this(gh))
+
+aw4 = rbind(aw4lwma,aw4sswma,aw4cbma,aw4kiowa)
+
+# Checking to see if they scaled within aridity is different or not
+arid_df = aw4 %>%
+  dplyr::select(site,gh,gh_within, gh_within2) %>%
+  arrange(gh_within,site)
+# gh_wihtin and gh_within2 are the same so within scaling seems to have worked
+
+# plotting to see if they have similar start and end points
 ggplot(data = aw4, aes(x = gh_within,
                        y = pc2,
                        color = site))+
   geom_smooth(method = loess, se = FALSE)
 
-K <- 3  # number of knots
 
-arid_df = aw6 %>%
+arid_df = aw4 %>%
   dplyr::select(site,gh,gh_within)
+
+# Setting up piecewise regression with multiple breaks or knots
 
 piece.formula <- function(var.name, knots) {
   formula.sign <- rep(" - ", length(knots))
@@ -206,14 +189,15 @@ aw6 = aw6 %>%
   group_by(site) %>%
   dplyr::mutate(gh_within = scale_this(gh))
 
-# aw6lwma = aw4 %>% dplyr::filter(site == "kiowa") %>% dplyr::select(gh_within, pc2)
-# x = aw6lwma$gh_within
-# y = aw6lwma$pc2
+# aw4site = aw4 %>% dplyr::filter(site == "kiowa") %>% dplyr::select(gh_within, pc2)
+# x = aw4site$gh_within
+# y = aw4site$pc2
 x = aw4$gh_within
 y = aw4$pc2
 # x <- seq(-1, 1, len = N)
 # y <- f(x) + rnorm(length(x))
 
+K <- 3  # number of knots
 knots <- seq(min(x), max(x), len = K + 2)[-c(1, K + 2)]
 model <- lm(formula(paste("y ~", piece.formula("x", knots))))
 
@@ -233,14 +217,17 @@ summary(model) # for kiowa at least, threshold for gh_wihtin is 2.26
 
 # ECE - Threshold - Impact Definition Data --------------------------------
 
-# Setting threshold based on full dataset, gh_within = 2.26 based on 4 knots
+# Setting threshold based on full dataset, gh_within = 1.8 based on 3 knots
 awthres_n = aw4 %>%
-  dplyr::filter(gh_within >=2.26) %>%
+  dplyr::mutate(total = n()) %>%
+  dplyr::filter(gh_within >=1.8) %>%
   group_by(site) %>%
-  dplyr::summarise(n = n())
+  dplyr::summarise(n = n(),
+                   percent = 100*(n/total)) %>%
+  dplyr::mutate(percent = 100*(n/total))
 
 awthres = aw4 %>%
-  dplyr::filter(gh_within >=2.26) %>%
+  dplyr::filter(gh_within >=1.8) %>%
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
@@ -299,6 +286,61 @@ emmeans(exthresm1, pairwise ~site|mas_bin)
 exthresm2 = lm(pc2 ~ site + scale(date), data = awthres)
 summary(exthresm2)
 emmeans(exthresm2, pairwise ~site)
+
+# Threshold - ECE - Threshold Modelling - Piece wise -----------------------------------------------------
+
+library(segmented)
+library(nlme)
+
+# Full Dataset - Site affects slope, aridity (z) affects changepoint
+## U = random effects in the slope-difference parameter
+## G0 = random effects in the breakpoints
+# does not give breakpoints for each individual site, have to analyze each site separately
+# MAS
+m1 = lm(pc ~ gh, data = data %>%
+          dplyr::filter(site == site))
+m1s = segmented(m1, seg.Z=~gh,
+                # npsi = 2
+                # psi = psi1
+                psi = list(gh = c(psi1,psi2))
+)
+m1s_summary = summary(m1s) 
+m1s_slope = slope(m1s)
+# get the fitted data
+my.fitted <- fitted(m1s)
+my.model <- data.frame(data %>% 
+                         dplyr::filter(site == site) %>%
+                         dplyr::select(gh), pc = my.fitted)
+
+thres_lwma = thres_seg(data = aw6,
+                      pc = aw6$pc2,
+                      site = "lwma",
+                      psi1 = -24,
+                      psi2 = -14
+                      ); thres_lwma[[2]];thres_lwma[[3]]
+
+thres_sswma = thres_seg(data = aw6,
+                      pc = aw6$pc2,
+                      site = "sswma",
+                      psi1 = -18,
+                      psi2 = -10
+                      ); thres_sswma[[2]];thres_sswma[[3]]
+
+thres_cbma = thres_seg(data = aw6,
+                      pc = aw6$pc2,
+                      site = "cbma",
+                      psi1 = -18,
+                      psi2 = -10
+                      ); thres_cbma[[1]];thres_cbma[[2]];thres_cbma[[3]]
+
+thres_kiowa = thres_seg(data = aw6,
+                       pc = aw6$pc2,
+                       site = "kiowa",
+                       psi1 = -15,
+                       psi2 = -10
+                       ); thres_kiowa[[1]];thres_kiowa[[2]];thres_kiowa[[3]]
+
+
 
 # General Additive Model --------------------------------------------------
 
