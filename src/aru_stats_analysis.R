@@ -65,7 +65,7 @@ aw4 = aw4 %>%
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
-ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
@@ -211,6 +211,7 @@ aw6 = aw4 %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
                            gh, 
+                           gh_within,
                            arid_within, 
                            hist_within:arid_across,
                            sound_atten04:sound_atten12,

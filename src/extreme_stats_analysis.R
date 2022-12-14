@@ -54,17 +54,18 @@ exa_kiowa = aw4 %>%
   slice_max(gh_within,n = 816)
 
 extreme_arid = rbind(exa_lwma, exa_sswma, exa_cbma, exa_kiowa)
+
 # Climate ECE - Simple Plots ------------------------------------------------------------
 # Full Dataset
-ggplot(data = aw4, aes(x = gh, y = pc3, color = site)) +
-  # geom_point() +
+ggplot(data = extreme_arid, aes(x = gh, y = pc2, color = site)) +
+  geom_point() +
   geom_smooth(method = loess)
 # we do get threshold for cbma but not the other sites
 
 # MAS Summarized data
-ggplot(data = ea_mas, aes(x = gh_within, y = pc3, color = site)) +
-  geom_point() +
-  geom_smooth(method = lm)
+ggplot(data = aw6, aes(x = gh, y = pc2, color = site)) +
+  # geom_point() +
+  geom_smooth(method = gam)
 
 
 # Climate ECE - Statistical Analysis ----------------------------------------------------
@@ -104,14 +105,211 @@ ea_mas = extreme_arid %>%
               "hist_across"), round_factor) 
 
 
-
 # Climate ECE - MAS and Date ----------------------------------------------
 ex1mas = lm(pc1 ~ arid_within*site + mas_bin + scale(date), data = ea_mas)
 summary(ex1mas)  
 assump(ex1mas)
 emmeans(ex1mas, pairwise ~ site)
 
-# Threshold - ECE - Threshold Modelling -----------------------------------------------------
+ex2mas = lm(pc2 ~ arid_within*site + mas_bin + scale(date), data = ea_mas)
+summary(ex2mas)  
+assump(ex2mas)
+emmeans(ex2mas, pairwise ~ site)
+
+ex3mas = lm(pc3 ~ arid_within*site + mas_bin + scale(date), data = ea_mas)
+summary(ex3mas)  
+assump(ex3mas)
+emmeans(ex3mas, pairwise ~ site)
+
+# Threshold - ECE - Threshold Modelling - Piece wise -----------------------------------------------------
+
+library(segmented)
+library(nlme)
+
+# Full Dataset - Site affects slope, aridity (z) affects changepoint
+## U = random effects in the slope-difference parameter
+## G0 = random effects in the breakpoints
+# does not give breakpoints for each individual site, have to analyze each site separately
+# MAS
+m1 = lm(pc ~ gh, data = data %>%
+          dplyr::filter(site == site))
+m1s = segmented(m1, seg.Z=~gh,
+                # npsi = 2
+                # psi = psi1
+                psi = list(gh = c(psi1,psi2))
+)
+m1s_summary = summary(m1s) 
+m1s_slope = slope(m1s)
+# get the fitted data
+my.fitted <- fitted(m1s)
+my.model <- data.frame(data %>% 
+                         dplyr::filter(site == site) %>%
+                         dplyr::select(gh), pc = my.fitted)
+
+thres_lwma = thres_seg(data = aw6,
+                      pc = aw6$pc2,
+                      site = "lwma",
+                      psi1 = -24,
+                      psi2 = -14
+                      ); thres_lwma[[2]];thres_lwma[[3]]
+
+thres_sswma = thres_seg(data = aw6,
+                      pc = aw6$pc2,
+                      site = "sswma",
+                      psi1 = -18,
+                      psi2 = -10
+                      ); thres_sswma[[2]];thres_sswma[[3]]
+
+thres_cbma = thres_seg(data = aw6,
+                      pc = aw6$pc2,
+                      site = "cbma",
+                      psi1 = -18,
+                      psi2 = -10
+                      ); thres_cbma[[1]];thres_cbma[[2]];thres_cbma[[3]]
+
+thres_kiowa = thres_seg(data = aw6,
+                       pc = aw6$pc2,
+                       site = "kiowa",
+                       psi1 = -15,
+                       psi2 = -10
+                       ); thres_kiowa[[1]];thres_kiowa[[2]];thres_kiowa[[3]]
+
+### Estimating continuous piecewise linear regression ###
+# https://www.r-bloggers.com/2013/04/estimating-continuous-piecewise-linear-regression/
+# N <- 325 # number of sampled points, lwma = 325, sswma = 354, cbma = 368, kiowa = 367
+
+ggplot(data = aw4, aes(x = gh_within,
+                       y = pc2,
+                       color = site))+
+  geom_smooth(method = loess, se = FALSE)
+
+K <- 3  # number of knots
+
+arid_df = aw6 %>%
+  dplyr::select(site,gh,gh_within)
+
+piece.formula <- function(var.name, knots) {
+  formula.sign <- rep(" - ", length(knots))
+  formula.sign[knots < 0] <- " + "
+  paste(var.name, "+",
+        paste("I(pmax(", var.name, formula.sign, abs(knots), ", 0))",
+              collapse = " + ", sep=""))
+}
+
+f <- function(x) {
+  2 * sin(6 * x)
+}
+
+set.seed(1)
+# Should use full dataset??? 
+aw6 = aw6 %>%
+  group_by(site) %>%
+  dplyr::mutate(gh_within = scale_this(gh))
+
+# aw6lwma = aw4 %>% dplyr::filter(site == "kiowa") %>% dplyr::select(gh_within, pc2)
+# x = aw6lwma$gh_within
+# y = aw6lwma$pc2
+x = aw4$gh_within
+y = aw4$pc2
+# x <- seq(-1, 1, len = N)
+# y <- f(x) + rnorm(length(x))
+
+knots <- seq(min(x), max(x), len = K + 2)[-c(1, K + 2)]
+model <- lm(formula(paste("y ~", piece.formula("x", knots))))
+
+par(mar = c(4, 4, 1, 1))
+plot(x, y)
+
+# ggplot(data = aw4, aes(gh_within,pc2))+
+#   geom_smooth(method = loess, se = FALSE)
+
+lines(x, f(x))
+new.x <- seq(min(x), max(x) ,len = 10000)
+points(new.x, predict(model, newdata = data.frame(x = new.x)),
+       col = "red", pch = ".")
+points(knots, predict(model, newdata = data.frame(x = knots)),
+       col = "red", pch = 18)
+summary(model) # for kiowa at least, threshold for gh_wihtin is 2.26
+
+# ECE - Threshold - Impact Definition Data --------------------------------
+
+# Setting threshold based on full dataset, gh_within = 2.26 based on 4 knots
+awthres_n = aw4 %>%
+  dplyr::filter(gh_within >=2.26) %>%
+  group_by(site) %>%
+  dplyr::summarise(n = n())
+
+awthres = aw4 %>%
+  dplyr::filter(gh_within >=2.26) %>%
+  dplyr::filter(year(date_time)==2021) %>%
+  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+  mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity, 
+                           temp:dew, 
+                           gh, 
+                           gh_within,
+                           arid_within, 
+                           hist_within:arid_across,
+                           sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
+  mutate_at(c("arid_within",
+              "arid_across",
+              "hist_within",
+              "hist_across"), round_factor) 
+
+exthresm1 = lm(pc2 ~ site*mas_bin + scale(date), data = awthres)
+summary(exthresm1)
+emmeans(exthresm1, pairwise ~site|mas_bin)
+
+exthresm2 = lm(pc2 ~ site + scale(date), data = awthres)
+summary(exthresm2)
+emmeans(exthresm2, pairwise ~site) # at the most extreme aridity, cbma still has higher avian abundance than kiowa
+
+# Setting threshold based on MAS dataset, gh_within = 2.02
+
+awthres_n = aw4 %>%
+  dplyr::filter(gh_within >=2.02) %>%
+  group_by(site) %>%
+  dplyr::summarise(n = n())
+
+awthres = aw4 %>%
+  dplyr::filter(gh_within >=2.02) %>%
+  dplyr::filter(year(date_time)==2021) %>%
+  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+  mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity, 
+                           temp:dew, 
+                           gh, 
+                           gh_within,
+                           arid_within, 
+                           hist_within:arid_across,
+                           sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
+  mutate_at(c("arid_within",
+              "arid_across",
+              "hist_within",
+              "hist_across"), round_factor) 
+
+exthresm1 = lm(pc2 ~ site*mas_bin + scale(date), data = awthres)
+summary(exthresm1)
+emmeans(exthresm1, pairwise ~site|mas_bin)
+
+exthresm2 = lm(pc2 ~ site + scale(date), data = awthres)
+summary(exthresm2)
+emmeans(exthresm2, pairwise ~site)
+
+# General Additive Model --------------------------------------------------
+
+library(mgcv)
+gam1 = gam(pc2 ~ s(gh, by = site), data = aw6)
+summary(gam1)
+coef(gam1)
+plot(gam1)
+emm(gam1, pairwise ~ site)
+contrast(emmeans(gam1, pairwise ~ site))
+
 # Reference: https://www.r-bloggers.com/2021/04/other-useful-functions-for-nonlinear-regression-threshold-models-and-all-that/
 library(sandwich)
 library(lmtest)
@@ -141,41 +339,8 @@ plot(modExb, log="",
 
 
 
-# Threshold - ECE - Piecewise Regression ----------------------------------------------------
+# Threshold - ECE - findthresh --------------------------------------------
 
-library(segmented)
-library(nlme)
+library(evir)
 
-# Full Dataset - Site affects slope, aridity (z) affects changepoint
-## U = random effects in the slope-difference parameter
-## G0 = random effects in the breakpoints
-m1 = lme(pc1 ~ gh, random = ~1|site, data = extreme_arid %>% 
-           dplyr::filter(site == "lwma"))
-m1s = segmented.lme(m1, ~gh,
-                    random = list(site=pdDiag(~1+gh+U+G0)),
-                    control = seg.control(n.boot=10), display = TRUE)
-summary(m1s) # does not give breakpoints for each individual site
-slope(m1s)
-
-
-fit = lm(pc1 ~ gh, data = extreme_arid %>% dplyr::filter(site == "lwma"))
-segmented.fit = segmented(fit, seg.Z = ~gh, psi = -9)
-summary(segmented.fit)
-
-
-# MAS
-m1 = lm(pc1 ~ gh, data = ea_mas)
-m1s = segmented(m1, seg.Z=~gh)
-davies.test(m1, seg.Z = gh*site)
-summary(m1s) # does not give breakpoints for each individual site
-slope(m1s)
-
-# General Additive Model --------------------------------------------------
-
-library(mgcv)
-gam1 = gam(pc1 ~ gh*site + s(site, bs = "re")
-                    + s(gh, site, bs = "re"), data = extreme_arid)
-summary(gam1)
-coef(gam1)
-plot(gam1)
-emm(gam1, ~gh*site)
+findthresh(aw6, 100)
