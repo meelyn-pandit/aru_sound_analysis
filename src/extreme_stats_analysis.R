@@ -28,13 +28,14 @@ setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
 load("data_clean/aridity_data_clean.Rdata")
 
 extreme_arid_n = aw4 %>%
-  arrange(desc(gh)) %>%
+  arrange(desc(gh_within)) %>%
   group_by(site) %>%
   dplyr::summarise(n = n(),
          top5per = 0.05*n())
 
 exa_lwma = aw4 %>%
   dplyr::filter(site == "lwma") %>%
+  # mutate(gh_within = scale_this(gh)) %>%
   arrange(desc(gh_within)) %>%
   slice_max(gh_within,n = 601)
 
@@ -51,14 +52,24 @@ exa_cbma = aw4 %>%
 exa_kiowa = aw4 %>%
   dplyr::filter(site == "kiowa") %>%
   arrange(desc(gh_within)) %>%
-  slice_max(gh_within,n = 816)
+  slice_max(gh_within,n = 816) # min gh_within = 
 
 extreme_arid = rbind(exa_lwma, exa_sswma, exa_cbma, exa_kiowa)
 
+ea_ghwithin = extreme_arid %>%
+  dplyr::select(site, gh, gh_within) %>%
+  group_by(site) %>%
+  dplyr::summarise(min = min(gh_within),
+         max = max(gh_within))
+# lwma  gh_within min = 1.74, max = 2.66
+# sswma gh_within min = 1.73, max = 3.04
+# cbma  gh_within min = 1.74, max = 2.72
+# kiowa gh_within min = 1.88, max = 2.56
+
 # Climate ECE - Simple Plots ------------------------------------------------------------
 # Full Dataset
-ggplot(data = extreme_arid, aes(x = gh, y = pc2, color = site)) +
-  geom_point() +
+ggplot(data = extreme_arid, aes(x = gh_within, y = pc2, color = site)) +
+  # geom_point() +
   geom_smooth(method = loess)
 # we do get threshold for cbma but not the other sites
 
@@ -160,14 +171,11 @@ arid_df = aw4 %>%
 # gh_wihtin and gh_within2 are the same so within scaling seems to have worked
 
 # plotting to see if they have similar start and end points
+
 ggplot(data = aw4, aes(x = gh_within,
                        y = pc2,
                        color = site))+
   geom_smooth(method = loess, se = FALSE)
-
-
-arid_df = aw4 %>%
-  dplyr::select(site,gh,gh_within)
 
 # Setting up piecewise regression with multiple breaks or knots
 
@@ -217,7 +225,7 @@ summary(model) # for kiowa at least, threshold for gh_wihtin is 2.26
 
 # ECE - Threshold - Impact Definition Data --------------------------------
 
-# Setting threshold based on full dataset, gh_within = 1.8 based on 3 knots
+# Setting threshold based on full dataset, gh_within = 1.8 based on 3 knots, also within the 5% climate definition cutoff
 awthres_n = aw4 %>%
   dplyr::mutate(total = n()) %>%
   dplyr::filter(gh_within >=1.8) %>%

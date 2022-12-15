@@ -59,7 +59,7 @@ aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 
 aw4 = aw4 %>%
   group_by(site) %>%
-  mutate(gh_within = scale_this(gh))
+  dplyr::mutate(gh_within = scale_this(gh)) # split up datasets by site and scale!!!
 
 # Audio Variable PCAs
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
