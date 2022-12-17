@@ -254,19 +254,21 @@ library(mcp)
 
 # plotting to see if they have similar start and end points
 
-ggplot(data = aw6, aes(x = gh_within,
-                       y = pc3,
-                       color = site))+
-  geom_smooth(method = loess, se = TRUE) 
+ggplot(data = aw4, aes(x = gh_within,
+                       y = pc2))+
+  geom_smooth(method = loess, se = FALSE) +
+  geom_vline(xintercept = -0.950, color = "red") +
+  geom_vline(xintercept = 0.494, color = "blue") +
+  geom_vline(xintercept = 1.538, color = 'green')
 
 # Modeling Slope Changepoints (linear model)
 
 mcp_model1 = list(pc2 ~ 1, # intercept
-                      ~ 1 + gh_within, #plateau (int_1)
-                      ~ 0 + gh_within, #joined slope (time_2) at cp_1
+                      ~ 1 + gh_within, #linear segment1 (int_1)
+                      ~ 1 + gh_within, #linear segment2 slope (time_2) at cp_1
                       ~ 1 + gh_within # disjoined slope (int_3, time_3) at cp_2
                   )
-fit1 = mcp(mcp_model1, data = aw6, sample = 'both')
+fit1 = mcp(mcp_model1, data = aw6, sample = 'both', cores = 4)
 summary(fit1)
 head(fitted(fit1))
 fitted(fit1)
@@ -355,10 +357,17 @@ emmeans(exthresm2, pairwise ~site)
 # ECE - Threshold - Loess Regression --------------------------------------
 
 ggplot(data = aw4, aes(x = gh_within,
-                       y = pc1,
+                       y = pc2,
                        # color = site
                        ))+
-geom_smooth(method = loess, se = FALSE) 
+geom_smooth(method = loess, se = FALSE) +
+  geom_vline(xintercept = 0.5520, color = "red")
+  geom_vline(xintercept = -1.162, color = "red") +
+  geom_vline(xintercept = -0.057, color = "blue") +
+  geom_vline(xintercept = 1.166, color = 'green')
+  
+  abline(v = -0.057, col = "blue")
+abline(v = 1.166, col = "green")
 
 loess_m10 = loess(pc2 ~ gh_within, data = aw4, span = 0.10)
 loess_m25 = loess(pc2 ~ gh_within, data = aw4, span = 0.25)
@@ -420,9 +429,41 @@ loess_max(aw4, aw4$gh_within, aw4$pc1,-1,1.5) # 1
 loess_max(aw4, aw4$gh_within, aw4$pc2,1,2) # 1.136
 loess_max(aw4, aw4$gh_within, aw4$pc3,1,2) # 1.597
 
+# Piecewise Linear Regression model on loess predicted data
 
+loess_m = loess(pc2 ~ gh_within, data = aw4)
+set.seed(124)
+# x = rnorm(1000, 0,1.2)
+x = seq(-2,3, by = 0.1)
+px <- predict(loess_m, newdata=x)
 
+loess_predict = data.frame(x = x,
+                           y = px)
 
+# par(mfrow=c(1, 1))
+plot(x, px, main="loess model")
+# abline(v = -1.162, col = "red")
+# abline(v = -0.057, col = "blue")
+# abline(v = 1.166, col = "green")
+
+# map piecewise regression to loess model. 3 breakpoints for pc1, 4 for pc2, 3 for pc3
+
+mcp_loess = list(y ~ 1, # intercept
+                  ~ 0 + x, #linear segment1 (int_1)
+                  ~ 1 + x, #linear segment2 slope (time_2) at cp_1
+                  ~ 1 + x # disjoined slope (int_3, time_3) at cp_2
+                 # ~ 1+x
+)
+fit_loess = mcp(mcp_loess, data = loess_predict, sample = 'both', cores = 4)
+summary(fit_loess)
+summaryfl = summary(fit_loess)
+
+# mcp predicted breakpoints
+plot(x, px, main="loess model")
+abline(v = summaryfl$mean[1], col = "red")
+abline(v = summaryfl$mean[2], col = "blue")
+abline(v = summaryfl$mean[3], col = "green")
+abline(v = 2.0423, col = "green")
 
 
 
