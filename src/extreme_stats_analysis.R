@@ -133,7 +133,7 @@ assump(ex3mas)
 emmeans(ex3mas, pairwise ~ site)
 
 
-# Threshold - ECE - Multi-piecewise linear regression ---------------------
+# ECE - Threshold - Multi-piecewise linear regression ---------------------
 
 ### Estimating continuous piecewise linear regression ###
 # https://www.r-bloggers.com/2013/04/estimating-continuous-piecewise-linear-regression/
@@ -170,72 +170,127 @@ arid_df = aw4 %>%
   arrange(gh_within,site)
 # gh_wihtin and gh_within2 are the same so within scaling seems to have worked
 
-# plotting to see if they have similar start and end points
+# plotting to see changepoints - full dataset
 
 ggplot(data = aw4, aes(x = gh_within,
+                       y = pc1,
+                       # color = site
+                       )
+       )+
+  geom_smooth(method = loess, se = FALSE) 
+
+# plotting to see if where changepoints are - MAS dataset
+
+ggplot(data = aw6, aes(x = gh_within,
                        y = pc2,
-                       color = site))+
-  geom_smooth(method = loess, se = FALSE)
-
-# Setting up piecewise regression with multiple breaks or knots
-
-piece.formula <- function(var.name, knots) {
-  formula.sign <- rep(" - ", length(knots))
-  formula.sign[knots < 0] <- " + "
-  paste(var.name, "+",
-        paste("I(pmax(", var.name, formula.sign, abs(knots), ", 0))",
-              collapse = " + ", sep=""))
-}
-
-f <- function(x) {
-  2 * sin(6 * x)
-}
-
-set.seed(1)
-# Should use full dataset??? 
-aw6 = aw6 %>%
-  group_by(site) %>%
-  dplyr::mutate(gh_within = scale_this(gh))
-
+                       # color = site
+                      )
+      )+
+  geom_smooth(method = loess, se = TRUE) 
 # aw4site = aw4 %>% dplyr::filter(site == "kiowa") %>% dplyr::select(gh_within, pc2)
 # x = aw4site$gh_within
 # y = aw4site$pc2
-x = aw4$gh_within
-y = aw4$pc2
+
 # x <- seq(-1, 1, len = N)
 # y <- f(x) + rnorm(length(x))
 
-K <- 3  # number of knots
-knots <- seq(min(x), max(x), len = K + 2)[-c(1, K + 2)]
-model <- lm(formula(paste("y ~", piece.formula("x", knots))))
+knot_model = function(num_knots,
+                      x_var,
+                      y_var) {
+  
+  # Setting up piecewise regression with multiple breaks or knots
+  
+  piece.formula <- function(var.name, knots) {
+    formula.sign <- rep(" - ", length(knots))
+    formula.sign[knots < 0] <- " + "
+    paste(var.name, "+",
+          paste("I(pmax(", var.name, formula.sign, abs(knots), ", 0))",
+                collapse = " + ", sep=""))
+  }
+  
+  f <- function(x) {
+    2 * sin(6 * x)
+  }
+  
+  x = x_var
+  y = y_var
+  
+  set.seed(1)
+  K <- num_knots  # number of knots
+  knots <- seq(min(x), max(x), len = K + 2)[-c(1, K + 2)]
+  model <- lm(formula(paste("y ~", piece.formula("x", knots))))
+  
+  par(mar = c(4, 4, 1, 1))
+  plot(x, y)
+  
+  # ggplot(data = aw4, aes(gh_within,pc2))+
+  #   geom_smooth(method = loess, se = FALSE)
+  
+  lines(x, f(x))
+  new.x <- seq(min(x), max(x) ,len = 10000)
+  points(new.x, predict(model, newdata = data.frame(x = new.x)),
+         col = "red", pch = ".")
+  points(knots, predict(model, newdata = data.frame(x = knots)),
+         col = "red", pch = 18)
+  summary(model) # for kiowa at least, threshold for gh_wihtin is 2.26
+  return(model)
+}
 
-par(mar = c(4, 4, 1, 1))
-plot(x, y)
 
-# ggplot(data = aw4, aes(gh_within,pc2))+
-#   geom_smooth(method = loess, se = FALSE)
+# Checking which piecewise regression model has best fit with AIC
+knotms = lapply(c(1:10), FUN = function(x) knot_model(num_knots = x,
+                              x_var = aw4$gh_within, 
+                              y_var = aw4$pc3))
 
-lines(x, f(x))
-new.x <- seq(min(x), max(x) ,len = 10000)
-points(new.x, predict(model, newdata = data.frame(x = new.x)),
-       col = "red", pch = ".")
-points(knots, predict(model, newdata = data.frame(x = knots)),
-       col = "red", pch = 18)
-summary(model) # for kiowa at least, threshold for gh_wihtin is 2.26
+AICctab(knotms[[1]],knotms[[2]],knotms[[3]],knotms[[4]],knotms[[5]],
+        knotms[[6]],knotms[[7]],knotms[[8]],knotms[[9]],knotms[[10]],
+        nobs = 1411, base=T, weights=T, delta=T, logLik=T)
+
+summary(knotms[[1]])
+
+# ECE - Threshold - MCP LMM Piecewise -------------------------------------
+
+library(mcp)
+
+# plotting to see if they have similar start and end points
+
+ggplot(data = aw6, aes(x = gh_within,
+                       y = pc3,
+                       color = site))+
+  geom_smooth(method = loess, se = TRUE) 
+
+# Modeling Slope Changepoints (linear model)
+
+mcp_model1 = list(pc2 ~ 1, # intercept
+                      ~ 1 + gh_within, #plateau (int_1)
+                      ~ 0 + gh_within, #joined slope (time_2) at cp_1
+                      ~ 1 + gh_within # disjoined slope (int_3, time_3) at cp_2
+                  )
+fit1 = mcp(mcp_model1, data = aw6, sample = 'both')
+summary(fit1)
+head(fitted(fit1))
+fitted(fit1)
+fit1$jags_code
+plot(fit1, q_fit = TRUE, q_predict = c(0.1, 0.9)) # https://lindeloev.github.io/mcp/articles/predict.html#extracting-fitted-values-1
+plot_pars(fit1, pars = c("cp_1", "cp_2", "cp_3"))
+
+# Modelling changepoints with random effects
+
+mcp_model2 = list(pc2 ~ 1,
+             1 + (1|site) ~ 0 + gh_within)
+fit = mcp(mcp_model, data = aw6, cores = 3, adapt = 500)
+plot(fit, facet_by = "site")
+pp_check(fit, facet_by = "site")
 
 # ECE - Threshold - Impact Definition Data --------------------------------
 
-# Setting threshold based on full dataset, gh_within = 1.8 based on 3 knots, also within the 5% climate definition cutoff
+# Setting threshold based on full dataset, gh_within = 1.8 based on 3 knots, with significant negative slope, also within the 5% climate definition cutoff, AIC prefers 9 knots
 awthres_n = aw4 %>%
-  dplyr::mutate(total = n()) %>%
-  dplyr::filter(gh_within >=1.8) %>%
   group_by(site) %>%
-  dplyr::summarise(n = n(),
-                   percent = 100*(n/total)) %>%
-  dplyr::mutate(percent = 100*(n/total))
+  dplyr::summarise(total = n())
 
 awthres = aw4 %>%
-  dplyr::filter(gh_within >=1.8) %>%
+  dplyr::filter(gh_within >=1.58) %>% # 1.8 is significant negative slope with 3 knots, 1.58 is significant negative slope with 9 knots
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
@@ -295,6 +350,84 @@ exthresm2 = lm(pc2 ~ site + scale(date), data = awthres)
 summary(exthresm2)
 emmeans(exthresm2, pairwise ~site)
 
+
+
+# ECE - Threshold - Loess Regression --------------------------------------
+
+ggplot(data = aw4, aes(x = gh_within,
+                       y = pc1,
+                       # color = site
+                       ))+
+geom_smooth(method = loess, se = FALSE) 
+
+loess_m10 = loess(pc2 ~ gh_within, data = aw4, span = 0.10)
+loess_m25 = loess(pc2 ~ gh_within, data = aw4, span = 0.25)
+loess_m50 = loess(pc2 ~ gh_within, data = aw4, span = 0.50)
+summary(loess_m50)
+
+# Get smooth output
+smoothed10 <- predict(loess_m10) 
+smoothed25 <- predict(loess_m25) 
+smoothed50 <- predict(loess_m50) 
+
+plot(y = aw4$pc2, aw4$gh_within, type = "p", main = "Loess Smoothing and Prediction")
+lines(smoothed10, x=aw4$gh_within, col="red")
+lines(smoothed25, x=aw4$gh_within, col="green")
+lines(smoothed50, x=aw4$gh_within, col="blue")
+
+# find changepoints in loess fit for full dataset, but manually segmenting data to where there is a dropoff in pc
+# pc1: 1-2
+# pc2: 1-2
+# pc3: 1-2
+
+loess_max = function(data,
+                     x_var,
+                     y_var,
+                     arid_min,
+                     arid_max) {
+  # loess_m = loess(y_var ~ gh_within, data = aw4)
+  
+  # segmenting data from gh_within 1 to 2 since that is where we see the drop in the loess model
+  data_filtered = data %>% 
+    dplyr::filter(gh_within >= arid_min) %>% 
+    dplyr::filter(gh_within <= arid_max)
+  loess_mex = loess(y_var ~ x_var, data = data_filtered)
+  
+  x <- x_var[x_var >= 1]
+  x = x[x <= 2]
+  # x = seq(-2,3, by = 0.1)
+  px <- predict(loess_mex, newdata=x)
+  px1 <- diff(px)
+  # px1_ex = px1[px1 >= 1] 
+  
+  max_gh = which.max(px1) # max is 4 but start value of x is -2, means the curve is flat at position -2+4 = 2
+  px1[max_gh] # 0.01929 value with max
+  loess_predict = cbind(x = x[-1], y = px1)
+  max_arid = loess_predict[max_gh,] # max x is 1.4769
+  
+  par(mfrow=c(1, 2))
+  plot(x, px, main="loess model")
+  abline(v=max_arid, col="red")
+  
+  # loess_predict[7488,] # x = 1.136
+  
+  plot(x[-1], px1, main="diff(loess model)")
+  abline(v=max_arid, col="red")
+  return(max_arid)
+}
+
+loess_max(aw4, aw4$gh_within, aw4$pc1,-1,1.5) # 1
+loess_max(aw4, aw4$gh_within, aw4$pc2,1,2) # 1.136
+loess_max(aw4, aw4$gh_within, aw4$pc3,1,2) # 1.597
+
+
+
+
+
+
+
+
+
 # Threshold - ECE - Threshold Modelling - Piece wise -----------------------------------------------------
 
 library(segmented)
@@ -305,13 +438,17 @@ library(nlme)
 ## G0 = random effects in the breakpoints
 # does not give breakpoints for each individual site, have to analyze each site separately
 # MAS
-m1 = lm(pc ~ gh, data = data %>%
-          dplyr::filter(site == site))
-m1s = segmented(m1, seg.Z=~gh,
-                # npsi = 2
-                # psi = psi1
-                psi = list(gh = c(psi1,psi2))
-)
+
+thres_seg(site,ps1,ps2){
+  m1 = lm(pc ~ gh, data = data %>%
+            dplyr::filter(site == site))
+  m1s = segmented(m1, seg.Z=~gh,
+                  # npsi = 2
+                  # psi = psi1
+                  psi = list(gh = c(psi1,psi2))
+  )
+}
+
 m1s_summary = summary(m1s) 
 m1s_slope = slope(m1s)
 # get the fitted data
