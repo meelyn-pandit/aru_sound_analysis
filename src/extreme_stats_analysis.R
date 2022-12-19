@@ -251,45 +251,115 @@ summary(knotms[[1]])
 # ECE - Threshold - MCP LMM Piecewise -------------------------------------
 
 library(mcp)
-
+library(rjags)
+Sys.setenv(JAGS_HOME="C:/Program Files/JAGS/JAGS-4.3.0") # setting 
 # plotting to see if they have similar start and end points
 
 ggplot(data = aw4, aes(x = gh_within,
-                       y = pc2))+
-  geom_smooth(method = loess, se = FALSE) +
-  geom_vline(xintercept = -0.950, color = "red") +
-  geom_vline(xintercept = 0.494, color = "blue") +
-  geom_vline(xintercept = 1.538, color = 'green')
+                       y = pc1,
+                       color = site)) +
+  geom_smooth(method = loess, se = FALSE) 
+# +
+#   geom_vline(xintercept = -0.950, color = "red") +
+#   geom_vline(xintercept = 0.494, color = "blue") +
+#   geom_vline(xintercept = 1.538, color = 'green')
 
+# Modeling Null Changepoint model
+
+mcp_null = list( pc2 ~ 1)
 # Modeling Slope Changepoints (linear model)
 
-mcp_model1 = list(pc2 ~ 1, # intercept
-                      ~ 1 + gh_within, #linear segment1 (int_1)
-                      ~ 1 + gh_within, #linear segment2 slope (time_2) at cp_1
-                      ~ 1 + gh_within # disjoined slope (int_3, time_3) at cp_2
+mcp_model1 = list(pc2 ~ 0 + gh_within, # joinedlinear segment1 (int_1)
+                      ~ 1, # intercept
+                      ~ 0 + gh_within #joined linear segment2 slope (time_2) at cp_1
+                      # ~ 0 + gh_within # joined slope (int_3, time_3) at cp_2
                   )
-fit1 = mcp(mcp_model1, data = aw6, sample = 'both', cores = 4)
+fit1 = mcp(mcp_model1, data = aw4, sample = 'prior')
 summary(fit1)
-head(fitted(fit1))
 fitted(fit1)
+plot(fit1)
 fit1$jags_code
 plot(fit1, q_fit = TRUE, q_predict = c(0.1, 0.9)) # https://lindeloev.github.io/mcp/articles/predict.html#extracting-fitted-values-1
+plot_pars(fit1, pars = c("cp_1", "cp_2"))
 plot_pars(fit1, pars = c("cp_1", "cp_2", "cp_3"))
 
 # Modelling changepoints with random effects
-
-mcp_model2 = list(pc2 ~ 1,
+# Joined slopes
+mcp_rem0 = list(pc1 ~ 1,
+             1 + (1|site) ~ 0 + gh_within,
+             1 + (1|site) ~ 0 + gh_within,
              1 + (1|site) ~ 0 + gh_within)
-fit = mcp(mcp_model, data = aw6, cores = 3, adapt = 500)
-plot(fit, facet_by = "site")
+
+fit_default0 = mcp(mcp_rem0, 
+                  data = aw4, 
+                  sample = 'prior')
+summary(fit_default0)
+ranef(fit_default0)
+
+# Disjointed slopes
+
+mcp_rem1 = list(pc2 ~ 1,
+                1 + (1|site) ~ 1 + gh_within,
+                1 + (1|site) ~ 1 + gh_within,
+                1 + (1|site) ~ 1 + gh_within)
+
+fit_default1 = mcp(mcp_rem1, 
+                   data = aw4, 
+                   sample = 'prior')
+summary(fit_default1)
+ranef(fit_default1)
+# Running models with priors (attempting to...)
+
+prior = list(
+   cp_1       = "dt(MINX, (MAXX - MINX) / N_CP, N_CP - 1) T(cp_0, MAXX)",
+   cp_1_sd    = "dnorm(0, 2 * (MAXX - MINX) / N_CP) T(0, )",
+   cp_1_site  = "dnorm(0, cp_1_sd) T(MINX - cp_1, cp_2 - cp_1)",
+   cp_2       = "dt(MINX, (MAXX - MINX) / N_CP, N_CP - 1) T(cp_1, MAXX)",
+   cp_2_sd    = "dnorm(0, 2 * (MAXX - MINX) / N_CP) T(0, )",
+   cp_2_site  = "dnorm(0, cp_2_sd) T(cp_1 - cp_2, cp_3 - cp_2)",
+   cp_3       = "dt(MINX, (MAXX - MINX) / N_CP, N_CP - 1) T(cp_2, MAXX)",
+   cp_3_sd    = "dnorm(0, 2 * (MAXX - MINX) / N_CP) T(0, )",
+   cp_3_site  = "dnorm(0, cp_3_sd) T(cp_2 - cp_3, MAXX - cp_3)",
+   int_1      = "dt(0, 3 * SDY, 3)",
+   gh_within_2 = "dt(0, SDY / (MAXX - MINX), 3)",
+   gh_within_3 = "dt(0, SDY / (MAXX - MINX), 3)",
+   gh_within_4 = "dt(0, SDY / (MAXX - MINX), 3)",
+   sigma_1     = "dnorm(0, SDY) T(0, )"
+)
+
+fit_manual = mcp(mcp_rem, 
+                 data = aw4, 
+                 sample = 'prior', 
+                 prior = prior)
+summary(fit_manual)
+ranef(fit_manual)
+plot(fit_manual, facet_by = "site")
+
+
+
+# predict results using mcp_rem model and new data generated below
+new_x = rep(seq(-2, 3), 4)
+sites = c("lwma", 'sswma', 'cbma', 'kiowa')
+
+newdata = NULL
+for(s in sites) {
+  new_x = seq(-2, 3)
+  # site = rep(s, length(new_x))
+  df_temp = data.frame(site = s,
+                  gh_within = new_x)
+  newdata = rbind(newdata, df_temp)
+}
+
+
+fitted(fit2, newdata = newdata)
+# predict_forecast = predict(fit2, newdata = newdata)
+# summary(predict_forecast)
+plot(fit2, facet_by = "site")
 pp_check(fit, facet_by = "site")
 
-# ECE - Threshold - Impact Definition Data --------------------------------
+### After seeing upper limits of random effect mcp, just go with 1.58 with 3 changepoints
 
-# Setting threshold based on full dataset, gh_within = 1.8 based on 3 knots, with significant negative slope, also within the 5% climate definition cutoff, AIC prefers 9 knots
-awthres_n = aw4 %>%
-  group_by(site) %>%
-  dplyr::summarise(total = n())
+# ECE - Threshold - Impact Definition Data --------------------------------
 
 awthres = aw4 %>%
   dplyr::filter(gh_within >=1.58) %>% # 1.8 is significant negative slope with 3 knots, 1.58 is significant negative slope with 9 knots
@@ -309,6 +379,11 @@ awthres = aw4 %>%
               "arid_across",
               "hist_within",
               "hist_across"), round_factor) 
+
+awthres_n = awthres %>%
+  group_by(site) %>%
+  dplyr::summarise(total = n(),
+                   percent = n()/length(awthres))
 
 exthresm1 = lm(pc2 ~ site*mas_bin + scale(date), data = awthres)
 summary(exthresm1)
@@ -431,7 +506,7 @@ loess_max(aw4, aw4$gh_within, aw4$pc3,1,2) # 1.597
 
 # Piecewise Linear Regression model on loess predicted data
 
-loess_m = loess(pc2 ~ gh_within, data = aw4)
+loess_m = loess(pc1 ~ gh_within, data = aw4)
 set.seed(124)
 # x = rnorm(1000, 0,1.2)
 x = seq(-2,3, by = 0.1)
@@ -450,11 +525,11 @@ plot(x, px, main="loess model")
 
 mcp_loess = list(y ~ 1, # intercept
                   ~ 0 + x, #linear segment1 (int_1)
-                  ~ 1 + x, #linear segment2 slope (time_2) at cp_1
-                  ~ 1 + x # disjoined slope (int_3, time_3) at cp_2
+                  ~ 0 + x, #linear segment2 slope (time_2) at cp_1
+                  ~ 0 + x # disjoined slope (int_3, time_3) at cp_2
                  # ~ 1+x
 )
-fit_loess = mcp(mcp_loess, data = loess_predict, sample = 'both', cores = 4)
+fit_loess = mcp(mcp_loess, data = loess_predict, sample = 'prior')
 summary(fit_loess)
 summaryfl = summary(fit_loess)
 
@@ -463,7 +538,7 @@ plot(x, px, main="loess model")
 abline(v = summaryfl$mean[1], col = "red")
 abline(v = summaryfl$mean[2], col = "blue")
 abline(v = summaryfl$mean[3], col = "green")
-abline(v = 2.0423, col = "green")
+# abline(v = 2.0423, col = "green")
 
 
 
@@ -572,3 +647,33 @@ plot(modExb, log="",
 library(evir)
 
 findthresh(aw6, 100)
+
+
+# ECE - Threshold - EnvCpt ------------------------------------------
+
+library(EnvCpt)
+aw6 = aw6 %>% 
+  # dplyr::filter(site == "lwma") %>%
+  # dplyr::select(gh_within, pc1:pc3) %>%
+  arrange(pc2)
+fit_envcpt = envcpt(aw6$pc2)  # Fit all models at once
+fit_envcpt$summary  # Show log-likelihoods
+out=fit_envcpt # run all models with default values
+out[[1]] # first row is twice the negative log-likelihood for each model
+# second row is the number of parameters
+AIC(out) # returns AIC for each model.
+which.min(AIC(out)) # gives trendar2cpt (model 12) as the best model fit.
+out$trendar1cpt # gives the model fit for the meancpt model.
+AICweights(out) # gives the AIC weights for each model
+BIC(out) # returns the BIC for each model.
+which.min(BIC(out)) # gives meancpt (model 2) as the best model fit too.
+plot(out,type='fit') # plots the fits
+plot(out,type="aic") # plots the aic values
+plot(out,type="bic") # plots the bic values # run all models with default values
+
+out$meancpt@cpts # example code
+out$meancpt@param.est #example code
+
+fit_envcpt$trendar1cpt@cpts # example code
+fit_envcpt$trendar2cpt@param.est #example code
+
