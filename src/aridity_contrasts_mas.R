@@ -1,11 +1,8 @@
 # load("src/cbma_water_table.R")
-aridity_contrasts_mas = function(data,
-                                 x1,
-                                 x2,
-                                 x3,
-                                  y){
+aridity_contrasts_mas = function(pc,
+                                 arid_factor){
   # m = lm(pc ~ arid_within*mas_bin*x3 + scale(date), data = data)
-  m = lm(y ~ x1*x2*x3 + scale(date), data = data)
+  m = lm(pc ~ arid_factor*mas_bin*site + scale(date), data = aw6)
   summary = summary(m)
   diagnostics = assump(m)
   # emm = emmeans(m, pairwise ~ x3*x2)
@@ -31,8 +28,8 @@ aridity_contrasts_mas = function(data,
   kiowa4 = c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0)
   kiowa5 = c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)
   
-  emm = emmeans(m, pairwise ~ x1*x3|x2)
-  emm_cntrst = contrast(emm, 
+  emm = emmeans(m, ~ arid_factor*site|mas_bin)
+  emm_cntrst = contrast(emm,
                method = list(
                "SSWMA:Extremely Humid - LWMA:Extremely Humid" = sswma1-lwma1,
                "CBMA:Extremely Humid - LWMA:Extremely Humid"  = cbma1 -lwma1,
@@ -68,8 +65,13 @@ aridity_contrasts_mas = function(data,
   # emm_cntrst = contrast(emm)
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
-  arid_table = aridity_table_mas(emm_cntrst);arid_table
-  my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, arid_table, emm)
+  arid_table = aridity_table_mas2(emm_cntrst_summary);arid_table
+  my_list = list(summary, 
+                 diagnostics, 
+                 emm_cntrst_summary,
+                 emm_confi_summary,
+                 arid_table,
+                 emm)
   # my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, emm)
   return(my_list)
 }

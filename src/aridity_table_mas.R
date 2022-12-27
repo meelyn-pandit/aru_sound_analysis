@@ -1,6 +1,6 @@
 aridity_table_mas = function(contrast_table) {
   ### Making good tables in R
-  table <- contrast_table %>%
+  table_tall <- contrast_table %>%
     data.frame(stringsAsFactors = FALSE) %>%
     mutate(
       # contrast = dplyr::recode(contrast, 
@@ -11,12 +11,12 @@ aridity_table_mas = function(contrast_table) {
            t.ratio = round(t.ratio, 3),
            p.value = round(p.value, 3)) %>%
     mutate(sig. = if_else(p.value < 0.1 & p.value >= 0.05, ".", 
-                          if_else(p.value < 0.05 & p.value >= 0.01, "*",
-                                  if_else(p.value < 0.01 & p.value >= 0.001, "**",
-                                          if_else(p.value < 0.001, "***", " "))))) %>%
+                  if_else(p.value < 0.05 & p.value >= 0.01, "*",
+                  if_else(p.value < 0.01 & p.value >= 0.001, "**",
+                  if_else(p.value < 0.001, "***", " "))))) %>%
     mutate(p.value = as.factor(p.value)) %>%
     mutate(p.value = dplyr::recode(p.value, "0" = "<0.001")) %>%
-    dplyr::select(-x2) %>%
+    dplyr::select(-mas_bin) %>% # x2
     gt(.) %>%
     cols_align('center') %>%
     cols_label(contrast = md("**Contrast**"),
@@ -42,5 +42,6 @@ aridity_table_mas = function(contrast_table) {
       rows = c(1:30)) %>%
     tab_source_note(
       source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
-    ); table
+    ); table_tall
+  
 }

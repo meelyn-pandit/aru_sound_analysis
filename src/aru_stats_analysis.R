@@ -19,13 +19,17 @@ library(gt)
 library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
+# library(cowplot)
+# library(magick)
+# library(patchwork)
+# library(flextable)
 
 ### Install ggbiplot ###
 library(devtools)
 install_github("vqv/ggbiplot")
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
-load("audio_and_weather_data.Rdata")
+load("data_clean/audio_and_weather_data.Rdata")
 
 # Aridity Gradient - Create PCA of Audio Variables, filter out files with NA ACI and  --------
 aw_bad1 = aw2 %>% dplyr::filter(as_date(date_time) == "2021-07-09" & site == "lwma" & aru == "aru04") 
@@ -40,11 +44,8 @@ aw3 = setdiff(aw2, aw_bad_total)
 aw3$site = factor(aw3$site, levels = c("lwma","sswma","cbma","kiowa"))
 aw3 = aw3 %>% dplyr::filter(is.na(mas_bin) == FALSE)
 
-# Writing own scale function to use within dplyr
-scale_this <- function(x){
-  (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)
-}
 
+# Filter out NA aci and only look at values before 2021-08-16
 aw4 = aw3 %>%
   dplyr::filter(is.na(aci) == FALSE) %>%
   dplyr::filter(rain == 0) %>% # filtering out 5 min bins with rain
@@ -55,27 +56,46 @@ aw4 = aw3 %>%
          sound_atten04 = att_coef(4000, temp, relh, (pres/1000)),
          sound_atten08 = att_coef(8000, temp, relh, (pres/1000)),
          sound_atten12 = att_coef(12000, temp, relh, (pres/1000)))
-aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
+
+# see how many gh rows are within each arid factor
+
+arid_check = aw4 %>% group_by(site,mas_bin,arid_within,arid_withinf) %>% tally(gh)
+
+ggplot(data = arid_check, aes(x = arid_withinf,
+                              y = n,
+                              color = mas_bin)) + geom_point()
+
+# Full clean dataset
 
 aw4 = aw4 %>%
   group_by(site) %>%
   dplyr::mutate(gh_within = scale_this(gh)) # split up datasets by site and scale!!!
 
+aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
+
+ggplot(data = aw4, 
+       aes(x = as.numeric(arid_withinf),
+           y = pc2
+           # ,
+           # color = site
+           )) + 
+  geom_point()
+
 # Audio Variable PCAs
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
-ggbiplot(audio_pca, choices = c(2,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI
 
 aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
-aw4$pc2 = audio_pcadf$PC2*-1
+aw4$pc2 = audio_pcadf$PC2*-1 # Multiply PC2 by -1 to make num vocals/species diversity have positive values
 aw4$pc3 = audio_pcadf$PC3
 
-save(aw4, file = "data_clean/aridity_data_clean.Rdata")
+save(aw4, file = "aridity_data_clean.Rdata")
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -84,6 +104,56 @@ save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 # #3D pCA Plot
 # pca3d(audio_pca, biplot = true) # only run this on windows machine
 # snapshotPCA3d("audio_pca.png")
+
+# AIC tests to see which aridity variable to use --------------------------
+# Arid within factor
+m_aridwithin = lmer(pc2 ~ arid_withinf*site*mas_bin + 
+                      # mas_bin + 
+                      scale(date) + 
+                      (1|site), data = aw4)
+summary(m_aridwithin)
+assump(m_aridwithin)
+emmeans(m_aridwithin, pairwise ~ site*arid_withinf|mas_bin, lmerTest.limit = 54007)
+# Arid across factor
+m_aridacross = lmer(pc3 ~ arid_acrossf*site + 
+                      mas_bin + 
+                      scale(date) + 
+                      (1|site), data = aw4)
+
+# Historic arid within factor
+m_histwithin = lmer(pc3 ~ hist_withinf*site + 
+                      mas_bin + 
+                      scale(date) + 
+                      (1|site), data = aw4)
+
+# Historic arid within factor
+m_histacross = lmer(pc3 ~ hist_acrossf*site + 
+                      mas_bin + 
+                      scale(date) + 
+                      (1|site), data = aw4)
+
+# Sound attenuation at 4kHz
+m_sound4khz = lmer(pc3 ~ sound_atten04*site + 
+                      mas_bin + 
+                      scale(date) + 
+                      (1|site), data = aw4)
+
+# Sound attenuation at 8kHz
+m_sound8khz = lmer(pc3 ~ sound_atten08*site + 
+                     mas_bin + 
+                     scale(date) + 
+                     (1|site), data = aw4)
+
+m_sound12khz = lmer(pc3 ~ sound_atten12*site + 
+                     mas_bin + 
+                     scale(date) + 
+                     (1|site), data = aw4)
+
+AICctab(m_aridwithin,m_aridacross,m_histwithin,m_histacross,m_sound4khz,m_sound8khz,m_sound12khz, nobs = 54007, base=T, weights=T, delta=T, logLik=T)
+
+# arid_within is best aridity metric to predict pc1, pc2
+# arid_across is best aridity metric to predict pc3,
+# sound_attn4khz is second best aridity metric to predict pc3
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 arid_pc1 = aridity_contrasts_lmer(aw4, aw4$pc1)
@@ -192,96 +262,114 @@ pwpp(emmeans(m3, ~mean_aridwithin|site, data = aw5)) # Pairwise p-value plots
 # Aridity Gradient - Summarized by Date and MAS ---------------------------
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
-# load("audio_and_weather_data.R")
-
-## Create PCA of Audio Variables, filter out files with NA ACI and greater than 3000
-### Summarize by site
-round_factor = function(x){
-  x = round(x)
-  y = as.factor(x)
-  y = factor(y, levels = c(1,2,3,4,5))
-  return(y)
-}
+load("data_clean/aridity_data_clean.Rdata")
 
 aw6 = aw4 %>%
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
+  mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
   group_by(site, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
                            gh, 
                            gh_within,
-                           arid_within, 
+                           arid_within,
                            hist_within:arid_across,
+                           arid_withinf:hist_acrossf,
                            sound_atten04:sound_atten12,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
-  mutate_at(c("arid_within",
-              "arid_across",
-              "hist_within",
-              "hist_across"), round_factor) 
-# audio_pca3 = prcomp(aw6[,c(5:10)], center = TRUE, scale. = TRUE)
-# summary(audio_pca3) #PC1 and PC2 have highest proportion of variance
-# audio_pcadf3 = as.data.frame(audio_pca3[["x"]])
-# ggbiplot(audio_pca3, choices = c(2,3),ellipse = TRUE, alpha = 0, groups = aw6$site) # Plot PCs
-# #3D Plot of PCAs
-# pca3d(audio_pca3, biplot = true)
-# snapshotPCA3d("audio_pca_datetime.png")
-# aw6$pc1 = audio_pcadf3$PC1*-1 # multiplied by -1 to reverse direction of PC1
-# aw6$pc2 = audio_pcadf3$PC2*-1 # multiplied by -1 to reverse direction of PC2, higher PC2 values indicate higher ACI, BIO, num vocals, and species diversity
+  mutate_at(c("arid_withinf","arid_acrossf","hist_within","hist_across"), round_factor)
+
+# Checking which scaled aridity matches gh distribution, the summarized arid_withinf above matches histogram of gh
+arid_check = aw6 %>%
+  arrange(site,gh) %>%
+  dplyr::mutate(arid_within2 = scale_this(gh),
+    arid_withinf2 = cut(gh,
+                    breaks = 5,
+                    labels = c(1,2,3,4,5))) %>%
+  dplyr::select(site,
+                mas_bin,
+                gh,
+                arid_within,
+                arid_withinf,
+                arid_within2,
+                arid_withinf2) %>%
+  arrange(site,gh)
+
+hist(as.numeric(aw6$arid_withinf))
+# y = factor(y, levels = c(1,2,3,4,5))
+
+ggplot(data = aw6, 
+       aes(x = as.numeric(arid_within),
+           y = pc2,
+           color = site
+       )) + 
+  geom_smooth()
+
+arid_check = aw6 %>% group_by(site,
+                              mas_bin,
+                              arid_withinf) %>% tally()
+
+aw6 %>% group_by(site,arid_acrossf) %>% tally(gh)
+
 
 save(aw6, file = "aridity_gradient_mas.Rdata")
 # Aridity Gradient - Date and MAS - Statistical Analysis ------------------
 # PC1: ADI, AEI, positive values more likely to have higher ADI 
 # (after being multiplied by -1)
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
-arid_pc1_mas = aridity_contrasts_mas(aw6,
-                                     aw6$arid_within,
-                                     aw6$mas_bin,
-                                     aw6$site,
-                                     aw6$pc1)
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis")
 
-arid_pc1_mas[[5]] %>% gtsave("results/arid_gradient_pc1_mas.png")
+m1 = lm(pc1 ~ arid_withinf*mas_bin*site + scale(date), data = aw6)
+summary(m1)
+assump(m1)
+emmeans(m1,  pairwise ~ site*arid_withinf|mas_bin)
+
+arid_pc1_mas = aridity_contrasts_mas(aw6$pc1,
+                                     aw6$arid_withinf)
+write.csv(arid_pc1_mas[[5]], 'results/arid_pc1_mas_table.csv', row.names = FALSE)
+arid_pc1_mas[[5]] %>% gtsave("results/arid_gradient_pc1_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
+
 plot(arid_pc1_mas[[6]])
 
 # PC2: Vocalization Number, Species Diversity higher with positive values
 # (after being multiplied by -1)
-arid_pc2_mas = aridity_contrasts_mas(aw6,
-                                     aw6$arid_within,
-                                     aw6$mas_bin,
-                                     aw6$site,
-                                     aw6$pc2)
-arid_pc2_mas[[5]] %>% gtsave("results/arid_gradient_pc2_mas.png")
-plot(arid_pc2_mas[[6]])
+arid_pc2_mas = aridity_contrasts_mas(aw6$pc2,
+                                     aw6$arid_withinf)
+arid_pc2_mas[[3]]
+
+write.csv(arid_pc2_mas[[5]], 'results/arid_pc2_mas_table.csv', row.names = FALSE)
+arid_pc2_mas[[5]] %>% gtsave("results/arid_gradient_pc2_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
+# plot(arid_pc2_mas[[6]])
 
 # PC3: ACI, BIO higher positive values have higher ACI and lower BIO
 # (after being multiplied by -1)
-arid_pc3_mas = aridity_contrasts_mas(aw6,
-                                     aw6$arid_within,
-                                     aw6$mas_bin,
-                                     aw6$site,
-                                     aw6$pc3)
-arid_pc3_mas[[5]] %>% gtsave("results/arid_gradient_pc3_mas.png")
+arid_pc3_mas = aridity_contrasts_mas(aw6$pc3,
+                                     aw6$arid_acrossf)
+arid_pc3_mas[[3]]
+# write.csv(arid_pc3_mas[[5]], 'results/arid_pc3_mas_table.csv', row.names = FALSE)
+ 
+arid_pc3_mas[[5]] %>% gtsave("results/arid_gradient_pc3_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
+
 plot(arid_pc3_mas[[6]])
 
 # Aridity Gradient - Dot Plots - Datetime - PC1 --------------------------------------
 
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
 
-dt_graphs = aw4 %>%
-  group_by(site, arid_within) %>%
+dt_graphs = aw6 %>%
+  group_by(site, mas_bin, arid_withinf) %>%
   dplyr::summarise(pc1_mean = mean(pc1),
                    pc1_se = (sd(pc1))/sqrt(n()),
                    pc2_mean = mean(pc2),
                    pc2_se = (sd(pc2))/sqrt(n()),
                    pc3_mean = mean(pc3),
-                   pc3_se = (sd(pc3))/sqrt(n()),
-                   ghwithin_mean = mean(gh_within))
+                   pc3_se = (sd(pc3))/sqrt(n()))
 
 ggplot(data = dt_graphs,
-       aes(x=arid_within, y=pc1_mean, color = site)) +
+       aes(x=arid_withinf, y=pc1_mean, color = site)) +
   geom_point(position = position_dodge(0))+
-  ggtitle("Datetime Summarized - PC1 - Acoustic Diversity")+
+  # ggtitle("Datetime Summarized - PC1 - Acoustic Diversity")+
   geom_line(aes(group = site, 
                 color = site),
             position = position_dodge(0))+
@@ -297,13 +385,16 @@ ggplot(data = dt_graphs,
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "right")
+        legend.position = "right") +
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc1_mas.png', dpi = 600, height = 11, width = 8, units = "in")
 
 ### PC2 - Num vocals and Species Diversity
 ggplot(data = dt_graphs,
-       aes(x=arid_within, y=pc2_mean, color = site)) +
+       aes(x=arid_withinf, y=pc2_mean, color = site)) +
   geom_point(position = position_dodge(0))+
-  ggtitle("Datetime Summarized - PC2 - Avian Vocal Abundance")+
+  # ggtitle("Datetime Summarized - PC2 - Avian Vocal Abundance")+
   geom_line(aes(group = site, 
                 color = site),
             position = position_dodge(0))+
@@ -319,13 +410,16 @@ ggplot(data = dt_graphs,
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "right")
+        legend.position = "right") +
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc2_mas.png', dpi = 600, height = 11, width = 8, units = "in")
 
 ### PC3 - ACI and BIO
 ggplot(data = dt_graphs,
-       aes(x=arid_within, y=pc3_mean, color = site)) +
+       aes(x=arid_withinf, y=pc3_mean, color = site)) +
   geom_point(position = position_dodge(0))+
-  ggtitle("Datetime Summarized - PC3 - Acoustic Complexity")+
+  # ggtitle("Datetime Summarized - PC3 - Acoustic Complexity")+
   geom_line(aes(group = site, 
                 color = site),
             position = position_dodge(0))+
@@ -341,14 +435,17 @@ ggplot(data = dt_graphs,
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "right")
+        legend.position = "right")+
+facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc3_mas.png', dpi = 600, height = 11, width = 8, units = "in")
 
 # Aridity Graident - Dot Plots - Date and MAS -----------------------------
 
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
 
-mas_graphs = aw4 %>%
-  group_by(site, arid_within, mas_bin) %>%
+mas_graphs = aw6 %>%
+  group_by(site, mas_bin, arid_withinf) %>%
   dplyr::summarise(pc1_mean = mean(pc1),
                    pc1_se = (sd(pc1))/sqrt(n()),
                    pc2_mean = mean(pc2),
@@ -357,13 +454,12 @@ mas_graphs = aw4 %>%
                    pc3_se = (sd(pc3))/sqrt(n()))
 
 ggplot(data = mas_graphs,
-       aes(x=arid_within, y=pc1_mean, color = site)) +
+       aes(x=arid_withinf, y=pc1_mean, color = site)) +
   geom_point(position = position_dodge(0))+
-  ggtitle("Date and MAS Summarized - PC1 - Acoustic Diversity")+
+  # ggtitle("Datetime Summarized - PC1 - Acoustic Diversity")+
   geom_line(aes(group = site, 
                 color = site),
             position = position_dodge(0))+
-  facet_wrap(~ mas_bin) +
   geom_errorbar(aes(ymin = pc1_mean-pc1_se, 
                     ymax = pc1_mean+pc1_se), width = 0.2,
                 position = position_dodge(0))+
@@ -371,19 +467,21 @@ ggplot(data = mas_graphs,
                      name = "Site",
                      labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
   scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
-  scale_y_continuous(name = "PC1 - Acoustic Diversity")+
+  scale_y_continuous(name = "PC1 - Evenness to Diversity")+
   # facet_grid(~facet_type) +
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "right")
+        legend.position = "right") +
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc1_mas.png', dpi = 600, height = 11, width = 8, units = "in")
 
-### PC2 - Num Vocals and Species Diversity - Date an MAS summarized
+### PC2 - Num vocals and Species Diversity
 ggplot(data = mas_graphs,
-       aes(x=arid_within, y=pc2_mean, color = site)) +
+       aes(x=arid_withinf, y=pc2_mean, color = site)) +
   geom_point(position = position_dodge(0))+
-  ggtitle("Date and MAS Summarized - PC2 - Num. Vocals and Species Diversity")+
-  facet_wrap(~ mas_bin) +
+  # ggtitle("Datetime Summarized - PC2 - Avian Vocal Abundance")+
   geom_line(aes(group = site, 
                 color = site),
             position = position_dodge(0))+
@@ -399,14 +497,16 @@ ggplot(data = mas_graphs,
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "right")
+        legend.position = "right") +
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc2_mas.png', dpi = 600, height = 11, width = 8, units = "in")
 
-### PC3 - Num Vocals and Species Diversity - Date an MAS summarized
+### PC3 - ACI and BIO
 ggplot(data = mas_graphs,
-       aes(x=arid_within, y=pc3_mean, color = site)) +
+       aes(x=arid_withinf, y=pc3_mean, color = site)) +
   geom_point(position = position_dodge(0))+
-  ggtitle("Date and MAS Summarized - PC3 - Acoustic Complexity")+
-  facet_wrap(~ mas_bin) +
+  # ggtitle("Datetime Summarized - PC3 - Acoustic Complexity")+
   geom_line(aes(group = site, 
                 color = site),
             position = position_dodge(0))+
@@ -422,8 +522,10 @@ ggplot(data = mas_graphs,
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "right")
-
+        legend.position = "right")+
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc3_mas.png', dpi = 600, height = 11, width = 8, units = "in")
 
 
 # Water Supplementation - Load Data ---------------------------------------

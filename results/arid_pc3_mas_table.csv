@@ -1,0 +1,31 @@
+"contrast","estimate","SE","df","t.ratio","p.value","sig.","estimate_e","SE_e","t.ratio_e","p.value_e","sig._e","estimate_m","SE_m","t.ratio_m","p.value_m","sig._m","estimate_l","SE_l","t.ratio_l","p.value_l","sig._l"
+"SSWMA:Extremely Humid - LWMA:Extremely Humid",0.383,0.082,1350,4.692,"<0.001","***",0.453,0.083,5.487,"<0.001","***",0.203,0.139,1.454,"0.146"," ",-0.403,0.227,-1.778,"0.076","."
+"CBMA:Extremely Humid - LWMA:Extremely Humid",0.375,0.106,1350,3.528,"<0.001","***",0.351,0.109,3.231,"0.001","**",0.439,0.223,1.971,"0.049","*",-0.34,0.512,-0.665,"0.506"," "
+"KIOWA:Extremely Humid - LWMA:Extremely Humid",0.535,0.088,1350,6.083,"<0.001","***",0.307,0.09,3.397,"0.001","**",0.154,0.209,0.738,"0.461"," ",0.095,0.313,0.304,"0.761"," "
+"CBMA:Extremely Humid - SSWMA:Extremely Humid",-0.008,0.106,1350,-0.075,"0.94"," ",-0.102,0.11,-0.933,"0.351"," ",0.236,0.227,1.042,"0.298"," ",0.063,0.53,0.118,"0.906"," "
+"KIOWA:Extremely Humid - SSWMA:Extremely Humid",0.152,0.088,1350,1.732,"0.084",".",-0.146,0.092,-1.589,"0.112"," ",-0.048,0.214,-0.226,"0.821"," ",0.498,0.342,1.458,"0.145"," "
+"KIOWA:Extremely Humid - CBMA:Extremely Humid",0.16,0.111,1350,1.44,"0.15"," ",-0.044,0.116,-0.377,"0.706"," ",-0.285,0.275,-1.034,"0.302"," ",0.436,0.572,0.762,"0.446"," "
+"SSWMA:Humid - LWMA:Humid",-0.076,0.244,1350,-0.31,"0.757"," ",0.087,0.254,0.342,"0.732"," ",0.362,0.106,3.415,"0.001","**",0.198,0.124,1.589,"0.112"," "
+"CBMA:Humid - LWMA:Humid",0.007,0.203,1350,0.035,"0.972"," ",0.245,0.234,1.047,"0.295"," ",0.943,0.115,8.173,"<0.001","***",0.867,0.185,4.683,"<0.001","***"
+"KIOWA:Humid - LWMA:Humid",0.287,0.23,1350,1.249,"0.212"," ",0.171,0.245,0.699,"0.485"," ",0.399,0.117,3.408,"0.001","**",0.284,0.166,1.715,"0.087","."
+"CBMA:Humid - SSWMA:Humid",0.083,0.174,1350,0.475,"0.635"," ",0.158,0.145,1.095,"0.274"," ",0.582,0.118,4.917,"<0.001","***",0.669,0.189,3.543,"<0.001","***"
+"KIOWA:Humid - SSWMA:Humid",0.363,0.205,1350,1.769,"0.077",".",0.084,0.161,0.522,"0.602"," ",0.038,0.12,0.314,"0.753"," ",0.086,0.17,0.507,"0.612"," "
+"KIOWA:Humid - CBMA:Humid",0.28,0.153,1350,1.831,"0.067",".",-0.074,0.127,-0.582,"0.56"," ",-0.544,0.128,-4.247,"<0.001","***",-0.583,0.218,-2.67,"0.008","**"
+"SSWMA:Normal - LWMA:Normal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0.29,0.243,1.197,"0.232"," ",-0.13,0.116,-1.117,"0.264"," "
+"CBMA:Normal - LWMA:Normal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0.997,0.237,4.205,"<0.001","***",0.919,0.12,7.683,"<0.001","***"
+"KIOWA:Normal - LWMA:Normal",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0.576,0.237,2.431,"0.015","*",0.12,0.126,0.949,"0.343"," "
+"CBMA:Normal - SSWMA:Normal",0.267,0.277,1350,0.964,"0.335"," ",0.542,0.31,1.749,"0.08",".",0.707,0.13,5.422,"<0.001","***",1.049,0.112,9.398,"<0.001","***"
+"KIOWA:Normal - SSWMA:Normal",0.329,0.286,1350,1.152,"0.25"," ",0.476,0.33,1.44,"0.15"," ",0.285,0.13,2.201,"0.028","*",0.249,0.119,2.103,"0.036","*"
+"KIOWA:Normal - CBMA:Normal",0.063,0.189,1350,0.331,"0.741"," ",-0.067,0.204,-0.328,"0.743"," ",-0.422,0.119,-3.537,"<0.001","***",-0.8,0.121,-6.607,"<0.001","***"
+"SSWMA:Arid - LWMA:Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"CBMA:Arid - LWMA:Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"KIOWA:Arid - LWMA:Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"CBMA:Arid - SSWMA:Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,1.197,0.171,7.014,"<0.001","***"
+"KIOWA:Arid - SSWMA:Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0.438,0.177,2.472,"0.014","*"
+"KIOWA:Arid - CBMA:Arid",-0.062,0.342,1350,-0.182,"0.856"," ",-0.096,0.391,-0.246,"0.806"," ",-0.685,0.167,-4.092,"<0.001","***",-0.759,0.126,-6.014,"<0.001","***"
+"SSWMA:Extremely Arid - LWMA:Extremely Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"CBMA:Extremely Arid - LWMA:Extremely Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"KIOWA:Extremely Arid - LWMA:Extremely Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"CBMA:Extremely Arid - SSWMA:Extremely Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"KIOWA:Extremely Arid - SSWMA:Extremely Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"KIOWA:Extremely Arid - CBMA:Extremely Arid",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,-1.588,0.204,-7.77,"<0.001","***"

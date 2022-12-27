@@ -1,11 +1,11 @@
 
-library(rmarkdown)
+# library(rmarkdown)
 library(soundecology) #obtain broad scale acoustic metrics
 library(tuneR) #loading and reading sound files
 library(seewave) #soundwave analysis
 library(osfr) #downloading files from osf
-library(dplyr) #data management and conversion
-library(tidyverse)
+# library(dplyr) 
+library(tidyverse) #data management and conversion
 library(lubridate) #convert date types
 library(lme4) #linear mixed models
 library(lmerTest) #statistical tests for linear mixed models
@@ -18,8 +18,8 @@ library(zoo) #approximate missing values
 # Aridity Gradient Data ---------------------------------------------------
 ## Aridity Gradient- Load broad acoustic data ====
 
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data")
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data")
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 aru = as.list(c("aru01","aru02","aru03","aru04","aru05"))
 
@@ -268,14 +268,14 @@ save(acoustic2, file = "acoustic_and_birdnet_data.Rdata")
 
 ## Aridity Gradient - Combine 2021 Mesonet and Historic Weather Data -----------------------
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 # acoustic2 = import("acoustic_and_birdnet_data.Rdata")
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
 wfull = NULL
 for(s in sites){
-  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
   labels = seq(-725,755,5) #creating bin labels, going from lowest value to the highest value-5
   if(s == "lwma"){
     
@@ -388,29 +388,29 @@ aw2$mas_num = as.numeric(as.character(aw2$mas))
 
 # observed aridity scaled within sites
 aw2 = aw2 %>% 
-  arrange(arid_within) %>%
-  mutate(arid_within = cut(arid_within,
+  arrange(site,arid_within) %>%
+  mutate(arid_withinf = cut(arid_within,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
 # observed aridity scaled across sites
 aw2 = aw2 %>% 
   arrange(arid_across) %>%
-  mutate(arid_across = cut(arid_across,
+  mutate(arid_acrossf = cut(arid_across,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
 # historic aridity scaled within sites
 aw2 = aw2 %>% 
-  arrange(hist_within) %>%
-  mutate(hist_within = cut(hist_within,
+  arrange(site,hist_within) %>%
+  mutate(hist_withinf = cut(hist_within,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
-#%>% #historic aridity scaled across sites
+# historic aridity scaled across sites
 aw2 = aw2 %>% 
   arrange(hist_across) %>%
-  mutate(hist_across = cut(hist_across,
+  mutate(hist_acrossf = cut(hist_across,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
@@ -418,6 +418,9 @@ aw2 = aw2 %>%
 aw2$mas_bin = cut(aw2$mas_num, include.lowest = TRUE, breaks = c(-400,-5,125,255,400), labels = c("0","1","2","3"))
 
 aw2$site = factor(aw2$site, levels = c("lwma","sswma","cbma","kiowa"))
+
+# see how many gh rows are within each arid factor
+arid_check = aw2 %>% group_by(site,mas_bin,arid_acrossf) %>% tally(gh)
 
 setwd("data_clean")
 # setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
@@ -757,7 +760,7 @@ save(water_acoustics3, file = "water_acoustic_and_birdnet_data.Rdata")
 ## Water Supplementation - Combine 2021 Mesonet and Historic Weather Data -----------------------
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 # acoustic2 = import("acoustic_and_birdnet_data.Rdata")
 
 sites = as.list(c("sswma","cbma"))
@@ -839,28 +842,28 @@ water_weather2$mas_num = as.numeric(as.character(water_weather2$mas))
 # observed aridity scaled within sites
 water_weather2 = water_weather2 %>% 
   arrange(arid_within) %>%
-  mutate(arid_within = cut(arid_within,
+  mutate(arid_withinf = cut(arid_within,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
 # observed aridity scaled across sites
 water_weather2 = water_weather2 %>% 
   arrange(arid_across) %>%
-  mutate(arid_across = cut(arid_across,
+  mutate(arid_acrossf = cut(arid_across,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
 # historic aridity scaled within sites
 water_weather2 = water_weather2 %>% 
   arrange(hist_within) %>%
-  mutate(hist_within = cut(hist_within,
+  mutate(hist_withinf = cut(hist_within,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
 # historic aridity scaled across sites
 water_weather2 = water_weather2 %>% 
   arrange(hist_across) %>%
-  mutate(hist_across = cut(hist_across,
+  mutate(hist_acrossf = cut(hist_across,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
 
@@ -910,6 +913,6 @@ water_weather3 = rbind(cbma_full_water,sswma_full_water)
 #   dplyr::filter(is.na(mas_bin) == FALSE)
 
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 save(water_weather3, file = "water_audio_and_weather_data.Rdata")
 

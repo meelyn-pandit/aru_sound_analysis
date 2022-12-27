@@ -23,8 +23,8 @@ library(ggbiplot) # plot pcas
 # Threshold ECE - when biological response crashes/threshold
 
 # Climate ECE - Loading MAS and Date Aridity Gradient Data ------------------------------
-
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
 load("data_clean/aridity_data_clean.Rdata")
 
 extreme_arid_n = aw4 %>%
@@ -33,60 +33,100 @@ extreme_arid_n = aw4 %>%
   dplyr::summarise(n = n(),
          top5per = 0.05*n())
 
+
+# Aridwithin Dataframe Subsetting -----------------------------------------
+
 exa_lwma = aw4 %>%
   dplyr::filter(site == "lwma") %>%
   # mutate(gh_within = scale_this(gh)) %>%
-  arrange(desc(gh_within)) %>%
-  slice_max(gh_within,n = 601)
+  arrange(desc(arid_within)) %>%
+  slice_max(arid_within,n = 601)
 
 exa_sswma = aw4 %>%
   dplyr::filter(site == "sswma") %>%
-  arrange(desc(gh_within)) %>%
-  slice_max(gh_within,n = 620)
+  arrange(desc(arid_within)) %>%
+  slice_max(arid_within,n = 620)
 
 exa_cbma = aw4 %>%
   dplyr::filter(site == "cbma") %>%
-  arrange(desc(gh_within)) %>%
-  slice_max(gh_within,n = 662)
+  arrange(desc(arid_within)) %>%
+  slice_max(arid_within,n = 662)
 
 exa_kiowa = aw4 %>%
   dplyr::filter(site == "kiowa") %>%
-  arrange(desc(gh_within)) %>%
-  slice_max(gh_within,n = 816) # min gh_within = 
+  arrange(desc(arid_within)) %>%
+  slice_max(arid_within,n = 816) # min gh_within = 
 
-extreme_arid = rbind(exa_lwma, exa_sswma, exa_cbma, exa_kiowa)
+extreme_aridwithin = rbind(exa_lwma, exa_sswma, exa_cbma, exa_kiowa)
 
-ea_ghwithin = extreme_arid %>%
-  dplyr::select(site, gh, gh_within) %>%
+ea_aridwithin = extreme_aridwithin %>%
+  dplyr::select(site, gh, gh_within,arid_within) %>%
   group_by(site) %>%
-  dplyr::summarise(min = min(gh_within),
-         max = max(gh_within))
+  dplyr::summarise(min_aw = min(arid_within),
+                   max_aw = max(arid_within),
+                   min_gw = min(gh_within),
+                   max_gw = max(gh_within),
+                   min_gh = min(gh),
+                   max_gh = max(gh))
 # lwma  gh_within min = 1.74, max = 2.66
 # sswma gh_within min = 1.73, max = 3.04
 # cbma  gh_within min = 1.74, max = 2.72
 # kiowa gh_within min = 1.88, max = 2.56
 
+
+# Arid Across Dataframe Subsetting ----------------------------------------
+
+exa_lwma2 = aw4 %>%
+  dplyr::filter(site == "lwma") %>%
+  # mutate(gh_within = scale_this(gh)) %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 601)
+
+exa_sswma2 = aw4 %>%
+  dplyr::filter(site == "sswma") %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 620)
+
+exa_cbma2 = aw4 %>%
+  dplyr::filter(site == "cbma") %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 662)
+
+exa_kiowa2 = aw4 %>%
+  dplyr::filter(site == "kiowa") %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 816) # min gh_within = 
+
+extreme_aridacross = rbind(exa_lwma2, exa_sswma2, exa_cbma2, exa_kiowa2)
+
+ea_aridacross = extreme_aridacross %>%
+  dplyr::select(site, gh, arid_across) %>%
+  group_by(site) %>%
+  dplyr::summarise(min = min(arid_across),
+                   max = max(arid_across))
+
 # Climate ECE - Simple Plots ------------------------------------------------------------
 # Full Dataset
-ggplot(data = extreme_arid, aes(x = gh_within, y = pc2, color = site)) +
+ggplot(data = extreme_aridacross, aes(x = arid_within, y = pc2, color = site)) +
   # geom_point() +
   geom_smooth(method = loess)
 # we do get threshold for cbma but not the other sites
 
 # MAS Summarized data
-ggplot(data = aw6, aes(x = gh, y = pc2, color = site)) +
+ggplot(data = aw4, aes(x = arid_within, y = pc2, color = site)) +
   # geom_point() +
-  geom_smooth(method = gam)
+  geom_smooth() +
+  geom_vline(xintercept = 1, color = "red")
 
 
 # Climate ECE - Statistical Analysis ----------------------------------------------------
 
-m1ex = lmer(pc1 ~ gh_within+site + mas_bin + scale(date) + (1|aru), data = extreme_arid)
+m1ex = lmer(pc1 ~ site + (1|site), data = extreme_aridwithin)
 summary(m1ex)  
 assump(m1ex)
 emmeans(m1ex, pairwise ~ site)
 
-m2ex = lmer(pc2 ~ arid_within*site + mas_bin + scale(date) + (1|aru), data = extreme_arid)
+m2ex = lmer(pc2 ~ site + (1|site), data = extreme_aridwithin)
 summary(m2ex)  
 assump(m2ex)
 emmeans(m2ex, pairwise ~ site)
@@ -95,12 +135,12 @@ emmeans(m2ex, pairwise ~ site)
 m3ex = lm(pc3 ~ arid_within*mas_bin + scale(date), data = extreme_arid)
 summary(m3ex)  
 
-# Climate ECE - Summarizing data into MAS and Date --------------------------------------
+# Climate ECE - Summarizing data into MAS and Date for Arid Within --------------------------------------
 
-ea_mas = extreme_arid %>%
+exaw_mas = extreme_aridwithin %>%
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
+  mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
   group_by(site, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
@@ -108,29 +148,306 @@ ea_mas = extreme_arid %>%
                            gh_within,
                            arid_within, 
                            hist_within:arid_across,
+                           arid_withinf:hist_acrossf,
                            sound_atten04:sound_atten12,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
-  mutate_at(c("arid_within",
-              "arid_across",
-              "hist_within",
-              "hist_across"), round_factor) 
+  mutate_at(c("arid_withinf",
+              "arid_acrossf",
+              "hist_withinf",
+              "hist_acrossf"), round_factor) 
+
+exaa_mas = extreme_aridacross %>%
+  dplyr::filter(year(date_time)==2021) %>%
+  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+  mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity, 
+                           temp:dew, 
+                           gh, 
+                           gh_within,
+                           arid_within, 
+                           hist_within:arid_across,
+                           arid_withinf:hist_acrossf,
+                           sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
+  mutate_at(c("arid_withinf",
+              "arid_acrossf",
+              "hist_withinf",
+              "hist_acrossf"), round_factor) 
 
 
 # Climate ECE - MAS and Date ----------------------------------------------
-ex1mas = lm(pc1 ~ arid_within*site + mas_bin + scale(date), data = ea_mas)
-summary(ex1mas)  
-assump(ex1mas)
-emmeans(ex1mas, pairwise ~ site)
+# ex1mas = lm(pc1 ~ site + scale(date), data = exaw_mas)
+# summary(ex1mas)  
+# assump(ex1mas)
+# emmeans(ex1mas, pairwise ~ site)
 
-ex2mas = lm(pc2 ~ arid_within*site + mas_bin + scale(date), data = ea_mas)
-summary(ex2mas)  
-assump(ex2mas)
-emmeans(ex2mas, pairwise ~ site)
+ece_pc1_mas = ece_contrast_mas(exaw_mas, 
+                               exaw_mas$pc1)
+write.csv(ece_pc1_mas[[5]], 
+          'results/climate_ece_mas_pc1.csv', 
+          row.names = FALSE)
+# ece_pc1_mas[[5]] %>% gtsave('results/climate_ece_mas_pc1.png', expand = 100)
 
-ex3mas = lm(pc3 ~ arid_within*site + mas_bin + scale(date), data = ea_mas)
-summary(ex3mas)  
-assump(ex3mas)
-emmeans(ex3mas, pairwise ~ site)
+ece_pc2_mas = ece_contrast_mas(exaw_mas, 
+                               exaw_mas$pc2)
+write.csv(ece_pc2_mas[[5]], 
+          'results/climate_ece_mas_pc2.csv', 
+          row.names = FALSE)
+# ece_pc2_mas[[5]] %>% gtsave('results/climate_ece_mas_pc2.png', expand = 100)
+
+ece_pc3_mas = ece_contrast_mas(exaw_mas, 
+                               exaw_mas$pc3)
+write.csv(ece_pc3_mas[[5]], 
+          'results/climate_ece_mas_pc3.csv', 
+          row.names = FALSE)
+
+ece_pc3_mas[[5]] %>% gtsave('results/climate_ece_mas_pc3_arid_within.png', expand = 100)
+
+ece_pc3_mas = ece_contrast_mas(exaa_mas, 
+                               exaa_mas$pc3)
+ece_pc3_mas[[5]] %>% gtsave('results/climate_ece_mas_pc3_arid_across.png', expand = 100)
+
+# General Additive Model --------------------------------------------------
+
+library(mgcv)
+# gam1 = gam(pc2 ~ s(arid_within, by = site), data = aw6)
+gam1 = gam(pc1 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
+summary(gam1)
+gam1$smooth[[1]]$xp #0.95
+coef(gam1)
+plot(gam1, se=TRUE,col="blue")
+emm(gam1, pairwise ~ site)
+contrast(emmeans(gam1, pairwise ~ site))
+
+gam2 = gam(pc2 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
+summary(gam2)
+gam2$smooth[[1]]$xp #0.95
+coef(gam2)
+plot(gam2, se=TRUE,col="blue")
+emm(gam2, pairwise ~ site)
+contrast(emmeans(gam1, pairwise ~ site))
+
+gam3 = gam(pc3 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
+summary(gam3)
+gam3$smooth[[1]]$xp #0.98 for arid_across, 0.95 for arid_within
+coef(gam3)
+plot(gam3, se=TRUE,col="blue")
+emm(gam3, pairwise ~ site)
+contrast(emmeans(gam1, pairwise ~ site))
+ggplot(data = aw4, aes(x = arid_within, y = pc2)) +
+  geom_smooth()
+# Reference: https://www.r-bloggers.com/2021/04/other-useful-functions-for-nonlinear-regression-threshold-models-and-all-that/
+
+
+# ECE - Threshold - MCP LMM Piecewise -------------------------------------
+# https://lindeloev.github.io/mcp/articles/predict.html#extracting-fitted-values-1
+library(mcp)
+library(rjags)
+Sys.setenv(JAGS_HOME="C:/Program Files/JAGS/JAGS-4.3.0") # setting path to jags library
+# plotting to see if they have similar start and end points
+
+# Creating new arid_within variable because mcp won't recognize arid_within[,1]
+aw4$arid_within2 = as.vector(aw4$arid_within)
+aw4$arid_across2 = as.vector(aw4$arid_across)
+
+# Finding Knots(changepoints) for PC1 data - Joined slopes
+# Random effects included
+
+# PC1 - Full Dataset - ADI/AEI
+
+mcp_rem1 = list(pc1 ~ 1,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2)
+
+  pc1_fit = mcp(mcp_rem1, 
+               data = aw4, 
+               sample = 'prior')
+  
+  summary(pc1_fit)
+  mcp::ranef(pc1_fit)
+  plot_pars(pc1_fit, pars = c("cp_9_site[lwma]", 
+                              "cp_9_site[sswma]", 
+                              "cp_9_site[cbma]",
+                              "cp_9_site[kiowa]"))
+  
+  # PC2 - Full Dataset - Num Vocals/Species Diversity
+  
+  mcp_rem2 = list(pc2 ~ 1,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2,
+                  1 + (1|site) ~ 0 + arid_within2)
+  
+  pc2_fit = mcp(mcp_rem2, 
+                data = aw4, 
+                sample = 'prior')
+  
+  summary(pc2_fit)
+  mcp::ranef(pc2_fit)
+  plot_pars(pc2_fit, pars = "cp_9")
+  plot_pars(pc2_fit, pars = c("cp_9_site[lwma]", 
+                              "cp_9_site[sswma]", 
+                              "cp_9_site[cbma]",
+                              "cp_9_site[kiowa]"))
+
+  # PC3 - Full Dataset - Num Vocals/Species Diversity
+  
+  mcp_rem3 = list(pc3 ~ 1,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2,
+                  1 + (1|site) ~ 0 + arid_across2)
+  
+  pc3_fit = mcp(mcp_rem3, 
+                data = aw4, 
+                sample = 'prior')
+  
+  summary(pc3_fit)
+  mcp::ranef(pc3_fit)
+  plot_pars(pc3_fit, pars = "cp_9")
+  plot_pars(pc3_fit, pars = c("cp_9_site[lwma]", 
+                              "cp_9_site[sswma]", 
+                              "cp_9_site[cbma]",
+                              "cp_9_site[kiowa]"))
+  
+# predict results using mcp_rem model and new data generated below
+new_x = rep(seq(-2, 3), 4)
+sites = c("lwma", 'sswma', 'cbma', 'kiowa')
+
+newdata = NULL
+for(s in sites) {
+  new_x = seq(-2, 2)
+  # site = rep(s, length(new_x))
+  df_temp = data.frame(site = s,
+                       arid_within2 = new_x)
+  newdata = rbind(newdata, df_temp)
+}
+
+
+fitted(pc1_fit, newdata = newdata)
+predict_forecast = predict(pc1_fit, newdata = newdata)
+summary(predict_forecast)
+
+ggplot(data = predict_forecast, aes(x = arid_within2,
+                                    y = predict,
+                                    color = site)) + 
+  geom_line()
+
+plot(predict_forecast, facet_by = "site")
+pp_check(fit, facet_by = "site")
+
+# ECE - Threshold - Impact Definition Data --------------------------------
+
+awthres = aw4 %>%
+  dplyr::filter(arid_within >0.95) %>%
+  # dplyr::filter(year(date_time)==2021) %>%
+  # dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+#   mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+#                            temp:dew, 
+#                            gh, 
+#                            gh_within,
+#                            arid_within, 
+#                            hist_within:arid_across,
+#                            arid_withinf:hist_acrossf,
+#                            sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+#   mutate_at(c("arid_withinf",
+#               "arid_acrossf",
+#               "hist_withinf",
+#               "hist_acrossf"), round_factor) 
+
+awthres_n = awthres %>%
+  group_by(site) %>%
+  dplyr::summarise(total = n(),
+                   percent = n()/length(awthres))
+
+exthresm1 = lm(pc1 ~ site + scale(date), data = awthres)
+summary(exthresm1)
+emmeans(exthresm1, pairwise ~ site)
+
+ecethres_pc1_mas = ece_contrast_mas(awthres, 
+                                    awthres$pc1)
+write.csv(ecethres_pc1_mas[[5]], 
+          'results/ece_threshold_pc1_mas.csv', 
+          row.names = FALSE)
+
+ecethres_pc1_mas[[5]] %>% gtsave('ece_threshold_pc1_mas.png', expand = 100)
+
+ecethres_pc2_mas = ece_contrast_mas(awthres, 
+                                    awthres$pc2)
+write.csv(ecethres_pc2_mas[[5]], 
+          'results/ece_threshold_pc2_mas.csv', 
+          row.names = FALSE)
+
+ecethres_pc2_mas[[5]] %>% gtsave('ece_threshold_pc2_mas.png', expand = 100)
+
+ecethres_pc3_mas = ece_contrast_mas(awthres, 
+                                    awthres$pc3)
+write.csv(ecethres_pc3_mas[[5]], 
+          'results/ece_threshold_pc3_mas.csv', 
+          row.names = FALSE)
+
+ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas.png', expand = 100)
+
+# Finding cutoff for arid across for pc3
+aathres = aw4 %>%
+  dplyr::filter(arid_across >=0.98) %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+                           #                            temp:dew, 
+                           #                            gh, 
+                           #                            gh_within,
+                           #                            arid_within, 
+                           #                            hist_within:arid_across,
+                           #                            arid_withinf:hist_acrossf,
+                           #                            sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+
+ecethres_pc3_mas = ece_contrast_mas2(aathres, 
+                                    aathres$pc3)
+write.csv(ecethres_pc3_mas[[5]], 
+          'results/ece_threshold_pc3_mas_arid_across.csv', 
+          row.names = FALSE)
+
+ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
+
+exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
+summary(exthresm3)
+emmeans(exthresm3, pairwise ~ site)
+
+
+# ECE - Climate and Threshold Tables Together -----------------------------
+
+# All PCs for Climate and Impact ECE in One Table 
+ece_pc_table = ece_tables_combined2(ece_pc1_mas[[5]],
+                    ecethres_pc1_mas[[5]],
+                    ece_pc2_mas[[5]],
+                    ecethres_pc2_mas[[5]],
+                    ece_pc3_mas[[5]],
+                    ecethres_pc3_mas[[5]]
+                    ); ece_pc_table
+ece_pc_table %>% gtsave("results/ece_all_pcs.png", vwidth = 2000, vheight = 1500, expand = 100)
+
 
 
 # ECE - Threshold - Multi-piecewise linear regression ---------------------
@@ -247,186 +564,6 @@ AICctab(knotms[[1]],knotms[[2]],knotms[[3]],knotms[[4]],knotms[[5]],
         nobs = 1411, base=T, weights=T, delta=T, logLik=T)
 
 summary(knotms[[1]])
-
-# ECE - Threshold - MCP LMM Piecewise -------------------------------------
-
-library(mcp)
-library(rjags)
-Sys.setenv(JAGS_HOME="C:/Program Files/JAGS/JAGS-4.3.0") # setting 
-# plotting to see if they have similar start and end points
-
-ggplot(data = aw4, aes(x = gh_within,
-                       y = pc1,
-                       color = site)) +
-  geom_smooth(method = loess, se = FALSE) 
-# +
-#   geom_vline(xintercept = -0.950, color = "red") +
-#   geom_vline(xintercept = 0.494, color = "blue") +
-#   geom_vline(xintercept = 1.538, color = 'green')
-
-# Modeling Null Changepoint model
-
-mcp_null = list( pc2 ~ 1)
-# Modeling Slope Changepoints (linear model)
-
-mcp_model1 = list(pc2 ~ 0 + gh_within, # joinedlinear segment1 (int_1)
-                      ~ 1, # intercept
-                      ~ 0 + gh_within #joined linear segment2 slope (time_2) at cp_1
-                      # ~ 0 + gh_within # joined slope (int_3, time_3) at cp_2
-                  )
-fit1 = mcp(mcp_model1, data = aw4, sample = 'prior')
-summary(fit1)
-fitted(fit1)
-plot(fit1)
-fit1$jags_code
-plot(fit1, q_fit = TRUE, q_predict = c(0.1, 0.9)) # https://lindeloev.github.io/mcp/articles/predict.html#extracting-fitted-values-1
-plot_pars(fit1, pars = c("cp_1", "cp_2"))
-plot_pars(fit1, pars = c("cp_1", "cp_2", "cp_3"))
-
-# Modelling changepoints with random effects
-# Joined slopes
-mcp_rem0 = list(pc1 ~ 1,
-             1 + (1|site) ~ 0 + gh_within,
-             1 + (1|site) ~ 0 + gh_within,
-             1 + (1|site) ~ 0 + gh_within)
-
-fit_default0 = mcp(mcp_rem0, 
-                  data = aw4, 
-                  sample = 'prior')
-summary(fit_default0)
-ranef(fit_default0)
-
-# Disjointed slopes
-
-mcp_rem1 = list(pc2 ~ 1,
-                1 + (1|site) ~ 1 + gh_within,
-                1 + (1|site) ~ 1 + gh_within,
-                1 + (1|site) ~ 1 + gh_within)
-
-fit_default1 = mcp(mcp_rem1, 
-                   data = aw4, 
-                   sample = 'prior')
-summary(fit_default1)
-ranef(fit_default1)
-# Running models with priors (attempting to...)
-
-prior = list(
-   cp_1       = "dt(MINX, (MAXX - MINX) / N_CP, N_CP - 1) T(cp_0, MAXX)",
-   cp_1_sd    = "dnorm(0, 2 * (MAXX - MINX) / N_CP) T(0, )",
-   cp_1_site  = "dnorm(0, cp_1_sd) T(MINX - cp_1, cp_2 - cp_1)",
-   cp_2       = "dt(MINX, (MAXX - MINX) / N_CP, N_CP - 1) T(cp_1, MAXX)",
-   cp_2_sd    = "dnorm(0, 2 * (MAXX - MINX) / N_CP) T(0, )",
-   cp_2_site  = "dnorm(0, cp_2_sd) T(cp_1 - cp_2, cp_3 - cp_2)",
-   cp_3       = "dt(MINX, (MAXX - MINX) / N_CP, N_CP - 1) T(cp_2, MAXX)",
-   cp_3_sd    = "dnorm(0, 2 * (MAXX - MINX) / N_CP) T(0, )",
-   cp_3_site  = "dnorm(0, cp_3_sd) T(cp_2 - cp_3, MAXX - cp_3)",
-   int_1      = "dt(0, 3 * SDY, 3)",
-   gh_within_2 = "dt(0, SDY / (MAXX - MINX), 3)",
-   gh_within_3 = "dt(0, SDY / (MAXX - MINX), 3)",
-   gh_within_4 = "dt(0, SDY / (MAXX - MINX), 3)",
-   sigma_1     = "dnorm(0, SDY) T(0, )"
-)
-
-fit_manual = mcp(mcp_rem, 
-                 data = aw4, 
-                 sample = 'prior', 
-                 prior = prior)
-summary(fit_manual)
-ranef(fit_manual)
-plot(fit_manual, facet_by = "site")
-
-
-
-# predict results using mcp_rem model and new data generated below
-new_x = rep(seq(-2, 3), 4)
-sites = c("lwma", 'sswma', 'cbma', 'kiowa')
-
-newdata = NULL
-for(s in sites) {
-  new_x = seq(-2, 3)
-  # site = rep(s, length(new_x))
-  df_temp = data.frame(site = s,
-                  gh_within = new_x)
-  newdata = rbind(newdata, df_temp)
-}
-
-
-fitted(fit2, newdata = newdata)
-# predict_forecast = predict(fit2, newdata = newdata)
-# summary(predict_forecast)
-plot(fit2, facet_by = "site")
-pp_check(fit, facet_by = "site")
-
-### After seeing upper limits of random effect mcp, just go with 1.58 with 3 changepoints
-
-# ECE - Threshold - Impact Definition Data --------------------------------
-
-awthres = aw4 %>%
-  dplyr::filter(gh_within >=1.58) %>% # 1.8 is significant negative slope with 3 knots, 1.58 is significant negative slope with 9 knots
-  dplyr::filter(year(date_time)==2021) %>%
-  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
-  group_by(site, date, mas_bin) %>%
-  dplyr::summarise_at(vars(aci:species_diversity, 
-                           temp:dew, 
-                           gh, 
-                           gh_within,
-                           arid_within, 
-                           hist_within:arid_across,
-                           sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
-  mutate_at(c("arid_within",
-              "arid_across",
-              "hist_within",
-              "hist_across"), round_factor) 
-
-awthres_n = awthres %>%
-  group_by(site) %>%
-  dplyr::summarise(total = n(),
-                   percent = n()/length(awthres))
-
-exthresm1 = lm(pc2 ~ site*mas_bin + scale(date), data = awthres)
-summary(exthresm1)
-emmeans(exthresm1, pairwise ~site|mas_bin)
-
-exthresm2 = lm(pc2 ~ site + scale(date), data = awthres)
-summary(exthresm2)
-emmeans(exthresm2, pairwise ~site) # at the most extreme aridity, cbma still has higher avian abundance than kiowa
-
-# Setting threshold based on MAS dataset, gh_within = 2.02
-
-awthres_n = aw4 %>%
-  dplyr::filter(gh_within >=2.02) %>%
-  group_by(site) %>%
-  dplyr::summarise(n = n())
-
-awthres = aw4 %>%
-  dplyr::filter(gh_within >=2.02) %>%
-  dplyr::filter(year(date_time)==2021) %>%
-  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate_at(c("arid_within", "arid_across", "hist_within", "hist_across"), as.numeric) %>%
-  group_by(site, date, mas_bin) %>%
-  dplyr::summarise_at(vars(aci:species_diversity, 
-                           temp:dew, 
-                           gh, 
-                           gh_within,
-                           arid_within, 
-                           hist_within:arid_across,
-                           sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
-  mutate_at(c("arid_within",
-              "arid_across",
-              "hist_within",
-              "hist_across"), round_factor) 
-
-exthresm1 = lm(pc2 ~ site*mas_bin + scale(date), data = awthres)
-summary(exthresm1)
-emmeans(exthresm1, pairwise ~site|mas_bin)
-
-exthresm2 = lm(pc2 ~ site + scale(date), data = awthres)
-summary(exthresm2)
-emmeans(exthresm2, pairwise ~site)
-
 
 
 # ECE - Threshold - Loess Regression --------------------------------------
@@ -603,21 +740,6 @@ thres_kiowa = thres_seg(data = aw6,
 
 
 
-# General Additive Model --------------------------------------------------
-
-library(mgcv)
-gam1 = gam(pc2 ~ s(gh, by = site), data = aw6)
-summary(gam1)
-coef(gam1)
-plot(gam1)
-emm(gam1, pairwise ~ site)
-contrast(emmeans(gam1, pairwise ~ site))
-
-# Reference: https://www.r-bloggers.com/2021/04/other-useful-functions-for-nonlinear-regression-threshold-models-and-all-that/
-library(sandwich)
-library(lmtest)
-library(drcSeedGerm)
-
 # Threshold - ECE - Hyperbolic Model --------------------------------------------------------
 
 thres1 <- drm(ea_mas$pc1 ~ ea_mas$gh_within*ea_mas$site, fct = GRT.YL())
@@ -676,4 +798,5 @@ out$meancpt@param.est #example code
 
 fit_envcpt$trendar1cpt@cpts # example code
 fit_envcpt$trendar2cpt@param.est #example code
+
 
