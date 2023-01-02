@@ -240,7 +240,7 @@ ggplot(data = aw4, aes(x = arid_within, y = pc2)) +
 # Reference: https://www.r-bloggers.com/2021/04/other-useful-functions-for-nonlinear-regression-threshold-models-and-all-that/
 
 
-# ECE - Threshold - MCP LMM Piecewise -------------------------------------
+# ECE - Impact - MCP LMM Piecewise -------------------------------------
 # https://lindeloev.github.io/mcp/articles/predict.html#extracting-fitted-values-1
 library(mcp)
 library(rjags)
@@ -354,7 +354,7 @@ ggplot(data = predict_forecast, aes(x = arid_within2,
 plot(predict_forecast, facet_by = "site")
 pp_check(fit, facet_by = "site")
 
-# ECE - Threshold - Impact Definition Data --------------------------------
+# ECE - Impact - Aridity Gradient - Impact Definition Data --------------------------------
 
 awthres = aw4 %>%
   dplyr::filter(arid_within >0.95) %>%
@@ -364,7 +364,7 @@ awthres = aw4 %>%
   group_by(site, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity,
 #                            temp:dew, 
-#                            gh, 
+                           gh,
 #                            gh_within,
 #                            arid_within, 
 #                            hist_within:arid_across,
@@ -436,7 +436,7 @@ summary(exthresm3)
 emmeans(exthresm3, pairwise ~ site)
 
 
-# ECE - Climate and Threshold Tables Together -----------------------------
+# ECE - Climate and Impact Tables Together -----------------------------
 
 # All PCs for Climate and Impact ECE in One Table 
 ece_pc_table = ece_tables_combined2(ece_pc1_mas[[5]],
@@ -450,353 +450,309 @@ ece_pc_table %>% gtsave("results/ece_all_pcs.png", vwidth = 2000, vheight = 1500
 
 
 
-# ECE - Threshold - Multi-piecewise linear regression ---------------------
-
-### Estimating continuous piecewise linear regression ###
-# https://www.r-bloggers.com/2013/04/estimating-continuous-piecewise-linear-regression/
-# N <- 325 # number of sampled points, lwma = 325, sswma = 354, cbma = 368, kiowa = 367
-
-# Fixing Within-normalized aridity
-aw4 = aw4 %>%
-  group_by(site) %>%
-  dplyr::mutate(gh_within = scale_this(gh))
-
-# checking it against separating sites and scaling aridity 
-
-aw4lwma = aw4 %>%
-  dplyr::filter(site == "lwma") %>%
-  dplyr::mutate(gh_within2 = scale_this(gh))
-
-aw4sswma = aw4 %>%
-  dplyr::filter(site == "sswma") %>%
-  dplyr::mutate(gh_within2 = scale_this(gh))
-
-aw4cbma = aw4 %>%
-  dplyr::filter(site == "cbma") %>%
-  dplyr::mutate(gh_within2 = scale_this(gh))
-
-aw4kiowa = aw4 %>%
-  dplyr::filter(site == "kiowa") %>%
-  dplyr::mutate(gh_within2 = scale_this(gh))
-
-aw4 = rbind(aw4lwma,aw4sswma,aw4cbma,aw4kiowa)
-
-# Checking to see if they scaled within aridity is different or not
-arid_df = aw4 %>%
-  dplyr::select(site,gh,gh_within, gh_within2) %>%
-  arrange(gh_within,site)
-# gh_wihtin and gh_within2 are the same so within scaling seems to have worked
-
-# plotting to see changepoints - full dataset
-
-ggplot(data = aw4, aes(x = gh_within,
-                       y = pc1,
-                       # color = site
-                       )
-       )+
-  geom_smooth(method = loess, se = FALSE) 
-
-# plotting to see if where changepoints are - MAS dataset
-
-ggplot(data = aw6, aes(x = gh_within,
-                       y = pc2,
-                       # color = site
-                      )
-      )+
-  geom_smooth(method = loess, se = TRUE) 
-# aw4site = aw4 %>% dplyr::filter(site == "kiowa") %>% dplyr::select(gh_within, pc2)
-# x = aw4site$gh_within
-# y = aw4site$pc2
-
-# x <- seq(-1, 1, len = N)
-# y <- f(x) + rnorm(length(x))
-
-knot_model = function(num_knots,
-                      x_var,
-                      y_var) {
-  
-  # Setting up piecewise regression with multiple breaks or knots
-  
-  piece.formula <- function(var.name, knots) {
-    formula.sign <- rep(" - ", length(knots))
-    formula.sign[knots < 0] <- " + "
-    paste(var.name, "+",
-          paste("I(pmax(", var.name, formula.sign, abs(knots), ", 0))",
-                collapse = " + ", sep=""))
-  }
-  
-  f <- function(x) {
-    2 * sin(6 * x)
-  }
-  
-  x = x_var
-  y = y_var
-  
-  set.seed(1)
-  K <- num_knots  # number of knots
-  knots <- seq(min(x), max(x), len = K + 2)[-c(1, K + 2)]
-  model <- lm(formula(paste("y ~", piece.formula("x", knots))))
-  
-  par(mar = c(4, 4, 1, 1))
-  plot(x, y)
-  
-  # ggplot(data = aw4, aes(gh_within,pc2))+
-  #   geom_smooth(method = loess, se = FALSE)
-  
-  lines(x, f(x))
-  new.x <- seq(min(x), max(x) ,len = 10000)
-  points(new.x, predict(model, newdata = data.frame(x = new.x)),
-         col = "red", pch = ".")
-  points(knots, predict(model, newdata = data.frame(x = knots)),
-         col = "red", pch = 18)
-  summary(model) # for kiowa at least, threshold for gh_wihtin is 2.26
-  return(model)
-}
-
-
-# Checking which piecewise regression model has best fit with AIC
-knotms = lapply(c(1:10), FUN = function(x) knot_model(num_knots = x,
-                              x_var = aw4$gh_within, 
-                              y_var = aw4$pc3))
-
-AICctab(knotms[[1]],knotms[[2]],knotms[[3]],knotms[[4]],knotms[[5]],
-        knotms[[6]],knotms[[7]],knotms[[8]],knotms[[9]],knotms[[10]],
-        nobs = 1411, base=T, weights=T, delta=T, logLik=T)
-
-summary(knotms[[1]])
-
-
-# ECE - Threshold - Loess Regression --------------------------------------
-
-ggplot(data = aw4, aes(x = gh_within,
-                       y = pc2,
-                       # color = site
-                       ))+
-geom_smooth(method = loess, se = FALSE) +
-  geom_vline(xintercept = 0.5520, color = "red")
-  geom_vline(xintercept = -1.162, color = "red") +
-  geom_vline(xintercept = -0.057, color = "blue") +
-  geom_vline(xintercept = 1.166, color = 'green')
-  
-  abline(v = -0.057, col = "blue")
-abline(v = 1.166, col = "green")
-
-loess_m10 = loess(pc2 ~ gh_within, data = aw4, span = 0.10)
-loess_m25 = loess(pc2 ~ gh_within, data = aw4, span = 0.25)
-loess_m50 = loess(pc2 ~ gh_within, data = aw4, span = 0.50)
-summary(loess_m50)
-
-# Get smooth output
-smoothed10 <- predict(loess_m10) 
-smoothed25 <- predict(loess_m25) 
-smoothed50 <- predict(loess_m50) 
-
-plot(y = aw4$pc2, aw4$gh_within, type = "p", main = "Loess Smoothing and Prediction")
-lines(smoothed10, x=aw4$gh_within, col="red")
-lines(smoothed25, x=aw4$gh_within, col="green")
-lines(smoothed50, x=aw4$gh_within, col="blue")
-
-# find changepoints in loess fit for full dataset, but manually segmenting data to where there is a dropoff in pc
-# pc1: 1-2
-# pc2: 1-2
-# pc3: 1-2
-
-loess_max = function(data,
-                     x_var,
-                     y_var,
-                     arid_min,
-                     arid_max) {
-  # loess_m = loess(y_var ~ gh_within, data = aw4)
-  
-  # segmenting data from gh_within 1 to 2 since that is where we see the drop in the loess model
-  data_filtered = data %>% 
-    dplyr::filter(gh_within >= arid_min) %>% 
-    dplyr::filter(gh_within <= arid_max)
-  loess_mex = loess(y_var ~ x_var, data = data_filtered)
-  
-  x <- x_var[x_var >= 1]
-  x = x[x <= 2]
-  # x = seq(-2,3, by = 0.1)
-  px <- predict(loess_mex, newdata=x)
-  px1 <- diff(px)
-  # px1_ex = px1[px1 >= 1] 
-  
-  max_gh = which.max(px1) # max is 4 but start value of x is -2, means the curve is flat at position -2+4 = 2
-  px1[max_gh] # 0.01929 value with max
-  loess_predict = cbind(x = x[-1], y = px1)
-  max_arid = loess_predict[max_gh,] # max x is 1.4769
-  
-  par(mfrow=c(1, 2))
-  plot(x, px, main="loess model")
-  abline(v=max_arid, col="red")
-  
-  # loess_predict[7488,] # x = 1.136
-  
-  plot(x[-1], px1, main="diff(loess model)")
-  abline(v=max_arid, col="red")
-  return(max_arid)
-}
-
-loess_max(aw4, aw4$gh_within, aw4$pc1,-1,1.5) # 1
-loess_max(aw4, aw4$gh_within, aw4$pc2,1,2) # 1.136
-loess_max(aw4, aw4$gh_within, aw4$pc3,1,2) # 1.597
-
-# Piecewise Linear Regression model on loess predicted data
-
-loess_m = loess(pc1 ~ gh_within, data = aw4)
-set.seed(124)
-# x = rnorm(1000, 0,1.2)
-x = seq(-2,3, by = 0.1)
-px <- predict(loess_m, newdata=x)
-
-loess_predict = data.frame(x = x,
-                           y = px)
-
-# par(mfrow=c(1, 1))
-plot(x, px, main="loess model")
-# abline(v = -1.162, col = "red")
-# abline(v = -0.057, col = "blue")
-# abline(v = 1.166, col = "green")
-
-# map piecewise regression to loess model. 3 breakpoints for pc1, 4 for pc2, 3 for pc3
-
-mcp_loess = list(y ~ 1, # intercept
-                  ~ 0 + x, #linear segment1 (int_1)
-                  ~ 0 + x, #linear segment2 slope (time_2) at cp_1
-                  ~ 0 + x # disjoined slope (int_3, time_3) at cp_2
-                 # ~ 1+x
-)
-fit_loess = mcp(mcp_loess, data = loess_predict, sample = 'prior')
-summary(fit_loess)
-summaryfl = summary(fit_loess)
-
-# mcp predicted breakpoints
-plot(x, px, main="loess model")
-abline(v = summaryfl$mean[1], col = "red")
-abline(v = summaryfl$mean[2], col = "blue")
-abline(v = summaryfl$mean[3], col = "green")
-# abline(v = 2.0423, col = "green")
-
-
-
-
-
-# Threshold - ECE - Threshold Modelling - Piece wise -----------------------------------------------------
-
-library(segmented)
-library(nlme)
-
-# Full Dataset - Site affects slope, aridity (z) affects changepoint
-## U = random effects in the slope-difference parameter
-## G0 = random effects in the breakpoints
-# does not give breakpoints for each individual site, have to analyze each site separately
-# MAS
-
-thres_seg(site,ps1,ps2){
-  m1 = lm(pc ~ gh, data = data %>%
-            dplyr::filter(site == site))
-  m1s = segmented(m1, seg.Z=~gh,
-                  # npsi = 2
-                  # psi = psi1
-                  psi = list(gh = c(psi1,psi2))
-  )
-}
-
-m1s_summary = summary(m1s) 
-m1s_slope = slope(m1s)
-# get the fitted data
-my.fitted <- fitted(m1s)
-my.model <- data.frame(data %>% 
-                         dplyr::filter(site == site) %>%
-                         dplyr::select(gh), pc = my.fitted)
-
-thres_lwma = thres_seg(data = aw6,
-                      pc = aw6$pc2,
-                      site = "lwma",
-                      psi1 = -24,
-                      psi2 = -14
-                      ); thres_lwma[[2]];thres_lwma[[3]]
-
-thres_sswma = thres_seg(data = aw6,
-                      pc = aw6$pc2,
-                      site = "sswma",
-                      psi1 = -18,
-                      psi2 = -10
-                      ); thres_sswma[[2]];thres_sswma[[3]]
-
-thres_cbma = thres_seg(data = aw6,
-                      pc = aw6$pc2,
-                      site = "cbma",
-                      psi1 = -18,
-                      psi2 = -10
-                      ); thres_cbma[[1]];thres_cbma[[2]];thres_cbma[[3]]
-
-thres_kiowa = thres_seg(data = aw6,
-                       pc = aw6$pc2,
-                       site = "kiowa",
-                       psi1 = -15,
-                       psi2 = -10
-                       ); thres_kiowa[[1]];thres_kiowa[[2]];thres_kiowa[[3]]
-
-
-
-# Threshold - ECE - Hyperbolic Model --------------------------------------------------------
-
-thres1 <- drm(ea_mas$pc1 ~ ea_mas$gh_within*ea_mas$site, fct = GRT.YL())
-summary(thres1)
-plot(thres1, log="", 
-     legendPos = c(5, 1.0), xlab = "Aridity")
-
-# Threshold - ECE - Exponential switch-off model --------------------------------------------
-
-modExb <- drm(ea_mas$pc1 ~ ea_mas$gh_within*ea_mas$site, fct = GRT.Exb())
-summary(modExb)
-plot(modExb, log="", 
-     legendPos = c(5, 1.0), xlab = "Temperature (°C)")
-
-
-# Threshold - ECE - Broken-curvilinear model ------------------------------------------------
-
-modExb <- drm(ea_mas$pc1 ~ ea_mas$gh_within*ea_mas$site, fct = GRT.RFb())
-summary(modExb)
-plot(modExb, log="", 
-     legendPos = c(5, 1.0), xlab = "Temperature (°C)")
-
-
-
-# Threshold - ECE - findthresh --------------------------------------------
-
-library(evir)
-
-findthresh(aw6, 100)
-
-
-# ECE - Threshold - EnvCpt ------------------------------------------
-
-library(EnvCpt)
-aw6 = aw6 %>% 
-  # dplyr::filter(site == "lwma") %>%
-  # dplyr::select(gh_within, pc1:pc3) %>%
-  arrange(pc2)
-fit_envcpt = envcpt(aw6$pc2)  # Fit all models at once
-fit_envcpt$summary  # Show log-likelihoods
-out=fit_envcpt # run all models with default values
-out[[1]] # first row is twice the negative log-likelihood for each model
-# second row is the number of parameters
-AIC(out) # returns AIC for each model.
-which.min(AIC(out)) # gives trendar2cpt (model 12) as the best model fit.
-out$trendar1cpt # gives the model fit for the meancpt model.
-AICweights(out) # gives the AIC weights for each model
-BIC(out) # returns the BIC for each model.
-which.min(BIC(out)) # gives meancpt (model 2) as the best model fit too.
-plot(out,type='fit') # plots the fits
-plot(out,type="aic") # plots the aic values
-plot(out,type="bic") # plots the bic values # run all models with default values
-
-out$meancpt@cpts # example code
-out$meancpt@param.est #example code
-
-fit_envcpt$trendar1cpt@cpts # example code
-fit_envcpt$trendar2cpt@param.est #example code
 
 
+# ECE - Climate - Water Supp - SSWMA - Lag - Data Organization --------------------------------------
+
+### Only analyzing half of water supplementation period
+load("data_clean/raw_water_audio_weather.Rdata")
+
+### SSWMA
+# Separating out SSWMA water sites
+sswma_wlag1 = water_weather2 %>%
+  filter(aru == "ws01"| aru == "ws02"| aru == "ws03"| aru == "ws04"| aru == "ws05")%>%
+  mutate(water = ifelse(date(date_time) >= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02", 1,0),
+         ws_site = 1)
+
+sswma_wlag2 = water_weather2 %>%
+  filter(aru == "ws06"| aru == "ws07"| aru == "ws08"| aru == "ws09"| aru == "ws10") %>%
+  mutate(water = ifelse(date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07", 1,0),
+         ws_site = 2)
+
+sswma_wlag3 = water_weather2 %>%
+  filter(aru == "ws11"| aru == "ws12"| aru == "ws13"| aru == "ws14"| aru == "ws15") %>%
+  mutate(water = 0,
+         ws_site = 3)
+
+sswma_wlag = rbind(sswma_wlag1, 
+                   sswma_wlag2, 
+                   sswma_wlag3)
+
+sswmawl = sswma_wlag %>%
+  dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07")
+
+sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+
+sswma_waterpcadf = as.data.frame(sswma_waterpca[["x"]])
+ggbiplot(sswma_waterpca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = sswmawl$site) # Plot PCs
+
+# #3D pCA Plot
+# pca3d(sswma_waterpca, biplot = true) # only run this on windows machine
+# snapshotPCA3d("sswma_water_lag_pca.png")
+
+### PC1: ADI and AEI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO, higher values = higher ACI and BIO
+
+sswmawl$pc1 = sswma_waterpcadf$PC1*-1
+sswmawl$pc2 = sswma_waterpcadf$PC2*-1
+sswmawl$pc3 = sswma_waterpcadf$PC3
+
+# Taking top 5% of arid_within values
+# Plotting arid_within to make sure values are correct
+ggplot(sswmawl, aes(x = arid_within, y = pc1, color = site)) +
+  geom_smooth(method = loess)
+hist(sswmawl$arid_within)
+
+sswmawl_climate = sswmawl %>%
+  # mutate(gh_within = scale_this(gh)) %>%
+  arrange(desc(arid_within)) %>%
+  slice_max(arid_within,n = (7680*0.05))
+sswmawl_climate = sswmawl_climate[1:384,]
+
+# ECE - Climate - Water Supp - SSWMA - Lag - MAS and Date ----------------------
+
+sswmawl_clmas = sswmawl_climate %>%
+  mutate(date = date(date_time),
+         ws_site = as.factor(ws_site),
+         water = as.factor(water)) %>%
+  group_by(site, ws_site, water, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+                           gh,
+                           arid_within,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
+hist(sswmawl_clmas$arid_within)
+hist(as.numeric(sswmawl_clmas$arid_withinf)) # top 5% so only fours and fives
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+sswmawl_clmas_pc1 = sswma_water_climate(pc = sswmawl_clmas$pc1); sswmawl_clmas_pc1
+
+# PC2: Num vocals and species diversity
+sswmawl_clmas_pc2 = sswma_water_climate(pc = sswmawl_clmas$pc2); sswmawl_clmas_pc2
+
+# PC3: ACI and BIO
+sswmawl_clmas_pc3 = sswma_water_climate(pc = sswmawl_clmas$pc3); sswmawl_clmas_pc3
+
+sswma_pc_climate_table = sswma_water_climate_table(sswmawl_clmas_pc1[[3]],                          sswmawl_clmas_pc2[[3]],                       sswmawl_clmas_pc3[[3]]); sswma_pc_climate_table
+
+sswma_pc_table %>% gtsave("results/sswma_water_allpcs_lag.png",
+                          expand = 100,
+                          vwidth = 2000, 
+                          vheight = 1500)
+
+
+
+
+# ECE - Impact - Water Supp - SSWMA ---------------------------------------
+# Do not need to do a GAM for water supp data, using threshold for aridity gradient experiment.
+sswmawl_thres = sswmawl %>%
+  dplyr::filter(arid_within >0.95) %>% # similar to aridity gradient data
+  # dplyr::filter(year(date_time)==2021) %>%
+  # dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+  #   mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
+  dplyr::mutate(date = as_date(date_time),
+                ws_site = as.factor(ws_site),
+                water = as.factor(water)) %>%
+  group_by(site, ws_site, water, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+                           gh,
+                           arid_within,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+
+sswmawl_immas_pc1 = sswma_water_impact(sswmawl_thres$pc1)
+sswmawl_immas_pc1[[3]]
+
+sswmawl_immas_pc2 = sswma_water_impact(sswmawl_thres$pc2)
+sswmawl_immas_pc2[[3]]
+
+sswmawl_immas_pc3 = sswma_water_impact(sswmawl_thres$pc3)
+sswmawl_immas_pc3[[3]]
+
+# Finding cutoff for arid across for pc3
+aathres = aw4 %>%
+  dplyr::filter(arid_across >=0.98) %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+                           # temp:dew, 
+                           # gh, 
+                           # gh_within,
+                           # arid_within, 
+                           # hist_within:arid_across,
+                           # arid_withinf:hist_acrossf,
+                           # sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+
+ecethres_pc3_mas = ece_contrast_mas2(aathres, 
+                                     aathres$pc3)
+write.csv(ecethres_pc3_mas[[5]], 
+          'results/ece_threshold_pc3_mas_arid_across.csv', 
+          row.names = FALSE)
+
+ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
+
+exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
+summary(exthresm3)
+emmeans(exthresm3, pairwise ~ site)
+
+
+# SSWMA - Combining Climate and Impact Tables -----------------------------
+
+sswma_all_eces = sswma_ece_table(sswmawl_clmas_pc1[[3]],
+                 sswmawl_clmas_pc2[[3]],
+                 sswmawl_clmas_pc3[[3]],
+                 sswmawl_immas_pc1[[3]],
+                 sswmawl_immas_pc2[[3]],
+                 sswmawl_immas_pc3[[3]])
+
+sswma_all_eces %>% gtsave("results/sswma_water_ece_pcs.png", vwidth = 2000, vheight = 1500, expand = 100)
+
+
+# ECE - Climate - Water Supp - CBMA - Lag - Data Organization --------------------------------------
+
+### Only analyzing half of water supplementation period
+load("data_clean/raw_water_audio_weather.Rdata")
+
+#Separating out CBMA water sites
+cbma_wlag1 = water_weather2 %>%
+  dplyr::filter(year(date_time) == 2021) %>%
+  mutate(date = date(date_time)) %>%
+  filter(aru == "wg01" | aru == "wg02" | aru == "wg03") %>%
+  mutate(water = ifelse(date >= "2021-06-04" & date < "2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1),
+         ws_site = 1) #1 = water access open
+
+cbma_wlag2 = water_weather2 %>%
+  mutate(date = date(date_time)) %>%
+  filter(aru == "wg04" | aru == "wg05") %>%
+  mutate(water = 1,
+         ws_site = 2)
+
+# Lag by week
+cbmawl = rbind(cbma_wlag1, cbma_wlag2) %>% 
+  dplyr::filter(date >="2021-05-28"  & date < "2021-06-04" | # ws1 water open, closed on 2021-06-04
+                  date >= "2021-06-18" & date < "2021-06-25" | # ws1 water closed, opened on 2021-06-25
+                  date >= "2021-07-12" & date < "2021-07-19" | # ws1 water open, closed on 2021-07-19
+                  date >= "2021-07-27" & date < "2021-08-02" | # ws1 water closed, open on 2021-08-02
+                  date >= "2021-08-09" & date < "2021-08-16") # ws1 water open, end of experiment on 2021-08-15
+
+cbma_waterlagpca = prcomp(cbmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+
+cbma_waterpcadf = as.data.frame(cbma_waterlagpca[["x"]])
+ggbiplot(cbma_waterlagpca, choices = c(1,2),ellipse = TRUE, alpha = 0) # Plot PCs
+
+# #3D pCA Plot
+# pca3d(cbmawl, biplot = true) # only run this on windows machine
+# snapshotPCA3d("cbma_water_lag_pca.png")
+
+### PC1: ADI, AEI, ACI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity higher positive values = higher num vocals and species diversity (after running line 699)
+### PC3: BIO, higher values = higher BIO
+
+cbmawl$pc1 = cbma_waterpcadf$PC1 # Higher ADI increases with positive values already
+cbmawl$pc2 = cbma_waterpcadf$PC2 * -1 # switching direction of Num Vocals/Species Diversity so that it is positive
+cbmawl$pc3 = cbma_waterpcadf$PC3 # Higher ACI and BIO with higher positive values
+
+cbmawl_climate = cbmawl %>%
+  # mutate(gh_within = scale_this(gh)) %>%
+  arrange(desc(arid_within)) %>%
+  slice_max(arid_within,n = (6103*0.05))
+cbmawl_climate = cbmawl_climate[1:305,]
+
+# ECE - Climate - Water Supp - CBMA - Lag - MAS and Date ----------------------
+
+cbmawl_clmas = cbmawl_climate %>%
+  mutate(date = date(date_time),
+         ws_site = as.factor(ws_site),
+         water = as.factor(water)) %>%
+  group_by(site, ws_site, water, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+                           gh,
+                           arid_within,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
+hist(cbmawl_clmas$arid_within)
+hist(as.numeric(cbmawl_clmas$arid_withinf)) # top 5% so only fours and fives
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+cbmawl_clmas_pc1 = cbma_water_climate(pc = cbmawl_clmas$pc1); cbmawl_clmas_pc1
+
+# PC2: Num vocals and species diversity
+cbmawl_clmas_pc2 = cbma_water_climate(pc = cbmawl_clmas$pc2); cbmawl_clmas_pc2
+
+# PC3: ACI and BIO
+cbmawl_clmas_pc3 = cbma_water_climate(pc = cbmawl_clmas$pc3); cbmawl_clmas_pc3
+
+cbma_pc_climate_table = cbma_water_climate_table(cbmawl_clmas_pc1[[3]],                          cbmawl_clmas_pc2[[3]],                       cbmawl_clmas_pc3[[3]]); cbma_pc_climate_table
+
+cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
+                          expand = 100,
+                          vwidth = 2000, 
+                          vheight = 1500)
+
+
+
+
+# ECE - Impact - Water Supp - CBMA ---------------------------------------
+# Do not need to do a GAM for water supp data, using threshold for aridity gradient experiment.
+cbmawl_thres = cbmawl %>%
+  dplyr::filter(arid_within >0.95) %>% # similar to aridity gradient data
+  # dplyr::filter(year(date_time)==2021) %>%
+  # dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+  #   mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
+  dplyr::mutate(date = as_date(date_time),
+                ws_site = as.factor(ws_site),
+                water = as.factor(water)) %>%
+  group_by(site, ws_site, water, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+                           gh,
+                           arid_within,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
+cbmawl_immas_pc1 = cbma_water_impact(cbmawl_thres$pc1)
+cbmawl_immas_pc1[[3]]
+
+cbmawl_immas_pc2 = cbma_water_impact(cbmawl_thres$pc2)
+cbmawl_immas_pc2[[3]]
+
+cbmawl_immas_pc3 = cbma_water_impact(cbmawl_thres$pc3)
+cbmawl_immas_pc3[[3]]
+
+# Finding cutoff for arid across for pc3
+aathres = aw4 %>%
+  dplyr::filter(arid_across >=0.98) %>%
+  group_by(site, date, mas_bin) %>%
+  dplyr::summarise_at(vars(aci:species_diversity,
+                           # temp:dew, 
+                           # gh, 
+                           # gh_within,
+                           # arid_within, 
+                           # hist_within:arid_across,
+                           # arid_withinf:hist_acrossf,
+                           # sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+
+ecethres_pc3_mas = ece_contrast_mas2(aathres, 
+                                     aathres$pc3)
+write.csv(ecethres_pc3_mas[[5]], 
+          'results/ece_threshold_pc3_mas_arid_across.csv', 
+          row.names = FALSE)
+
+ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
+
+exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
+summary(exthresm3)
+emmeans(exthresm3, pairwise ~ site)
+
+
+# CBMA - Combining Climate and Impact Tables -----------------------------
+
+cbma_all_eces = cbma_ece_table(cbmawl_clmas_pc1[[3]],
+                                 cbmawl_clmas_pc2[[3]],
+                                 cbmawl_clmas_pc3[[3]],
+                                 cbmawl_immas_pc1[[3]],
+                                 cbmawl_immas_pc2[[3]],
+                                 cbmawl_immas_pc3[[3]]);cbma_all_eces
+
+cbma_all_eces %>% gtsave("results/cbma_water_ece_pcs.png", vwidth = 2000, vheight = 1500, expand = 100)
