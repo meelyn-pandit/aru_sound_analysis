@@ -424,7 +424,7 @@ arid_check = aw2 %>% group_by(site,mas_bin,arid_acrossf) %>% tally(gh)
 
 setwd("data_clean")
 # setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
-save(aw2, file = "audio_and_weather_data.Rdata")
+save(aw2, file = "data_clean/audio_and_weather_data.Rdata")
 
 
 
@@ -821,8 +821,8 @@ save(water_wfull, file = "water_mesonet_historic_weather.Rdata")
 
 
 ## Water Supplementation - Combine Acoustic and Weather Data --------------------
-load("water_mesonet_historic_weather.Rdata")
-load("water_acoustic_and_birdnet_data.Rdata")
+load("data_clean/water_mesonet_historic_weather.Rdata")
+load("data_clean/water_acoustic_and_birdnet_data.Rdata")
 water_weather = full_join(water_acoustics3, water_wfull, by = c("site","date_time")) %>%
   arrange(site,aru,date_time)
 # %>%
@@ -873,7 +873,7 @@ water_weather2$mas_bin = cut(water_weather2$mas_num, include.lowest = TRUE, brea
 # recode sites so they are ordered east to west
 water_weather2$site = factor(water_weather2$site, levels = c("lwma","sswma","cbma","kiowa"))
 
-save(water_weather2, file = "raw_water_audio_weather.Rdata")
+save(water_weather2, file = "data_clean/raw_water_audio_weather.Rdata")
 
 # Separating Sites and Designating Water Sites ----------------------------
 

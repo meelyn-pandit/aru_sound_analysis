@@ -479,7 +479,7 @@ sswma_wlag = rbind(sswma_wlag1,
                    sswma_wlag3)
 
 sswmawl = sswma_wlag %>%
-  dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07")
+  dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07") %>% dplyr::mutate(date = as_date(date_time))
 
 sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 
@@ -500,19 +500,43 @@ sswmawl$pc3 = sswma_waterpcadf$PC3
 
 # Taking top 5% of arid_within values
 # Plotting arid_within to make sure values are correct
-ggplot(sswmawl, aes(x = arid_within, y = pc1, color = site)) +
+ggplot(sswmawl, aes(x = arid_within, y = pc1, color = ws_site)) +
   geom_smooth(method = loess)
+
 hist(sswmawl$arid_within)
 
 sswmawl_climate = sswmawl %>%
-  # mutate(gh_within = scale_this(gh)) %>%
+  mutate(date = as_date(date_time)) %>%
   arrange(desc(arid_within)) %>%
   slice_max(arid_within,n = (7680*0.05))
 sswmawl_climate = sswmawl_climate[1:384,]
 
+clsswma_dates = unique(sswmawl_climate$date) # dates with climate ece aridity:
+# 2021-05-25, 2021-07-22, 2021-07-24, 2021-07-27, 2021-07-28, 2021-07-29, 
+# 2021-07-30, 2021-07-31, 2021-08-03, 2021-08-04, 2021-08-05, 2021-08-06
+
+sswmawl_climate2 = sswmawl %>%
+  mutate(date = as_date(date_time)) %>%
+  filter(date == "2021-05-25" | 
+         date == "2021-07-22" | 
+         date == "2021-07-24" | 
+         date >= "2021-07-27" & date <= "2021-07-31" |
+         date >= "2021-08-03" & date <= "2021-08-06") 
+
+# filtering based on next day after extreme aridity
+sswmawl_climate3 = sswmawl %>%
+  mutate(date = as_date(date_time)) %>%
+  filter(date == "2021-05-26" | 
+           date == "2021-07-23" | 
+           date == "2021-07-25" | 
+           date >= "2021-07-28" & date <= "2021-08-01" |
+           date >= "2021-08-04" & date <= "2021-08-07") 
+
 # ECE - Climate - Water Supp - SSWMA - Lag - MAS and Date ----------------------
 
-sswmawl_clmas = sswmawl_climate %>%
+# sswmawl_clmas = sswmawl_climate %>%
+# sswmawl_clmas = sswmawl_climate2 %>%
+sswmawl_clmas = sswmawl_climate3 %>%
   mutate(date = date(date_time),
          ws_site = as.factor(ws_site),
          water = as.factor(water)) %>%

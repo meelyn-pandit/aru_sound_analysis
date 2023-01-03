@@ -29,7 +29,7 @@ library(ggbiplot) # plot pcas
 library(devtools)
 install_github("vqv/ggbiplot")
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 load("data_clean/audio_and_weather_data.Rdata")
 
 # Aridity Gradient - Create PCA of Audio Variables, filter out files with NA ACI and  --------
@@ -74,14 +74,6 @@ aw4 = aw4 %>%
 
 aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 
-ggplot(data = aw4, 
-       aes(x = as.numeric(arid_withinf),
-           y = pc2
-           # ,
-           # color = site
-           )) + 
-  geom_point()
-
 # Audio Variable PCAs
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
@@ -96,7 +88,7 @@ aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 aw4$pc2 = audio_pcadf$PC2*-1 # Multiply PC2 by -1 to make num vocals/species diversity have positive values
 aw4$pc3 = audio_pcadf$PC3
 
-save(aw4, file = "aridity_data_clean.Rdata")
+save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -282,6 +274,10 @@ aw6 = aw4 %>%
   mutate_at(c("arid_withinf","arid_acrossf","hist_within","hist_across"), round_factor)
 
 # Checking which scaled aridity matches gh distribution, the summarized arid_withinf above matches histogram of gh
+
+hist(aw6$arid_within)
+hist(as.numeric(aw6$arid_withinf))
+
 arid_check = aw6 %>%
   arrange(site,gh) %>%
   dplyr::mutate(arid_within2 = scale_this(gh),
@@ -314,7 +310,7 @@ arid_check = aw6 %>% group_by(site,
 aw6 %>% group_by(site,arid_acrossf) %>% tally(gh)
 
 
-save(aw6, file = "aridity_gradient_mas.Rdata")
+save(aw6, file = "data_clean/aridity_gradient_mas.Rdata")
 # Aridity Gradient - Date and MAS - Statistical Analysis ------------------
 # PC1: ADI, AEI, positive values more likely to have higher ADI 
 # (after being multiplied by -1)
@@ -445,6 +441,9 @@ ggsave('results/arid_pc3_mas.png', dpi = 600, height = 11, width = 8, units = "i
 
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
 
+# Load MAS binned data
+load("data_clean/aridity_gradient_mas.Rdata")
+
 mas_graphs = aw6 %>%
   group_by(site, mas_bin, arid_withinf) %>%
   dplyr::summarise(pc1_mean = mean(pc1),
@@ -452,8 +451,17 @@ mas_graphs = aw6 %>%
                    pc2_mean = mean(pc2),
                    pc2_se = (sd(pc2))/sqrt(n()),
                    pc3_mean = mean(pc3),
-                   pc3_se = (sd(pc3))/sqrt(n()))
-
+                   pc3_se = (sd(pc3))/sqrt(n())) %>%
+  dplyr::mutate(mas_bin = case_when(mas_bin == "0" ~ "Predawn",
+                                    mas_bin == "1" ~ "Early",
+                                    mas_bin == "2" ~ "Mid",
+                                    mas_bin == "3" ~ "Late")) %>%
+  dplyr::mutate(mas_bin = factor(mas_bin,
+                                 levels = c("Predawn",
+                                            "Early",
+                                            "Mid",
+                                            "Late")))
+### PC1 - Acoustic Diversity
 ggplot(data = mas_graphs,
        aes(x=arid_withinf, y=pc1_mean, color = site)) +
   geom_point(position = position_dodge(0))+
@@ -462,21 +470,22 @@ ggplot(data = mas_graphs,
                 color = site),
             position = position_dodge(0))+
   geom_errorbar(aes(ymin = pc1_mean-pc1_se, 
-                    ymax = pc1_mean+pc1_se), width = 0.2,
+                    ymax = pc1_mean+pc1_se), width = 0.5,
                 position = position_dodge(0))+
   scale_color_manual(values = cbpalette, 
                      name = "Site",
                      labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  # scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid")) +
+  scale_x_discrete(name = "Aridity - Normalized Within") +
   scale_y_continuous(name = "PC1 - Evenness to Diversity")+
-  # facet_grid(~facet_type) +
+  facet_grid(. ~ mas_bin) +
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "right") +
-  facet_grid(vars(mas_bin)) + 
+        legend.position = "bottom") +
+  # facet_wrap(vars(mas_bin)) + 
   theme(strip.text.y = element_text(angle = 0))
-ggsave('results/arid_pc1_mas.png', dpi = 600, height = 11, width = 8, units = "in")
+ggsave('results/arid_pc1_mas.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### PC2 - Num vocals and Species Diversity
 ggplot(data = mas_graphs,
@@ -487,21 +496,22 @@ ggplot(data = mas_graphs,
                 color = site),
             position = position_dodge(0))+
   geom_errorbar(aes(ymin = pc2_mean-pc2_se, 
-                    ymax = pc2_mean+pc2_se), width = 0.2,
+                    ymax = pc2_mean+pc2_se), width = 0.5,
                 position = position_dodge(0))+
   scale_color_manual(values = cbpalette, 
                      name = "Site",
                      labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  # scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  scale_x_discrete(name = "Aridity - Normalized Within") +
   scale_y_continuous(name = "PC2 - Num. Vocals and Species Diversity")+
-  # facet_grid(~facet_type) +
+  facet_grid(. ~ mas_bin) +
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
         legend.position = "right") +
-  facet_grid(vars(mas_bin)) + 
+  # facet_grid(vars(mas_bin)) + 
   theme(strip.text.y = element_text(angle = 0))
-ggsave('results/arid_pc2_mas.png', dpi = 600, height = 11, width = 8, units = "in")
+ggsave('results/arid_pc2_mas.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### PC3 - ACI and BIO
 ggplot(data = mas_graphs,
@@ -512,21 +522,22 @@ ggplot(data = mas_graphs,
                 color = site),
             position = position_dodge(0))+
   geom_errorbar(aes(ymin = pc3_mean-pc3_se, 
-                    ymax = pc3_mean+pc3_se), width = 0.2,
+                    ymax = pc3_mean+pc3_se), width = 0.5,
                 position = position_dodge(0))+
   scale_color_manual(values = cbpalette, 
                      name = "Site",
                      labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  # scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  scale_x_discrete(name = "Aridity - Normalized Within") +
   scale_y_continuous(name = "PC3 - Simple to Complex")+
-  # facet_grid(~facet_type) +
+  facet_grid(. ~ mas_bin) +
   theme_classic(base_size = 10) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
         legend.position = "right")+
-  facet_grid(vars(mas_bin)) + 
+  # facet_grid(vars(mas_bin)) + 
   theme(strip.text.y = element_text(angle = 0))
-ggsave('results/arid_pc3_mas.png', dpi = 600, height = 11, width = 8, units = "in")
+ggsave('results/arid_pc3_mas.png', dpi = 600, height = 6, width = 8, units = "in")
 
 
 # Water Supplementation - Load Data ---------------------------------------
@@ -719,7 +730,36 @@ sswma_wlag3 = water_weather2 %>%
   mutate(water = 0,
          ws_site = 3)
 
-sswma_wlag = rbind(sswma_wlag1, sswma_wlag2, sswma_wlag3)
+sswma_wlag = rbind(sswma_wlag1, sswma_wlag2, sswma_wlag3)  %>%
+  dplyr::mutate(date = as_date(date_time),
+                ws_site = as.factor(ws_site),
+                water = as.factor(water))
+
+sswma_fullwater = prcomp(sswma_wlag[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+
+sswma_fullwater_pcadf = as.data.frame(sswma_fullwater[["x"]])
+ggbiplot(sswma_fullwater, choices = c(1,2),ellipse = TRUE, alpha = 0) # Plot PCs
+ggbiplot(sswma_fullwater, choices = c(1,3),ellipse = TRUE, alpha = 0) # Plot PCs
+
+### PC1: ADI and AEI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO, higher values = higher ACI and BIO
+
+sswma_wlag$pc1 = sswma_fullwater_pcadf$PC1
+sswma_wlag$pc2 = sswma_fullwater_pcadf$PC2
+sswma_wlag$pc3 = sswma_fullwater_pcadf$PC3
+
+library(mgcv)
+library(tidymv)
+
+sswma_gam1 = gam(pc1 ~ ws_site + s(as.numeric(date_time), bs = "cs", k = -1), data = sswma_wlag)
+plot(sswma_gam1, se=TRUE,col="blue")
+predict_model = predict_gam(sswma_gam1) %>%
+  ggplot(aes(as.numeric(date_time), fit)) +
+  scale_x_continuous(sec.axis = sec_axis(~as_datetime(.), name = 'Actual Datetime'))+
+  geom_smooth_ci(ws_site);predict_model
+
+# Create Lag dataframe, only focusing on last week of each water supplementation period to account for habituation period
 sswmawl = sswma_wlag %>%
   dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07")
 
@@ -803,6 +843,63 @@ sswma_pc_table %>% gtsave("results/sswma_water_allpcs_lag.png",
                           expand = 100,
                           vwidth = 2000, 
                           vheight = 1500)
+
+# Water Supp - SSWMA - Date and MAS - Rectangle Plots -------------------------
+#SSWMA Water Supplementation Graphs - Day-binned date on x-axis and specific species on y-axis
+
+sswma1_rec1 <- data.frame (xmin=as_date("2021-05-17"), 
+                           xmax=as_date("2021-05-30"), 
+                           ymin=-Inf, ymax=Inf) #start of water site 1 with water
+sswma2_rec1 <- data.frame (xmin=as_date("2021-05-30"), 
+                           xmax=as_date("2021-06-13"), 
+                           ymin=-Inf, ymax=Inf) #start of water site 2 with water
+sswma1_rec2 = data.frame (xmin=as_date("2021-06-13"), 
+                          xmax=as_date("2021-07-02"), 
+                          ymin=-Inf, ymax=Inf) #start of water site 1 with water
+sswma2_rec2 = data.frame (xmin=as_date("2021-07-03"), 
+                          xmax=as_date("2021-08-07"), 
+                          ymin=-Inf, ymax=Inf) #start of water at water site 2
+
+### SSWMA Water Supplementation Rectangle Graphs
+ggplot(data = sswma_wlag, aes(x = date, y = pc3, 
+                        color = as.factor(ws_site))) +
+  # geom_point(size = 3, position = position_dodge())+
+  geom_rect(data=sswma1_rec1, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#56B4E9", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
+  geom_rect(data=sswma1_rec2, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#56B4E9", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
+  geom_rect(data=sswma2_rec1, 
+            aes(xmin=xmin, 
+                xmax=xmax, 
+                ymin=ymin, 
+                ymax=ymax), 
+            fill="#E69F00", 
+            alpha=0.1, 
+            inherit.aes = FALSE) +
+  geom_rect(data=sswma2_rec2, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="#E69F00", alpha=0.1, inherit.aes = FALSE) +
+  geom_smooth(method = loess)+
+  scale_color_manual(values = c("#009E73","#D55E00","#CC79A7"),
+                     name = "Water Site")+
+  scale_x_date(name = "Date") +
+  scale_y_continuous(name = "PC1 - Acoustic Diversity")+
+  theme_classic(base_size = 10) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
+        # axis.title.x=element_text(),
+        # axis.text.x = element_blank(),
+        axis.text.x = element_text(),
+        legend.position = "right")
 
 # Water Supplementation - CBMA - Date and MAS - Statistical Analysis - Pairwise-------------
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
