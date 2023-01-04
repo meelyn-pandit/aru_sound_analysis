@@ -455,21 +455,44 @@ ece_pc_table %>% gtsave("results/ece_all_pcs.png", vwidth = 2000, vheight = 1500
 # ECE - Climate - Water Supp - SSWMA - Lag - Data Organization --------------------------------------
 
 ### Only analyzing half of water supplementation period
-load("data_clean/raw_water_audio_weather.Rdata")
+load("data_clean/filtered_water_supp_data.Rdata")
+
+sswma_water = ww3 %>%
+  dplyr::filter(site == "sswma") %>%
+  mutate(ws_site = as.factor(ws_site),
+         water = as.factor(water),
+         date = date(date_time),
+         week = week(date_time)) %>%
+  arrange(date_time,ws_site,water)
+
+sswma_water_pca = prcomp(sswma_water[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+summary(sswma_water_pca) #PC1 and PC2 have highest proportion of variance
+sswma_water_pcadf = as.data.frame(sswma_water_pca[["x"]])
+ggbiplot(sswma_water_pca, choices = c(1,2), ellipse = TRUE, alpha = 0, groups = sswma_water$ws_site) 
+ggbiplot(sswma_water_pca, choices = c(1,3), ellipse = TRUE, alpha = 0, groups = sswma_water$ws_site) 
+
+### PC1: ADI and AEI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO, higher values = higher ACI and higher BIO
+
+sswma_water$pc1 = sswma_water_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
+sswma_water$pc2 = sswma_water_pcadf$PC2*-1 # Multiply PC2 by -1 to make num-vocals and species diversity have positive values
+sswma_water$pc3 = sswma_water_pcadf$PC3
+#*-1 # multiply pc3 by -1 to make aci values have positive values
 
 ### SSWMA
 # Separating out SSWMA water sites
-sswma_wlag1 = water_weather2 %>%
+sswma_wlag1 = sswma_water %>%
   filter(aru == "ws01"| aru == "ws02"| aru == "ws03"| aru == "ws04"| aru == "ws05")%>%
   mutate(water = ifelse(date(date_time) >= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02", 1,0),
          ws_site = 1)
 
-sswma_wlag2 = water_weather2 %>%
+sswma_wlag2 = sswma_water %>%
   filter(aru == "ws06"| aru == "ws07"| aru == "ws08"| aru == "ws09"| aru == "ws10") %>%
   mutate(water = ifelse(date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07", 1,0),
          ws_site = 2)
 
-sswma_wlag3 = water_weather2 %>%
+sswma_wlag3 = sswma_water %>%
   filter(aru == "ws11"| aru == "ws12"| aru == "ws13"| aru == "ws14"| aru == "ws15") %>%
   mutate(water = 0,
          ws_site = 3)
@@ -481,10 +504,10 @@ sswma_wlag = rbind(sswma_wlag1,
 sswmawl = sswma_wlag %>%
   dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07") %>% dplyr::mutate(date = as_date(date_time))
 
-sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
-
-sswma_waterpcadf = as.data.frame(sswma_waterpca[["x"]])
-ggbiplot(sswma_waterpca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = sswmawl$site) # Plot PCs
+# sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+# 
+# sswma_waterpcadf = as.data.frame(sswma_waterpca[["x"]])
+# ggbiplot(sswma_waterpca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = sswmawl$site) # Plot PCs
 
 # #3D pCA Plot
 # pca3d(sswma_waterpca, biplot = true) # only run this on windows machine
@@ -494,21 +517,21 @@ ggbiplot(sswma_waterpca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = ss
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI and BIO
 
-sswmawl$pc1 = sswma_waterpcadf$PC1*-1
-sswmawl$pc2 = sswma_waterpcadf$PC2*-1
-sswmawl$pc3 = sswma_waterpcadf$PC3
+# sswmawl$pc1 = sswma_waterpcadf$PC1*-1
+# sswmawl$pc2 = sswma_waterpcadf$PC2*-1
+# sswmawl$pc3 = sswma_waterpcadf$PC3
 
 # Taking top 5% of arid_within values
 # Plotting arid_within to make sure values are correct
 ggplot(sswmawl, aes(x = arid_within, y = pc1, color = ws_site)) +
-  geom_smooth(method = loess)
+  geom_smooth(method = "gam")
 
 hist(sswmawl$arid_within)
 
 sswmawl_climate = sswmawl %>%
   mutate(date = as_date(date_time)) %>%
   arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = (7680*0.05))
+  slice_max(arid_within,n = (7271*0.05))
 sswmawl_climate = sswmawl_climate[1:384,]
 
 clsswma_dates = unique(sswmawl_climate$date) # dates with climate ece aridity:
@@ -534,9 +557,9 @@ sswmawl_climate3 = sswmawl %>%
 
 # ECE - Climate - Water Supp - SSWMA - Lag - MAS and Date ----------------------
 
-# sswmawl_clmas = sswmawl_climate %>%
+sswmawl_clmas = sswmawl_climate %>%
 # sswmawl_clmas = sswmawl_climate2 %>%
-sswmawl_clmas = sswmawl_climate3 %>%
+# sswmawl_clmas = sswmawl_climate3 %>%
   mutate(date = date(date_time),
          ws_site = as.factor(ws_site),
          water = as.factor(water)) %>%
@@ -628,25 +651,46 @@ sswma_all_eces = sswma_ece_table(sswmawl_clmas_pc1[[3]],
                  sswmawl_clmas_pc3[[3]],
                  sswmawl_immas_pc1[[3]],
                  sswmawl_immas_pc2[[3]],
-                 sswmawl_immas_pc3[[3]])
+                 sswmawl_immas_pc3[[3]]);sswma_all_eces
 
-sswma_all_eces %>% gtsave("results/sswma_water_ece_pcs.png", vwidth = 2000, vheight = 1500, expand = 100)
+sswma_all_eces %>% gtsave("results/sswma_water_ece_pcs.png", vwidth = 20000, vheight = 15000, expand = 100)
 
 
 # ECE - Climate - Water Supp - CBMA - Lag - Data Organization --------------------------------------
 
-### Only analyzing half of water supplementation period
-load("data_clean/raw_water_audio_weather.Rdata")
+load("data_clean/filtered_water_supp_data.Rdata")
+
+cbma_water = ww3 %>%
+  dplyr::filter(site == "cbma") %>%
+  mutate(ws_site = as.factor(ws_site),
+         water = as.factor(water),
+         date = date(date_time),
+         week = week(date_time)) %>%
+  arrange(date_time,ws_site,water)
+
+cbma_water_pca = prcomp(cbma_water[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+summary(cbma_water_pca) 
+cbma_water_pcadf = as.data.frame(cbma_water_pca[["x"]])
+ggbiplot(cbma_water_pca, choices = c(1,2), ellipse = TRUE, alpha = 0, groups = cbma_water$ws_site) # need to multiply pc1 by -1
+ggbiplot(cbma_water_pca, choices = c(1,3), ellipse = TRUE, alpha = 0, groups = cbma_water$ws_site) # need to multiply pc3 by -1
+
+### PC1: ADI and AEI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO, higher values = higher ACI and higher BIO
+
+cbma_water$pc1 = cbma_water_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
+cbma_water$pc2 = cbma_water_pcadf$PC2 # Multiply PC2 by -1 to make num-vocals and species diversity have positive values
+cbma_water$pc3 = cbma_water_pcadf$PC3*-1
 
 #Separating out CBMA water sites
-cbma_wlag1 = water_weather2 %>%
+cbma_wlag1 = cbma_water %>%
   dplyr::filter(year(date_time) == 2021) %>%
   mutate(date = date(date_time)) %>%
   filter(aru == "wg01" | aru == "wg02" | aru == "wg03") %>%
   mutate(water = ifelse(date >= "2021-06-04" & date < "2021-06-25"| date >= "2021-07-19" & date < "2021-08-02", 0,1),
          ws_site = 1) #1 = water access open
 
-cbma_wlag2 = water_weather2 %>%
+cbma_wlag2 = cbma_water %>%
   mutate(date = date(date_time)) %>%
   filter(aru == "wg04" | aru == "wg05") %>%
   mutate(water = 1,
@@ -658,12 +702,14 @@ cbmawl = rbind(cbma_wlag1, cbma_wlag2) %>%
                   date >= "2021-06-18" & date < "2021-06-25" | # ws1 water closed, opened on 2021-06-25
                   date >= "2021-07-12" & date < "2021-07-19" | # ws1 water open, closed on 2021-07-19
                   date >= "2021-07-27" & date < "2021-08-02" | # ws1 water closed, open on 2021-08-02
-                  date >= "2021-08-09" & date < "2021-08-16") # ws1 water open, end of experiment on 2021-08-15
+                  date >= "2021-08-09" & date < "2021-08-16") %>% # ws1 water open, end of experiment on 2021-08-15
+  dplyr::mutate(ws_site = as.factor(ws_site),
+                water = as.factor(water))
 
-cbma_waterlagpca = prcomp(cbmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
-
-cbma_waterpcadf = as.data.frame(cbma_waterlagpca[["x"]])
-ggbiplot(cbma_waterlagpca, choices = c(1,2),ellipse = TRUE, alpha = 0) # Plot PCs
+# cbma_waterlagpca = prcomp(cbmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+# 
+# cbma_waterpcadf = as.data.frame(cbma_waterlagpca[["x"]])
+# ggbiplot(cbma_waterlagpca, choices = c(1,2),ellipse = TRUE, alpha = 0) # Plot PCs
 
 # #3D pCA Plot
 # pca3d(cbmawl, biplot = true) # only run this on windows machine
@@ -673,15 +719,15 @@ ggbiplot(cbma_waterlagpca, choices = c(1,2),ellipse = TRUE, alpha = 0) # Plot PC
 ### PC2: Num Vocals and Species Diversity higher positive values = higher num vocals and species diversity (after running line 699)
 ### PC3: BIO, higher values = higher BIO
 
-cbmawl$pc1 = cbma_waterpcadf$PC1 # Higher ADI increases with positive values already
-cbmawl$pc2 = cbma_waterpcadf$PC2 * -1 # switching direction of Num Vocals/Species Diversity so that it is positive
-cbmawl$pc3 = cbma_waterpcadf$PC3 # Higher ACI and BIO with higher positive values
+# cbmawl$pc1 = cbma_waterpcadf$PC1 # Higher ADI increases with positive values already
+# cbmawl$pc2 = cbma_waterpcadf$PC2 * -1 # switching direction of Num Vocals/Species Diversity so that it is positive
+# cbmawl$pc3 = cbma_waterpcadf$PC3 # Higher ACI and BIO with higher positive values
 
 cbmawl_climate = cbmawl %>%
   # mutate(gh_within = scale_this(gh)) %>%
   arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = (6103*0.05))
-cbmawl_climate = cbmawl_climate[1:305,]
+  slice_max(arid_within,n = (5956*0.05))
+cbmawl_climate = cbmawl_climate[1:298,]
 
 # ECE - Climate - Water Supp - CBMA - Lag - MAS and Date ----------------------
 
@@ -697,7 +743,6 @@ cbmawl_clmas = cbmawl_climate %>%
 
 hist(cbmawl_clmas$arid_within)
 hist(as.numeric(cbmawl_clmas$arid_withinf)) # top 5% so only fours and fives
-
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 cbmawl_clmas_pc1 = cbma_water_climate(pc = cbmawl_clmas$pc1); cbmawl_clmas_pc1
@@ -779,4 +824,4 @@ cbma_all_eces = cbma_ece_table(cbmawl_clmas_pc1[[3]],
                                  cbmawl_immas_pc2[[3]],
                                  cbmawl_immas_pc3[[3]]);cbma_all_eces
 
-cbma_all_eces %>% gtsave("results/cbma_water_ece_pcs.png", vwidth = 2000, vheight = 1500, expand = 100)
+cbma_all_eces %>% gtsave("results/cbma_water_ece_pcs.png", vwidth = 20000, vheight = 15000, expand = 100)

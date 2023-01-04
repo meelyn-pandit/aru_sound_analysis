@@ -1,3 +1,77 @@
+# Water Supp - SSWMA - Datetime - Statistical Analyses  - Pairwise -----------------
+
+sswma_watermas = sswma_water %>%
+  mutate(date = date(date_time)) %>%
+  group_by(site, ws_site, water, arid_withinf, date, mas_bin) %>%
+  # summarise_at(c("pc1","pc2","pc3"), mean) 
+  summarise_at(vars(gh, 
+                    arid_within,
+                    sound_atten04:sound_atten12,
+                    pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lmer(pc1 ~ ws_site*water*arid_within + date + (1|ws_site), data = sswma_watermas)
+summary(m1)
+assump(m1)
+
+emmeans(m1, pairwise ~ ws_site:water|arid_within)
+emm_options(pbkrtest.limit = 3000) # run this R will crash
+emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+
+
+# PC2: Num vocals and species diversity
+m2 = lmer(pc2 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+summary(m2)
+assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+
+# PC3: ACI and BIO
+m3 = lmer(pc3 ~ ws_site*water*arid_within + scale(date_time) + (1|ws_site), data = sswma_water)
+summary(m3)
+assump(m3)
+emmeans(m3, pairwise ~ ws_site:water|arid_within)
+
+emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+
+# Water Supp - SSWMA - Datetime - Stats Analysis - Lag -----------------
+
+sswma_dtlag = sswmawl %>%
+  mutate(ws_site = as.factor(ws_site),
+         water = as.factor(water)) %>%
+  group_by(site, ws_site, water, arid_within, date_time) %>%
+  # summarise_at(c("pc1","pc2","pc3"), mean) 
+  summarise_at(vars(gh, 
+                    arid_within,
+                    sound_atten04:sound_atten12,
+                    pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+m1 = lm(pc1 ~ ws_site*water*arid_within + scale(date_time), data = sswma_dtlag)
+summary(m1)
+assump(m1)
+###stick with lms over lmer
+emmeans(m1, pairwise ~ ws_site*water|arid_within)
+# emm_options(pbkrtest.limit = 3000) # run this R will crash
+# emm_options(lmerTest.limit = 11778) # set lmerTest limit so you can do the within site comparisons
+
+# PC2: Num vocals and species diversity
+m2 = lm(pc2 ~ ws_site*water*arid_within + date_time, data = sswma_dtlag)
+summary(m2)
+assump(m2)
+emmeans(m2, pairwise ~ ws_site:water|arid_within)
+
+# PC3: ACI and BIO
+m3 = lm(pc3 ~ ws_site*water*arid_within + date_time, data = sswma_dtlag)
+summary(m3)
+assump(m3)
+emmeans(m3, pairwise ~ ws_site*water|arid_within)
+
+
 # ECE - Threshold - Multi-piecewise linear regression ---------------------
 
 ### Estimating continuous piecewise linear regression ###

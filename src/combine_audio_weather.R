@@ -422,7 +422,6 @@ aw2$site = factor(aw2$site, levels = c("lwma","sswma","cbma","kiowa"))
 # see how many gh rows are within each arid factor
 arid_check = aw2 %>% group_by(site,mas_bin,arid_acrossf) %>% tally(gh)
 
-setwd("data_clean")
 # setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 save(aw2, file = "data_clean/audio_and_weather_data.Rdata")
 
@@ -841,7 +840,7 @@ water_weather2$mas_num = as.numeric(as.character(water_weather2$mas))
 
 # observed aridity scaled within sites
 water_weather2 = water_weather2 %>% 
-  arrange(arid_within) %>%
+  arrange(site, arid_within) %>%
   mutate(arid_withinf = cut(arid_within,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
@@ -855,7 +854,7 @@ water_weather2 = water_weather2 %>%
 
 # historic aridity scaled within sites
 water_weather2 = water_weather2 %>% 
-  arrange(hist_within) %>%
+  arrange(site, hist_within) %>%
   mutate(hist_withinf = cut(hist_within,
                            breaks = 5, 
                            labels = c(1,2,3,4,5)))
@@ -912,7 +911,7 @@ water_weather3 = rbind(cbma_full_water,sswma_full_water)
 # water_weather3 = water_weather2 %>%
 #   dplyr::filter(is.na(mas_bin) == FALSE)
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
-save(water_weather3, file = "water_audio_and_weather_data.Rdata")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+save(water_weather3, file = "data_clean/water_audio_and_weather_data.Rdata")
 
