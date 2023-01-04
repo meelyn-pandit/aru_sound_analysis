@@ -325,7 +325,8 @@ sswma_ece_table = function(climate_pc1_table,
   
   table3 = rbind(table3_climate,table3_impact)
   
-  sswma_ece_combined = cbind(table1, table2, table3) %>%
+  sswma_ece_combined = cbind(table1, table2, table3)
+  sswma_ece_combined2 = sswma_ece_combined[-c(3:4),] %>%
     gt(.) %>%
     cols_align('center') %>%
     tab_spanner(
@@ -371,12 +372,13 @@ sswma_ece_table = function(climate_pc1_table,
     #   rows = c(9:12)) %>%
     tab_row_group(
       label = md("**Impact ECE Definition**"),
-      rows = c(3:6)) %>%
+      # rows = c(3:6)) %>%
+      rows = c(3:4)) %>%
     tab_row_group(
       label = md("**Climate ECE Definition**"),
       rows = c(1:2)) %>%
     tab_source_note(
       source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
     )
-  return(sswma_ece_combined)
+  return(sswma_ece_combined2)
 }

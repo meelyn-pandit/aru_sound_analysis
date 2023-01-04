@@ -43,12 +43,13 @@ emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the withi
 sswma_dtlag = sswmawl %>%
   mutate(ws_site = as.factor(ws_site),
          water = as.factor(water)) %>%
-  group_by(site, ws_site, water, arid_within, date_time) %>%
+  group_by(site, ws_site, water, arid_withinf, date_time) %>%
   # summarise_at(c("pc1","pc2","pc3"), mean) 
   summarise_at(vars(gh, 
                     arid_within,
                     sound_atten04:sound_atten12,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 m1 = lm(pc1 ~ ws_site*water*arid_within + scale(date_time), data = sswma_dtlag)

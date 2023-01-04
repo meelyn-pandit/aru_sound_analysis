@@ -596,6 +596,7 @@ sswma_water$pc2 = sswma_water_pcadf$PC2*-1 # Multiply PC2 by -1 to make num-voca
 sswma_water$pc3 = sswma_water_pcadf$PC3
 #*-1 # multiply pc3 by -1 to make aci values have positive values
 
+save(sswma_water, file = "data_clean/sswma_water.Rdata")
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 m1 = lmer(pc1 ~ ws_site*water*arid_withinf + scale(date_time) + (1|ws_site), data = sswma_water)
 summary(m1)
@@ -831,6 +832,8 @@ ggbiplot(cbma_water_pca, choices = c(1,3), ellipse = TRUE, alpha = 0, groups = c
 cbma_water$pc1 = cbma_water_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
 cbma_water$pc2 = cbma_water_pcadf$PC2 # Multiply PC2 by -1 to make num-vocals and species diversity have positive values
 cbma_water$pc3 = cbma_water_pcadf$PC3*-1
+
+save(cbma_water, file = "data_clean/cbma_water.Rdata")
 
 # Water Supp - CBMA - Rectangle Graphs ------------------------------------
 
