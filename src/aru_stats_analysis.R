@@ -3,7 +3,7 @@ library(lubridate) #manipulating date and time
 library(hms) #manipulate time
 library(zoo) #for na.approx to approximate missing values in weather dataset
 library(gridExtra) #ggplot multi panels
-library(cowplot)
+library(ggpubr)
 library(lme4) #lmm and glmm analysis
 library(lmerTest) #get p-values for lmm tests
 library(reshape2) #???
@@ -89,6 +89,12 @@ aw4$pc2 = audio_pcadf$PC2*-1 # Multiply PC2 by -1 to make num vocals/species div
 aw4$pc3 = audio_pcadf$PC3
 
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
+
+# Checking full dataset and gam plots
+ggplot(data = aw4, aes(x = arid_within,
+                              y = pc3,
+                              color = site)) +
+  geom_smooth(method = "gam")
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -320,14 +326,20 @@ setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/R
 m1 = lm(pc1 ~ arid_withinf*mas_bin*site + scale(date), data = aw6)
 summary(m1)
 assump(m1)
-emmeans(m1,  pairwise ~ site*arid_withinf|mas_bin)
-
+emm = emmeans(m1,  pairwise ~ site*arid_withinf|mas_bin)
+source(aridity_contrasts_mas)
 arid_pc1_mas = aridity_contrasts_mas(aw6$pc1,
-                                     aw6$arid_withinf)
+                                     aw6$arid_withinf);arid_pc1_mas
 write.csv(arid_pc1_mas[[5]], 'results/arid_pc1_mas_table.csv', row.names = FALSE)
-arid_pc1_mas[[5]] %>% gtsave("results/arid_gradient_pc1_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
-
+arid_pc1_mas[[5]] %>% gtsave("results/arid_gradient_pc1_mas.png", 
+                             vwidth = 20000, 
+                             vheight = 15000, 
+                             expand = 100)
 plot(arid_pc1_mas[[6]])
+aridity_graph_table(arid_pc1_mas[[6]],
+                    "PC1 - Acoustic Diversity",
+                    "results/arid_pc1_mas.png")
+
 
 # PC2: Vocalization Number, Species Diversity higher with positive values
 # (after being multiplied by -1)
@@ -335,22 +347,27 @@ arid_pc2_mas = aridity_contrasts_mas(aw6$pc2,
                                      aw6$arid_withinf)
 arid_pc2_mas[[3]]
 
-write.csv(arid_pc2_mas[[5]], 'results/arid_pc2_mas_table.csv', row.names = FALSE)
-arid_pc2_mas[[5]] %>% gtsave("results/arid_gradient_pc2_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
+# write.csv(arid_pc2_mas[[5]], 'results/arid_pc2_mas_table.csv', row.names = FALSE)
+arid_pc2_mas[[5]] %>% gtsave("results/arid_gradient_pc2_mas.png", vwidth = 20000, vheight = 15000, expand = 100)
+aridity_graph_table(arid_pc2_mas[[6]],
+                    "PC2 - Avian Abundance",
+                    "results/arid_pc2_mas.png")
 # plot(arid_pc2_mas[[6]])
 
 # PC3: ACI, BIO higher positive values have higher ACI and lower BIO
 # (after being multiplied by -1)
 arid_pc3_mas = aridity_contrasts_mas(aw6$pc3,
-                                     aw6$arid_acrossf)
+                                     aw6$arid_withinf)
 arid_pc3_mas[[3]]
 # write.csv(arid_pc3_mas[[5]], 'results/arid_pc3_mas_table.csv', row.names = FALSE)
  
-arid_pc3_mas[[5]] %>% gtsave("results/arid_gradient_pc3_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
-
+arid_pc3_mas[[5]] %>% gtsave("results/arid_gradient_pc3_mas.png", vwidth = 20000, vheight = 15000, expand = 100)
+aridity_graph_table(arid_pc3_mas[[6]],
+                    "PC3 - Acoustic Complexity",
+                    "results/arid_pc3_mas.png")
 plot(arid_pc3_mas[[6]])
 
-# Aridity Gradient - Dot Plots - Datetime - PC1 --------------------------------------
+# Aridity Gradient - Dot Plots - Datetime --------------------------------------
 
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
 
@@ -781,6 +798,11 @@ sswma_maslag = sswmawl %>%
                     arid_within,
                     sound_atten04:sound_atten12,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
+# sswma_maslag$water_int = interaction(sswma_maslag$ws_site, sswma_maslag$water)
+# m_int = lm(pc1 ~ water_int*arid_withinf*mas_bin + date, data = sswma_maslag)
+# summary(m_int)
+# emm = emmeans(m_int,pairwise ~ water_int*arid_withinf|mas_bin);emm$contrast
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,

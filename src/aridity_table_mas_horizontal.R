@@ -53,7 +53,7 @@ aridity_table_mas2 = function(contrast_table) {
                                      "0" = "<0.001")) %>%
     dplyr::select(-mas_bin, -contrast, -estimate, -SE, -t.ratio,-p.value, -df)
   
-  table_combined = cbind(table_predawn, 
+  table_combined_horizontal = cbind(table_predawn, 
                          table_early,
                          table_mid,
                          table_late) %>%
@@ -102,6 +102,6 @@ aridity_table_mas2 = function(contrast_table) {
                sig._l = md("**sig.**")) %>%
     opt_table_font(
       font = "Times New Roman")
-  return(table_combined)
+  return(table_combined_horizontal)
 }
 
