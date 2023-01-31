@@ -20,6 +20,7 @@ library(gt)
 library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
+library(dotwhisker)
 # library(cowplot)
 # library(magick)
 # library(patchwork)
@@ -28,6 +29,10 @@ library(ggbiplot) # plot pcas
 ### Install ggbiplot ###
 library(devtools)
 install_github("vqv/ggbiplot")
+
+### Install dotwhisker ###
+devtools::install_github("fsolt/dotwhisker")
+
 
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
 load("data_clean/audio_and_weather_data.Rdata")
@@ -159,12 +164,12 @@ arid_pc1 = aridity_contrasts_lmer(aw4, aw4$pc1)
 arid_pc1[[5]] %>% gtsave("results/arid_grad_pc1_lag.png")
 plot(arid_pc1[[4]])
 
-m1 = lmer(pc1 ~ site*arid_within + mas_bin + scale(date_time) + (1|site), data = aw4)
-summary(m1)
-assump(m1)
+# m1 = lmer(pc1 ~ gh + mas_bin + scale(date) + (gh|site), data = aw4, REML = FALSE)
+
+
 # emm_options(pbkrtest.limit = 54931) # run this R will crash
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
-emmeans(m1, ~ site|arid_within)
+emmeans(m1, ~ site)
 
 pairs(emmeans(m1, ~ site|arid_within), data = aw4)
 pairs(emmeans(m1, ~ arid_within|site), data = aw4)
@@ -317,13 +322,142 @@ aw6 %>% group_by(site,arid_acrossf) %>% tally(gh)
 
 
 save(aw6, file = "data_clean/aridity_gradient_mas.Rdata")
+
+# Aridity Gradient - Date and MAS - Statistical Analysis - LINEAR REGRESSION ONLY -----------------------------------------
+
+ggplot(data = aw4,
+       aes(x = gh, y = pc1, color = site)) +
+  geom_smooth(method = lm)
+
+m1 = lmer(pc1 ~ gh + scale(date_time) + (gh|site), 
+          data = aw4, REML = FALSE,
+           control=lmerControl(optimizer="bobyqa",
+                               optCtrl=list(maxfun=2e5)))
+
+summary(m1)
+lattice::dotplot(lme4::ranef(m1))
+
+broom.mixed::tidy(m1, effects = "ran_coefs", conf.int = TRUE) #fixed + random effects
+broom.mixed::tidy(m1, effects = "fixed", conf.int = TRUE) #fixed effects
+broom.mixed::tidy(m1, effects = "ran_vals", conf.int = TRUE) # random effects intercepts and slopes
+broom.mixed::tidy(m1, effects = "ran_pars", conf.int = TRUE)
+
+# Making a dot and whisker plot with data from ran_vals
+m1_re = broom.mixed::tidy(m1, effects = "ran_vals", conf.int = TRUE)
+ggplot(data = m1_re,
+       aes(x = estimate, y = level, 
+           color = term, group = term)) +
+  geom_errorbar(aes(xmax = conf.high, xmin = conf.low, 
+                    width = 0)) +
+  geom_point() +
+  facet_wrap(~term)
+
+## PC2 - Linear mixed model Regression with full dataset
+ggplot(data = aw4,
+       aes(x = gh, y = pc2, color = site)) +
+  geom_smooth(method = lm)
+
+m2 = lmer(pc2 ~ gh + scale(date_time) + (gh|site), 
+          data = aw4, REML = FALSE,
+          control=lmerControl(optimizer="bobyqa",
+                              optCtrl=list(maxfun=2e5)))
+
+summary(m2)
+lattice::dotplot(lme4::ranef(m2))
+
+broom.mixed::tidy(m2, effects = "ran_coefs", conf.int = TRUE) #fixed + random effects
+broom.mixed::tidy(m2, effects = "fixed", conf.int = TRUE) #fixed effects
+broom.mixed::tidy(m2, effects = "ran_vals", conf.int = TRUE) # random effects intercepts and slopes
+broom.mixed::tidy(m2, effects = "ran_pars", conf.int = TRUE)
+
+# Making a dot and whisker plot with data from ran_vals
+m2_re = broom.mixed::tidy(m2, effects = "ran_vals", conf.int = TRUE)
+ggplot(data = m2_re,
+       aes(x = estimate, y = level, 
+           color = term, group = term)) +
+  geom_errorbar(aes(xmax = conf.high, xmin = conf.low, 
+                    width = 0)) +
+  geom_point() +
+  facet_wrap(~term)
+
+m3 = lmer(pc3 ~ gh + scale(date_time) + (gh|site), 
+          data = aw4, REML = FALSE,
+          control=lmerControl(optimizer="bobyqa",
+                              optCtrl=list(maxfun=2e5)))
+
+summary(m3)
+lattice::dotplot(lme4::ranef(m3))
+
+broom.mixed::tidy(m3, effects = "ran_coefs", conf.int = TRUE) #fixed + random effects
+broom.mixed::tidy(m3, effects = "fixed", conf.int = TRUE) #fixed effects
+broom.mixed::tidy(m3, effects = "ran_vals", conf.int = TRUE) # random effects intercepts and slopes
+broom.mixed::tidy(m3, effects = "ran_pars", conf.int = TRUE)
+
+# Making a dot and whisker plot with data from ran_vals
+m3_re = broom.mixed::tidy(m3, effects = "ran_vals", conf.int = TRUE)
+ggplot(data = m3_re,
+       aes(x = estimate, y = level, 
+           color = term, group = term)) +
+  geom_errorbar(aes(xmax = conf.high, xmin = conf.low, 
+                    width = 0)) +
+  geom_point() +
+  facet_wrap(~term)
+
+# Linear Regression, no random effects!!!
+
+ggplot(data = aw6,
+       aes(x = gh, y = pc1, color = site)) +
+  geom_smooth(method = lm) +
+  facet_wrap(~mas_bin)
+
+m1a = lm(pc1 ~ gh*site + scale(date), data = aw6)
+summary(m1a)
+assump(m1a)
+emmeans(m1a,~ gh*site, type = 'response')
+plot(emmeans(m1a,~ gh*site, type = 'response'))
+emmip(m1a, site ~ gh, cov.reduce = range)
+# emmip(m1a, site ~ gh|mas_bin, cov.reduce = range)
+contrast(emmeans(m1a, pairwise ~ gh*site))
+
+m1 = lm(pc1 ~ gh*site*mas_bin + scale(date), data = aw6)
+summary(m1)
+assump(m1)
+emmeans(m1,~ gh*site|mas_bin, type = 'response')
+plot(emmeans(m1,~ gh*site|mas_bin, type = 'response'))
+# emmip(m1, site ~ gh, cov.reduce = range)
+# emmip(m1, site ~ gh|mas_bin, cov.reduce = range)
+contrast(emmeans(m1, pairwise ~ gh*site|mas_bin))
+
+
+
+m2 = lm(pc2 ~ gh*site*mas_bin + scale(date), data = aw6)
+# m2 = lm(pc2 ~ gh*site*mas_bin, data = aw6)
+summary(m2)
+assump(m2)
+emmeans(m2, ~ gh*site|mas_bin, type = "response")
+plot(emmeans(m2, ~ gh*site|mas_bin))
+emmip(m2, site ~ gh|mas_bin, cov.reduce = range)
+contrast(emmeans(m2, ~ pairwise ~ gh*site|mas_bin))
+
+m3 = lm(pc3 ~ gh*site*mas_bin + scale(date), data = aw6)
+# m3 = lm(pc2 ~ gh*site*mas_bin, data = aw6)
+summary(m3)
+assump(m3)
+emmeans(m3, ~ gh*site|mas_bin, type = "response")
+plot(emmeans(m3, ~ gh*site|mas_bin))
+plot(emmeans(m3, ~ site|mas_bin))
+
+emmip(m3, site ~ gh|mas_bin, cov.reduce = range)
+contrast(emmeans(m3, ~ pairwise ~ gh*site|mas_bin))
+
 # Aridity Gradient - Date and MAS - Statistical Analysis ------------------
 # PC1: ADI, AEI, positive values more likely to have higher ADI 
 # (after being multiplied by -1)
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis")
 
-m1 = lm(pc1 ~ arid_withinf*mas_bin*site + scale(date), data = aw6)
+m1 = lm(pc1 ~ arid_withinf*mas_bin*site + scale(date), 
+        data = aw6)
 summary(m1)
 assump(m1)
 emm = emmeans(m1,  pairwise ~ site*arid_withinf|mas_bin)
