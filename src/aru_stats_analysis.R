@@ -96,10 +96,10 @@ aw4$pc3 = audio_pcadf$PC3
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 
 # Checking full dataset and gam plots
-ggplot(data = aw4, aes(x = arid_within,
+ggplot(data = aw6, aes(x = gh,
                               y = pc3,
                               color = site)) +
-  geom_smooth(method = "gam")
+  geom_smooth(method = lm)
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
