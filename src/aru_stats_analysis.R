@@ -329,7 +329,7 @@ ggplot(data = aw4,
        aes(x = gh, y = pc1, color = site)) +
   geom_smooth(method = lm)
 
-m1 = lmer(pc1 ~ gh + scale(date_time) + (gh|site), 
+m1 = lmer(pc1 ~ gh*mas_bin + scale(date_time) + (gh*mas_bin|site), 
           data = aw4, REML = FALSE,
            control=lmerControl(optimizer="bobyqa",
                                optCtrl=list(maxfun=2e5)))
@@ -403,49 +403,81 @@ ggplot(data = m3_re,
   geom_point() +
   facet_wrap(~term)
 
-# Linear Regression, no random effects!!!
+# Aridity Gradient - Summarized by Date and MAS - LINEAR MODELS! --------
 
+# Aridity Gradient, no MAS bin
 ggplot(data = aw6,
        aes(x = gh, y = pc1, color = site)) +
-  geom_smooth(method = lm) +
-  facet_wrap(~mas_bin)
+  geom_smooth(method = lm) #+
+  # facet_wrap(~mas_bin)
 
 m1a = lm(pc1 ~ gh*site + scale(date), data = aw6)
 summary(m1a)
 assump(m1a)
-emmeans(m1a,~ gh*site, type = 'response')
+emmeans(m1a, pairwise ~ gh*site)
+emtrends(m1a,~ gh*site, var = "gh", type = 'response')
 plot(emmeans(m1a,~ gh*site, type = 'response'))
 emmip(m1a, site ~ gh, cov.reduce = range)
 # emmip(m1a, site ~ gh|mas_bin, cov.reduce = range)
 contrast(emmeans(m1a, pairwise ~ gh*site))
 
+# Aridity Gradient with MAS Bin
+
+### PC 1 - Acoustic Diversity
+ggplot(data = aw6,
+       aes(x = gh, y = pc1, color = site)) +
+  geom_smooth(method = lm) +
+  facet_wrap(~mas_bin)
+
 m1 = lm(pc1 ~ gh*site*mas_bin + scale(date), data = aw6)
 summary(m1)
-assump(m1)
-emmeans(m1,~ gh*site|mas_bin, type = 'response')
+emmeans(m1, ~ gh*site, type = 'response')
+emtrends(m1, pairwise ~ gh*site|mas_bin, var = "gh", type = 'response',weights = "cells")
+emtrends(m1, pairwise ~ gh*mas_bin|site, var = "gh", type = 'response',weights = "cells")
+
+aw6 %>%
+  group_by(site, mas_bin) %>%
+  dplyr::summarise(mean_arid = mean(gh),
+                   se_arid = sd(gh)/sqrt(n()))
+
+# assump(m1)
+# emm1 = emmeans(m1, ~ gh*site|mas_bin);summary(emm1)
+# contrast(emmeans(m1, ~ gh*site|mas_bin), type = 'response')
+# emmeans(m1, pairwise ~ gh*site|mas_bin, weights = "cells")
 plot(emmeans(m1,~ gh*site|mas_bin, type = 'response'))
 # emmip(m1, site ~ gh, cov.reduce = range)
 # emmip(m1, site ~ gh|mas_bin, cov.reduce = range)
-contrast(emmeans(m1, pairwise ~ gh*site|mas_bin))
+contrast(emmeans(m1, ~ gh*site|mas_bin), type = 'response')
 
-
+### PC2 - Avian Abundance
+ggplot(data = aw6,
+       aes(x = gh, y = pc2, color = site)) +
+  geom_smooth(method = lm) +
+  facet_wrap(~mas_bin)
 
 m2 = lm(pc2 ~ gh*site*mas_bin + scale(date), data = aw6)
 # m2 = lm(pc2 ~ gh*site*mas_bin, data = aw6)
 summary(m2)
-assump(m2)
-emmeans(m2, ~ gh*site|mas_bin, type = "response")
-plot(emmeans(m2, ~ gh*site|mas_bin))
-emmip(m2, site ~ gh|mas_bin, cov.reduce = range)
-contrast(emmeans(m2, ~ pairwise ~ gh*site|mas_bin))
+emtrends(m2, ~ gh*site|mas_bin, var = "gh", type = 'response',weights = "cells")
+# assump(m2)
+# emmeans(m2, ~ gh*site|mas_bin, type = "response")
+# plot(emmeans(m2, ~ gh*site|mas_bin))
+# emmip(m2, site ~ gh|mas_bin, cov.reduce = range)
+# contrast(emmeans(m2, ~ pairwise ~ gh*site|mas_bin))
+
+### PC3 - Acoustic Complexity
+ggplot(data = aw6,
+       aes(x = gh, y = pc3, color = site)) +
+  geom_smooth(method = lm) +
+  facet_wrap(~mas_bin)
 
 m3 = lm(pc3 ~ gh*site*mas_bin + scale(date), data = aw6)
-# m3 = lm(pc2 ~ gh*site*mas_bin, data = aw6)
 summary(m3)
-assump(m3)
-emmeans(m3, ~ gh*site|mas_bin, type = "response")
-plot(emmeans(m3, ~ gh*site|mas_bin))
-plot(emmeans(m3, ~ site|mas_bin))
+emtrends(m2, ~ gh*site|mas_bin, var = "gh", type = 'response',weights = "cells")
+# assump(m3)
+# emmeans(m3, ~ gh*site|mas_bin, type = "response")
+# plot(emmeans(m3, ~ gh*site|mas_bin))
+# plot(emmeans(m3, ~ site|mas_bin))
 
 emmip(m3, site ~ gh|mas_bin, cov.reduce = range)
 contrast(emmeans(m3, ~ pairwise ~ gh*site|mas_bin))
