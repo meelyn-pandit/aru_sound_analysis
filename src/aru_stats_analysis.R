@@ -431,7 +431,7 @@ ggplot(data = aw6,
 
 m1 = lm(pc1 ~ gh*site*mas_bin + scale(date), data = aw6)
 summary(m1)
-emmeans(m1, ~ gh*site, type = 'response')
+emmeans(m1, ~ gh*site|mas_bin, type = 'response')
 emtrends(m1, pairwise ~ gh*site|mas_bin, var = "gh", type = 'response',weights = "cells")
 emtrends(m1, pairwise ~ gh*mas_bin|site, var = "gh", type = 'response',weights = "cells")
 
