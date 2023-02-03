@@ -21,6 +21,7 @@ library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
 library(dotwhisker)
+library(broom)
 # library(cowplot)
 # library(magick)
 # library(patchwork)
@@ -323,24 +324,26 @@ aw6 %>% group_by(site,arid_acrossf) %>% tally(gh)
 
 save(aw6, file = "data_clean/aridity_gradient_mas.Rdata")
 
-# Aridity Gradient - Date and MAS - Statistical Analysis - LINEAR REGRESSION ONLY -----------------------------------------
+# Aridity Gradient - Date and MAS - Statistical Analysis - LINEAR Mixed MODELs REGRESSION ONLY -----------------------------------------
 
 ggplot(data = aw4,
        aes(x = gh, y = pc1, color = site)) +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) +
+  # geom_point() +
+  facet_wrap(~mas_bin)
 
-m1 = lmer(pc1 ~ gh*mas_bin + scale(date_time) + (gh*mas_bin|site), 
+m1_lmm = lmer(pc1 ~ gh + (gh|site/mas_bin), 
           data = aw4, REML = FALSE,
-           control=lmerControl(optimizer="bobyqa",
-                               optCtrl=list(maxfun=2e5)))
+          control=lmerControl(optimizer="bobyqa",
+                              optCtrl=list(maxfun=2e5)))
 
-summary(m1)
+summary(m1_lmm)
 lattice::dotplot(lme4::ranef(m1))
 
-broom.mixed::tidy(m1, effects = "ran_coefs", conf.int = TRUE) #fixed + random effects
-broom.mixed::tidy(m1, effects = "fixed", conf.int = TRUE) #fixed effects
-broom.mixed::tidy(m1, effects = "ran_vals", conf.int = TRUE) # random effects intercepts and slopes
-broom.mixed::tidy(m1, effects = "ran_pars", conf.int = TRUE)
+broom.mixed::tidy(m1_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m1_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m1_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m1_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 
 # Making a dot and whisker plot with data from ran_vals
 m1_re = broom.mixed::tidy(m1, effects = "ran_vals", conf.int = TRUE)
@@ -431,10 +434,13 @@ ggplot(data = aw6,
 
 m1 = lm(pc1 ~ gh*site*mas_bin + scale(date), data = aw6)
 summary(m1)
-emmeans(m1, ~ gh*site|mas_bin, type = 'response')
+tidy(m1, conf.int = TRUE) %>% print(n = 100)
+emm1 = emmeans(m1, ~ gh*site|mas_bin, type = 'response');emm1
 emtrends(m1, pairwise ~ gh*site|mas_bin, var = "gh", type = 'response',weights = "cells")
 emtrends(m1, pairwise ~ gh*mas_bin|site, var = "gh", type = 'response',weights = "cells")
+tidy(emm1)
 
+# Find aridity averages over site and mas_bin
 aw6 %>%
   group_by(site, mas_bin) %>%
   dplyr::summarise(mean_arid = mean(gh),
