@@ -88,10 +88,19 @@ lwma_weather2 = lwma_weather %>%
          site = "lwma",
          dew = TAIR-((100-RELH)/5),
          arid = abs((1/dew)),
-         mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
-         gh = (25+(19*WS2M)*(max_sat(TAIR)-(RELH/100)))) %>%
+         mas = as.numeric(difftime(date_time,
+                                   sunrise,
+                                   units = c("mins"))),
+         gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
   dplyr::rename(temp = "TAIR",
-         relh = "RELH")
+         relh = "RELH") 
+# Evaporation rate equation: https://www.engineeringtoolbox.com/evaporation-water-surface-d_690.html
+# gh = Θ A (xs - x); amounted of water evaporated per hour
+# gh = (25 + (19*v)) * A * (xs - x)
+# A = area of water being evaporated; 1 m2 in our equation
+# Θ = (25 + (19*v)); v = velocity in m/s
+# xs = max humidity ratio of saturated air
+# x = humidity air ratio (relh in our equation)
 
 lwma_missing = lwma_weather2 %>% dplyr::filter(is.na(temp)==TRUE)
 
@@ -171,7 +180,7 @@ sswma_weather2 = sswma_weather %>%
          dew = TAIR-((100-RELH)/5),
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
-         gh = (25+(19*WS2M)*(max_sat(TAIR)-(RELH/100)))) %>%
+         gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
   dplyr::rename(temp = "TAIR",
          relh = "RELH")
   
@@ -195,7 +204,9 @@ sswma_hour = sswma_weather2 %>%
 
 # Clean CBMA Weather Data obtained from Texas Mesonet ---------------------
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/")
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/")
+
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data")
 
 cbma_weather = read_csv("cbma_mesonet.csv", col_names = TRUE, col_types = "ccnnnTnnnnnnnnnnnnnc") %>%
   dplyr::rename(station = "Station_ID",
@@ -207,16 +218,41 @@ cbma_weather = read_csv("cbma_mesonet.csv", col_names = TRUE, col_types = "ccnnn
                 dew = "Dew Point (c)",
                 temp = "Temperature (c)",
                 relh = "Relative Humidity (%)",
-                pres = "Sea_level pressure (pa)") %>%
+                pres = "Sea_level pressure (pa)",
+                rain = "Precipitation 1hr (mm)",
+                rain24 = "Precipitation 24hr (mm)") %>%
   dplyr::filter(date(date_time) > "2021-04-30")
 
-# cbma_weather$temp = na.approx(cbma_weather$temp, na.rm = FALSE)
-# cbma_weather$relh = na.approx(cbma_weather$relh, na.rm = FALSE)
-# cbma_weather$pres = na.approx(cbma_weather$pres, na.rm = FALSE)
-cbma_weather$dew = na.approx(cbma_weather$dew, na.rm = FALSE)
-cbma_weather$relh2 = relhum(cbma_weather$temp, cbma_weather$dew)
-##just use relh from cbma sites
+# Need to convert Cbma wind values from knots to m/s
+#1 kn = 0.514444 m/s
+cbma_wind = read_csv("cbma_mesonet_wind.csv", col_names = TRUE, col_types = "ccnnnTnnnnn") %>%
+  dplyr::rename(station = "Station_ID",
+                name = "Name",
+                lat = "Latitude",
+                lon = "Longitude",
+                elev_m = "Elevation (ft)",
+                date_time = "Date_Time (UTC)",
+                peak_wind_dir = "Peak_Wind Direction (Degrees)",
+                peak_wind_speed = "Peak_Wind Speed (mph)",
+                wind_dir = "Wind Direction 10m (deg)",
+                wind_gust = "Wind Gust 10m (kn)",
+                wind_speed_10m = "Wind Speed 10m (kn)") %>%
+  dplyr::filter(date(date_time) > "2021-04-30") %>%
+  dplyr::mutate(ws10m = 0.514444*wind_speed_10m) %>%
+  dplyr::mutate(ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))
+    )
 
+cbma_weather = cbma_weather %>% arrange(date_time)
+cbma_weather$temp = na.approx(cbma_weather$temp, na.rm = FALSE)
+cbma_weather$relh = na.approx(cbma_weather$relh, na.rm = FALSE)
+cbma_weather$pres = na.approx(cbma_weather$pres, na.rm = FALSE)
+cbma_weather$dew = na.approx(cbma_weather$dew, na.rm = FALSE)
+# cbma_weather$rain = na.approx(cbma_weather$rain, na.rm = FALSE)
+# cbma_weather$rain24 = na.approx(cbma_weather$rain24, 
+                                 # na.rm = FALSE)
+
+# don't need to approximate rain, only using presence/absence of rain to filter out files where rain would distort audio
+# Get Sunrise data for CBMA site (or load it if you have already obtained it)
 load("cbma_sunrise.Rdata")
 
 # cbma_sunrise = NULL
@@ -231,8 +267,9 @@ load("cbma_sunrise.Rdata")
 #   cbma_sunrise = rbind(sunrise_time,cbma_sunrise)
 # }
 
+cbma_weather1.5 = right_join(cbma_weather,cbma_wind[,-c(1:5)], by = c("date_time"))
 
-cbma_weather2 = right_join(cbma_weather,cbma_sunrise, by = c("date_time"))
+cbma_weather2 = right_join(cbma_weather1.5,cbma_sunrise, by = "date_time")
 # cbma_weather2= cbma_weather%>%arrange(date_time) %>%
 #   dplyr::filter(minute(date_time) == 0 | 
 #                   minute(date_time) == 5|
@@ -248,22 +285,32 @@ cbma_weather2 = right_join(cbma_weather,cbma_sunrise, by = c("date_time"))
 #                   minute(date_time) == 55)
 # cbma_weather2 = cbma_weather2 %>%
 #   dplyr::filter(is.na(sunrise) == TRUE)
+
+# Approximating values again so there are no NA values
 cbma_weather2 = cbma_weather2 %>% arrange(date_time)
 cbma_weather2$temp = na.approx(cbma_weather2$temp, na.rm = FALSE)
 cbma_weather2$relh = na.approx(cbma_weather2$relh, na.rm = FALSE)
 cbma_weather2$pres = na.approx(cbma_weather2$pres, na.rm = FALSE)
+cbma_weather2$dew = na.approx(cbma_weather2$dew, na.rm = FALSE)
+cbma_weather2$ws2m = na.approx(cbma_weather2$ws2m, 
+                               na.rm = FALSE)
+# cbma_weather$relh2 = relhum(cbma_weather$temp, cbma_weather$dew)
+##just use relh from cbma sites
 
 cbma_missing = cbma_weather2 %>% dplyr::filter(is.na(temp)==TRUE)
+# only missing data from 08/31 so we are good
 
-cbma_weather = cbma_weather2 %>%
+cbma_weather3 = cbma_weather2 %>%
   mutate(hour = hour(date_time),
          site = "cbma",
          dew = temp-((100-relh)/5),
          arid = abs((1/dew)),
-         mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
-         gh = (25)*(1)*(max_sat(temp)-(relh/100)))
+         mas = as.numeric(difftime(date_time,
+                                   sunrise,
+                                   units = c("mins"))),
+         gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))))
 
-cbma_hour = cbma_weather %>%
+cbma_hour = cbma_weather3 %>%
   mutate(hour = hour(date_time),
          site = "cbma",
          dew = temp-((100-relh)/5),
@@ -277,10 +324,6 @@ cbma_hour = cbma_weather %>%
             mean_mas = mean(mas),
             mean_sunalt = mean(altitude),
             mean_gh = mean(gh))
-
-ggplot(data = cbma_hour, aes(x = hour, y = mean_gh, color = site))+
-  geom_line()
-
 
 # Clean Kiowa Dataset obtained from Texas Mesonet -------------------------
 
