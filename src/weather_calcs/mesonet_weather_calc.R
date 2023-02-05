@@ -65,14 +65,15 @@ load("lwma_sunrise.Rdata")
 # }
 lwma_weather$lat = 34.98224
 lwma_weather$lon = -97.52109
-lwma_weather = inner_join(lwma_weather,lwma_sunrise, by = c("date_time"))
+lwma_weather2 = inner_join(lwma_weather,lwma_sunrise, by = c("date_time"))
 
-lwma_weather$TAIR = na.approx(lwma_weather$TAIR, na.rm = FALSE) # air temperature at 1.5 m
-lwma_weather$RELH = na.approx(lwma_weather$RELH, na.rm = FALSE) # relative humidity at 1.5 m
-lwma_weather$PRES = na.approx(lwma_weather$PRES, na.rm = FALSE) # atmospheric pressure
-lwma_weather$RAIN = na.approx(lwma_weather$RAIN, na.rm = FALSE) # precipitation
-lwma_weather$WSPD = na.approx(lwma_weather$WSPD, na.rm = FALSE) # wind speed at 10m
-lwma_weather$WS2M = na.approx(lwma_weather$WS2M, na.rm = FALSE) # wind speed at 2m
+lwma_weather2 = lwma_weather2 %>% dplyr::arrange(date_time)
+lwma_weather2$TAIR = na.approx(lwma_weather2$TAIR, na.rm = FALSE) # air temperature at 1.5 m
+lwma_weather2$RELH = na.approx(lwma_weather2$RELH, na.rm = FALSE) # relative humidity at 1.5 m
+lwma_weather2$PRES = na.approx(lwma_weather2$PRES, na.rm = FALSE) # atmospheric pressure
+lwma_weather2$RAIN = na.approx(lwma_weather2$RAIN, na.rm = FALSE) # precipitation
+lwma_weather2$WSPD = na.approx(lwma_weather2$WSPD, na.rm = FALSE) # wind speed at 10m
+lwma_weather2$WS2M = na.approx(lwma_weather2$WS2M, na.rm = FALSE) # wind speed at 2m
 
 # find relationship between wind speed at 2m and at 10m so you can estimate wind speed at cbma and kiowa sites
 
@@ -83,7 +84,7 @@ lm(WS2M ~ WSPD, data = lwma_weather) # slope = 0.8440,
 # lwma_weather$sunrise = na.approx(lwma_weather$sunrise, na.rm = FALSE)
 # lwma_weather$altitude = na.approx(lwma_weather$altitude, na.rm = FALSE)
 
-lwma_weather2 = lwma_weather %>%
+lwma_weather3 = lwma_weather2 %>%
   mutate(hour = hour(date_time),
          site = "lwma",
          dew = TAIR-((100-RELH)/5),
@@ -91,6 +92,7 @@ lwma_weather2 = lwma_weather %>%
          mas = as.numeric(difftime(date_time,
                                    sunrise,
                                    units = c("mins"))),
+         rain = if_else((lead(RAIN)-RAIN) >= 0, (lead(RAIN)-RAIN), 0),
          gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
   dplyr::rename(temp = "TAIR",
          relh = "RELH") 
@@ -102,13 +104,13 @@ lwma_weather2 = lwma_weather %>%
 # xs = max humidity ratio of saturated air
 # x = humidity air ratio (relh in our equation)
 
-lwma_missing = lwma_weather2 %>% dplyr::filter(is.na(temp)==TRUE)
+lwma_missing = lwma_weather3 %>% dplyr::filter(is.na(temp)==TRUE)
 
 # labels <- seq(0,1435,5)
 # bins <- cut(lwma_weather$mas,seq(0,1440,5), labels = labels, right = FALSE)#make 5 minute bins
 # bins <- as.numeric(as.character(bins))
 
-lwma_hour = lwma_weather2 %>%
+lwma_hour = lwma_weather3 %>%
   mutate(hour = hour(date_time),
          site = "lwma",
          dew = temp-((100-relh)/5),
@@ -146,21 +148,23 @@ load("sswma_sunrise.Rdata")
 #   sswma_sunrise = rbind(sunrise_time,sswma_sunrise)
 # }
 
-sswma_weather = inner_join(sswma_weather,sswma_sunrise, by = c("date_time"))
+sswma_weather2 = inner_join(sswma_weather,
+                            sswma_sunrise, by = c("date_time"))
+sswma_weather2 = sswma_weather2 %>% dplyr::arrange(date_time)
 
-sswma_weather$TAIR = na.approx(sswma_weather$TAIR, na.rm = FALSE)
-sswma_weather$RELH = na.approx(sswma_weather$RELH, na.rm = FALSE)
-sswma_weather$PRES = na.approx(sswma_weather$PRES, na.rm = FALSE)
-sswma_weather$TAIR = na.approx(sswma_weather$TAIR, na.rm = FALSE) # air temperature at 1.5 m
-sswma_weather$RELH = na.approx(sswma_weather$RELH, na.rm = FALSE) # relative humidity at 1.5 m
-sswma_weather$PRES = na.approx(sswma_weather$PRES, na.rm = FALSE) # atmospheric pressure
-sswma_weather$RAIN = na.approx(sswma_weather$RAIN, na.rm = FALSE) # precipitation
-sswma_weather$WSPD = na.approx(sswma_weather$WSPD, na.rm = FALSE) # wind speed at 10m
-sswma_weather$WS2M = na.approx(sswma_weather$WS2M, na.rm = FALSE) # wind speed at 2m
+sswma_weather2$TAIR = na.approx(sswma_weather2$TAIR, na.rm = FALSE)
+sswma_weather2$RELH = na.approx(sswma_weather2$RELH, na.rm = FALSE)
+sswma_weather2$PRES = na.approx(sswma_weather2$PRES, na.rm = FALSE)
+sswma_weather2$TAIR = na.approx(sswma_weather2$TAIR, na.rm = FALSE) # air temperature at 1.5 m
+sswma_weather2$RELH = na.approx(sswma_weather2$RELH, na.rm = FALSE) # relative humidity at 1.5 m
+sswma_weather2$PRES = na.approx(sswma_weather2$PRES, na.rm = FALSE) # atmospheric pressure
+sswma_weather2$RAIN = na.approx(sswma_weather2$RAIN, na.rm = FALSE) # precipitation
+sswma_weather2$WSPD = na.approx(sswma_weather2$WSPD, na.rm = FALSE) # wind speed at 10m
+sswma_weather2$WS2M = na.approx(sswma_weather2$WS2M, na.rm = FALSE) # wind speed at 2m
 
 # find relationship between wind speed at 2m and at 10m so you can estimate wind speed at cbma and kiowa sites
-plot(sswma_weather$WSPD, sswma_weather$WS2M)
-lm(WS2M ~ WSPD, data = sswma_weather) # slope = 0.7607, 
+plot(sswma_weather2$WSPD, sswma_weather2$WS2M)
+lm(WS2M ~ WSPD, data = sswma_weather2) # slope = 0.7607, 
 # intercept = -0.3861
 
 #estimating wind speed at 2m with wind speed at 10m data
@@ -174,20 +178,21 @@ u2 = (u10*4.87)/(log((67.8*10)-5.42))
 # sswma_weather$sunrise = na.approx(sswma_weather$sunrise, na.rm = FALSE)
 # sswma_weather$altitude = na.approx(sswma_weather$altitude, na.rm = FALSE)
 
-sswma_weather2 = sswma_weather %>%
+sswma_weather3 = sswma_weather2 %>%
   mutate(hour = hour(date_time),
          site = "sswma",
          dew = TAIR-((100-RELH)/5),
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
+         rain = if_else((lead(RAIN)-RAIN) >= 0, (lead(RAIN)-RAIN), 0),
          gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
   dplyr::rename(temp = "TAIR",
          relh = "RELH")
   
 
-sswma_missing = sswma_weather %>% dplyr::filter(is.na(temp)==TRUE)
+sswma_missing = sswma_weather3 %>% dplyr::filter(is.na(temp)==TRUE)
 
-sswma_hour = sswma_weather2 %>%
+sswma_hour = sswma_weather3 %>%
   mutate(hour = hour(date_time),
          site = "sswma",
          dew = temp-((100-relh)/5),
@@ -310,6 +315,9 @@ cbma_weather3 = cbma_weather2 %>%
                                    units = c("mins"))),
          gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))))
 
+cbma_weather3$gh = na.approx(cbma_weather3$gh, na.rm = FALSE)
+# just 08/31 so ok
+
 cbma_hour = cbma_weather3 %>%
   mutate(hour = hour(date_time),
          site = "cbma",
@@ -325,18 +333,33 @@ cbma_hour = cbma_weather3 %>%
             mean_sunalt = mean(altitude),
             mean_gh = mean(gh))
 
+# Seeing if relh or gh is missing
+cbma_missing = cbma_weather3 %>% dplyr::filter(is.na(gh)==TRUE)
+# only 08/31 so good
+
+ggplot(data = cbma_weather3,
+       aes(x = relh, y = gh)) + 
+  geom_point()
+
 # Clean Kiowa Dataset obtained from Texas Mesonet -------------------------
 
-kiowa_weather = read_csv("kiowa_mesonet.csv", col_names = TRUE, col_types = "ccnnnTnnnnnnnnnnc") %>%
+kiowa_weather = read_csv("kiowa_mesonet.csv", 
+                         col_names = TRUE, 
+                         col_types = "ccnnnTnnnnnnnnnnc") %>%
   dplyr::rename(station = "Station_ID",
                 lat = "Latitude",
                 lon = "Longitude",
                 elev_m = "Elevation (m)",
                 date_time = "Date_Time (UTC)",
                 temp = "Temperature (c)",
-                relh = "Relative Humidity (%)")%>%
+                relh = "Relative Humidity (%)",
+                rain_acc = "Precipitation accumulated (mm)")%>%
   arrange(date_time)
 
+# Determine kiowa rain (mm) per day like OK mesonet sites
+kiowa_weather = kiowa_weather %>%
+  dplyr::mutate(rain = if_else((lead(rain_acc)-rain_acc) >= 0, (lead(rain_acc)-rain_acc), 0),
+)
 
 load("kiowa_sunrise.Rdata")
 
@@ -366,7 +389,7 @@ kiowa_weather2$relh = na.approx(kiowa_weather2$relh, na.rm = FALSE)
 
 # kiowa_weather2$pres = na.approx(kiowa_weather2$pres, na.rm = FALSE)
 
-kiowa_weather = kiowa_weather2 %>%
+kiowa_weather3 = kiowa_weather2 %>%
   dplyr::filter(date(date_time)> "2021-04-30")%>%
   dplyr::filter(date(date_time)< "2021-09-01")%>%
   mutate(hour = hour(date_time),
@@ -374,7 +397,7 @@ kiowa_weather = kiowa_weather2 %>%
          dew = temp-((100-relh)/5),
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
-         gh = (25)*(1)*(max_sat(temp)-(relh/100)))
+         gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))))
 
 kiowa_missing = kiowa_weather %>% dplyr::filter(is.na(temp)==TRUE)
 
