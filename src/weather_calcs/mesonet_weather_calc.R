@@ -41,7 +41,7 @@ endTime = as.POSIXct("2021-08-31 23:55::00", tz = "UTC") #2021-08-31 18:55:00 CD
 
 lwma_weather <- okmts(begintime=beginTime,
              endtime=endTime, 
-             variables = c("TAIR", "RELH","PRES"),
+             variables = "ALL",
              station="WASH",  
              localtime=TRUE,
              missingNA = TRUE) #downloads date time into UTC
@@ -67,29 +67,39 @@ lwma_weather$lat = 34.98224
 lwma_weather$lon = -97.52109
 lwma_weather = inner_join(lwma_weather,lwma_sunrise, by = c("date_time"))
 
-lwma_weather$TAIR = na.approx(lwma_weather$TAIR, na.rm = FALSE)
-lwma_weather$RELH = na.approx(lwma_weather$RELH, na.rm = FALSE)
-lwma_weather$PRES = na.approx(lwma_weather$PRES, na.rm = FALSE)
+lwma_weather$TAIR = na.approx(lwma_weather$TAIR, na.rm = FALSE) # air temperature at 1.5 m
+lwma_weather$RELH = na.approx(lwma_weather$RELH, na.rm = FALSE) # relative humidity at 1.5 m
+lwma_weather$PRES = na.approx(lwma_weather$PRES, na.rm = FALSE) # atmospheric pressure
+lwma_weather$RAIN = na.approx(lwma_weather$RAIN, na.rm = FALSE) # precipitation
+lwma_weather$WSPD = na.approx(lwma_weather$WSPD, na.rm = FALSE) # wind speed at 10m
+lwma_weather$WS2M = na.approx(lwma_weather$WS2M, na.rm = FALSE) # wind speed at 2m
+
+# find relationship between wind speed at 2m and at 10m so you can estimate wind speed at cbma and kiowa sites
+
+lm(WS2M ~ WSPD, data = lwma_weather) # slope = 0.8440, 
+                                     # intercept = -0.5302
+
+
 # lwma_weather$sunrise = na.approx(lwma_weather$sunrise, na.rm = FALSE)
 # lwma_weather$altitude = na.approx(lwma_weather$altitude, na.rm = FALSE)
 
-lwma_weather = lwma_weather %>%
+lwma_weather2 = lwma_weather %>%
   mutate(hour = hour(date_time),
          site = "lwma",
          dew = TAIR-((100-RELH)/5),
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
-         gh = (25)*(1)*(max_sat(TAIR)-(RELH/100))) %>%
-  rename(temp = "TAIR",
+         gh = (25+(19*WS2M)*(max_sat(TAIR)-(RELH/100)))) %>%
+  dplyr::rename(temp = "TAIR",
          relh = "RELH")
 
-lwma_missing = lwma_weather %>% dplyr::filter(is.na(temp)==TRUE)
+lwma_missing = lwma_weather2 %>% dplyr::filter(is.na(temp)==TRUE)
 
 # labels <- seq(0,1435,5)
 # bins <- cut(lwma_weather$mas,seq(0,1440,5), labels = labels, right = FALSE)#make 5 minute bins
 # bins <- as.numeric(as.character(bins))
 
-lwma_hour = lwma_weather %>%
+lwma_hour = lwma_weather2 %>%
   mutate(hour = hour(date_time),
          site = "lwma",
          dew = temp-((100-relh)/5),
@@ -107,14 +117,11 @@ lwma_hour = lwma_weather %>%
 # SSWMA - Erick, OK Station -----------------------------------------------
 sswma_weather <- okmts(begintime=beginTime,
                 endtime=endTime, 
-                variables = c("TAIR", "RELH","PRES"),
+                variables = "ALL",
                 station="ERIC",  
                 localtime=FALSE,
                 missingNA = TRUE) #downloads date time into UTC
 sswma_weather$date_time = as_datetime(sswma_weather$TIME, tz = "UTC");sswma_weather$date_time
-
-
-
 
 load("sswma_sunrise.Rdata")
 
@@ -135,23 +142,43 @@ sswma_weather = inner_join(sswma_weather,sswma_sunrise, by = c("date_time"))
 sswma_weather$TAIR = na.approx(sswma_weather$TAIR, na.rm = FALSE)
 sswma_weather$RELH = na.approx(sswma_weather$RELH, na.rm = FALSE)
 sswma_weather$PRES = na.approx(sswma_weather$PRES, na.rm = FALSE)
+sswma_weather$TAIR = na.approx(sswma_weather$TAIR, na.rm = FALSE) # air temperature at 1.5 m
+sswma_weather$RELH = na.approx(sswma_weather$RELH, na.rm = FALSE) # relative humidity at 1.5 m
+sswma_weather$PRES = na.approx(sswma_weather$PRES, na.rm = FALSE) # atmospheric pressure
+sswma_weather$RAIN = na.approx(sswma_weather$RAIN, na.rm = FALSE) # precipitation
+sswma_weather$WSPD = na.approx(sswma_weather$WSPD, na.rm = FALSE) # wind speed at 10m
+sswma_weather$WS2M = na.approx(sswma_weather$WS2M, na.rm = FALSE) # wind speed at 2m
+
+# find relationship between wind speed at 2m and at 10m so you can estimate wind speed at cbma and kiowa sites
+plot(sswma_weather$WSPD, sswma_weather$WS2M)
+lm(WS2M ~ WSPD, data = sswma_weather) # slope = 0.7607, 
+# intercept = -0.3861
+
+#estimating wind speed at 2m with wind speed at 10m data
+# https://www.researchgate.net/post/Is-that-possible-to-convert-wind-speed-measured-in-10-m-height-to-a-possible-2-m-height-wind-speed
+u2 = (u10*4.87)/(log((67.8*10)-5.42))
+# u2 is wind speed at 2m
+# u10 is wind speed at 10m
+# u2 is approximately  = 0.75 * u10
+
+
 # sswma_weather$sunrise = na.approx(sswma_weather$sunrise, na.rm = FALSE)
 # sswma_weather$altitude = na.approx(sswma_weather$altitude, na.rm = FALSE)
 
-sswma_weather = sswma_weather %>%
+sswma_weather2 = sswma_weather %>%
   mutate(hour = hour(date_time),
          site = "sswma",
          dew = TAIR-((100-RELH)/5),
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
-         gh = (25)*(1)*(max_sat(TAIR)-(RELH/100)))%>%
-  rename(temp = "TAIR",
+         gh = (25+(19*WS2M)*(max_sat(TAIR)-(RELH/100)))) %>%
+  dplyr::rename(temp = "TAIR",
          relh = "RELH")
   
 
 sswma_missing = sswma_weather %>% dplyr::filter(is.na(temp)==TRUE)
 
-sswma_hour = sswma_weather %>%
+sswma_hour = sswma_weather2 %>%
   mutate(hour = hour(date_time),
          site = "sswma",
          dew = temp-((100-relh)/5),
