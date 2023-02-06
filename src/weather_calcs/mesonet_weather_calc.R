@@ -344,7 +344,8 @@ ggplot(data = cbma_weather3,
 # Clean Kiowa Dataset obtained from Texas Mesonet -------------------------
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data/mesonet_data")
 
-kiowa_weather = read_csv("kiowa_mesonet.csv", 
+
+kiowa_weather = read_csv("/data/mesonet_data/kiowa_mesonet.csv", 
                          col_names = TRUE, 
                          col_types = "ccnnnTnnnnnnnnnnc") %>%
   dplyr::rename(station = "Station_ID",
@@ -361,50 +362,19 @@ kiowa_weather = read_csv("kiowa_mesonet.csv",
 kiowa_weather = kiowa_weather %>%
   dplyr::mutate(rain = if_else((lead(rain_acc)-rain_acc) >= 0, (lead(rain_acc)-rain_acc), 0))
 
-# Calculate wind speeds from 3 adjacent sites from iowa mesonet (Clayton, Raton, Las Vegas)
-
-devtools::install_github("rspatial/rspat")
-devtools::install_github("r-spatial/gstat")
-
-library(rspat)
-library(gstat)
-library(tidyverse)
-library(sp)
-library(raster)
-
-nm_mesonet = read_csv("kiowa_wind.csv") %>% 
-  dplyr::rename(date_time = "valid") %>%
+# Determine kiowa wind speeds from ASOS iowa mesonet from Mills Canyon weather station (mlcn5)
+# all units are in US/Imperial, will need to convert to metric
+kiowa_wind <- read_csv("~/Downloads/kiowa_wind.csv") %>% 
+  dplyr::rename(date_time = "utc_valid",
+                rain_acc = "PCIRGZ",
+                rain = "PPHRGZ",
+                solar_rad = "RWIRGZ",
+                temp_min = "TAIRGN",
+                temp_max = "TAIRGX",
+                temp = "TAIRGZ",
+                wind_dir = "UDIRGZ",
+                peak_wind) %>%
   dplyr::arrange(date_time)
-
-nm_sites = nm_mesonet %>%
-  dplyr::filter(station != "kiowa") %>%
-  dplyr::filter(is.na(sknt) == FALSE)
-
-kiowa = nm_mesonet %>%
-  dplyr::filter(station == "kiowa")
-
-nm_mesonet2 = rbind(nm_sites, kiowa) %>%
-  dplyr::arrange(date_time)
-
-coordinates(nm_mesonet)=~lat+lon
-# d$N[c(5,6,7)]=NA
-valid = !is.na(nm_mesonet$sknt)
-predictions = idw(sknt~1, 
-                  locations=nm_mesonet[valid,,drop=FALSE],
-                  newdata=nm_mesonet[!valid,,drop=FALSE])
-nm_mesonet$sknt[!valid] = predictions$var1.pred #putting interpolated data back into dataframe
-
-notkiowa_wind = nm_mesonet@data %>% 
-  dplyr::filter(station != "kiowa")
-
-kiowa_wind = nm_mesonet@data %>%
-  dplyr::filter(station == "kiowa") %>%
-  dplyr::mutate(date_time = mdy_hm(date_time)) %>%
-  dplyr::select(date_time, sknt) %>%
-  dplyr::arrange(date_time)
-
-kiowa_weather1.5 = left_join(kiowa_weather, kiowa_wind[,c("date_time","sknt")], by = "date_time")
-
 # Calculate sunrise times for kiowa site (or load data if calculated before)
 load("kiowa_sunrise.Rdata")
 
