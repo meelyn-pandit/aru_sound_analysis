@@ -94,7 +94,9 @@ lwma_weather3 = lwma_weather2 %>%
          ws10m = "WSPD",
          ws2m = "WS2M",
          pres = "PRES",
-         solar_rad = "SRAD") 
+         solar_rad = "SRAD") %>%
+  dplyr::mutate(pres = pres/10) # convert pressure from millibars to kPa
+
 # Evaporation rate equation: https://www.engineeringtoolbox.com/evaporation-water-surface-d_690.html
 # gh = Θ A (xs - x); amounted of water evaporated per hour
 # gh = (25 + (19*v)) * A * (xs - x)
@@ -182,7 +184,8 @@ sswma_weather3 = sswma_weather2 %>%
                 ws10m = "WSPD",
                 ws2m = "WS2M",
                 pres = "PRES",
-                solar_rad = "SRAD") 
+                solar_rad = "SRAD") %>%
+  dplyr::mutate(pres = pres/10) # convert millibars to kPa
 
 sswma_missing = sswma_weather3 %>% dplyr::filter(is.na(temp)==TRUE) # no missing temperature values!
 
@@ -294,12 +297,16 @@ cbma_missing = cbma_weather2 %>% dplyr::filter(is.na(temp)==TRUE)
 cbma_weather3 = cbma_weather2 %>%
   mutate(hour = hour(date_time),
          site = "cbma",
+         elev_m = 931,
+         sea_pres = pres/1000, # convert pressure from pa to kPa
          dew = temp-((100-relh)/5),
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,
                                    sunrise,
                                    units = c("mins"))),
-         gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))))
+         gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100)))) %>%
+  dplyr::mutate(pres = (sea_pres*(exp(((-9.80665*0.0289644)*elev_m)/(8.31432*(temp+273.15)))))
+)
 
 cbma_weather3$gh = na.approx(cbma_weather3$gh, na.rm = FALSE)
 # just 08/31 so ok
@@ -427,12 +434,15 @@ kiowa_weather3 = kiowa_weather2 %>%
   dplyr::filter(date(date_time)< "2021-09-01")%>%
   dplyr::mutate(hour = hour(date_time),
          site = "kiowa",
+         elevation = 1776,
          dew = temp-((100-relh)/5),
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,
                                    sunrise,
                                    units = c("mins")))) %>%
-  dplyr::mutate(gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))))
+  dplyr::mutate(gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))),
+                pres = (101.325*(exp(((-9.80665*0.0289644)*1776)/(8.31432*(temp+273.15)))))
+  )
 
 kiowa_missing = kiowa_weather3 %>% dplyr::filter(is.na(temp)==TRUE) # only 08/31 data so were good!
 
@@ -457,22 +467,18 @@ save(cbma_sunrise, file = "cbma_sunrise.Rdata")
 save(kiowa_sunrise, file = "kiowa_sunrise.Rdata")
 
 lwma_mesonet = lwma_weather3 %>%
-  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
+  dplyr::select(site, date_time,sunrise,hour,temp,relh,pres,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 sswma_mesonet = sswma_weather3 %>%
-  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
+  dplyr::select(site, date_time,sunrise,hour,temp,relh,pres,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 cbma_mesonet = cbma_weather3 %>%
-  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
+  dplyr::select(site, date_time,sunrise,hour,temp,relh,pres,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 kiowa_mesonet = kiowa_weather3 %>%
-  dplyr::select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
+  dplyr::select(site, date_time,sunrise,hour,temp,relh,pres,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean/mesonet_data")
-
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data")
-
-save(lwma_mesonet, file = "lwma_mesonet.Rdata")
-save(sswma_mesonet, file = "sswma_mesonet.Rdata")
-save(cbma_mesonet, file = "cbma_mesonet.Rdata")
-save(kiowa_mesonet, file = "kiowa_mesonet.Rdata")
+save(lwma_mesonet, file = "data_clean/mesonet_data/lwma_mesonet.Rdata")
+save(sswma_mesonet, file = "data_clean/mesonet_data/sswma_mesonet.Rdata")
+save(cbma_mesonet, file = "data_clean/mesonet_data/cbma_mesonet.Rdata")
+save(kiowa_mesonet, file = "data_clean/mesonet_data/kiowa_mesonet.Rdata")
 
 
 

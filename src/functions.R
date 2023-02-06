@@ -83,3 +83,10 @@ ws10m_to_ws2m = function(ws10m){
   ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))
   return(ws2m)
 }
+
+# calculate pressure at set elevation based on temperature and sea level pressure (101.325 kpa), and temperature in kelvin
+
+pressure = function(altitude,
+                    temperature) {
+  pres = (101.325*(exp(((-9.80665*0.0289644)*altitude)/(8.31432*temperature+273.15))))
+}
