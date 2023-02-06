@@ -77,3 +77,9 @@ add_stars <- function(x, decimals = 3) {
       TRUE ~ "***"
     )
 }
+
+# Convert wind speed at 10m to wind speed at 2m
+ws10m_to_ws2m = function(ws10m){
+  ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))
+  return(ws2m)
+}

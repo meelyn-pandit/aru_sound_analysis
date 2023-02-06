@@ -20,14 +20,16 @@ library(beepr)
 
 
 # Calculating Maximum Saturation Humidty ratio of air (mass of water vapor in kg/ mass of dry air in kg) --------
-max_humid = data.frame(temp = c(0,5,10,15,20,25,30),
-                      max_sat = c(0.003767,0.005387,0.007612,0.01062,0.014659,0.019826,0.027125))
+
 #Determined in Excel
 # max_sat = 0.0039(e^(0.0656*x))
 max_sat <- function(temp){
   y = 0.0039*(exp(0.0656*temp))
   return(y)
 }
+max_humid = data.frame(temp = c(0,5,10,15,20,25,30),
+                      max_sat = c(0.003767,0.005387,0.007612,0.01062,0.014659,0.019826,0.027125))
+
 
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/Sound Analysis/data/mesonet_data/")
 
@@ -47,10 +49,7 @@ lwma_weather <- okmts(begintime=beginTime,
              missingNA = TRUE) #downloads date time into UTC
 lwma_weather$date_time = as_datetime(lwma_weather$TIME, tz = "UTC");lwma_weather$date_time
 
-
-
-
-load("lwma_sunrise.Rdata")
+load("data/mesonet_data/lwma_sunrise.Rdata")
 
 # lwma_sunrise = NULL
 # for(i in 1:length(lwma_weather$date_time)){
@@ -74,11 +73,7 @@ lwma_weather2$PRES = na.approx(lwma_weather2$PRES, na.rm = FALSE) # atmospheric 
 lwma_weather2$RAIN = na.approx(lwma_weather2$RAIN, na.rm = FALSE) # precipitation
 lwma_weather2$WSPD = na.approx(lwma_weather2$WSPD, na.rm = FALSE) # wind speed at 10m
 lwma_weather2$WS2M = na.approx(lwma_weather2$WS2M, na.rm = FALSE) # wind speed at 2m
-
-# find relationship between wind speed at 2m and at 10m so you can estimate wind speed at cbma and kiowa sites
-
-lm(WS2M ~ WSPD, data = lwma_weather) # slope = 0.8440, 
-                                     # intercept = -0.5302
+lwma_weather2$SRAD = na.approx(lwma_weather2$SRAD, na.rm = FALSE) # solar radiation w/m2
 
 
 # lwma_weather$sunrise = na.approx(lwma_weather$sunrise, na.rm = FALSE)
@@ -95,7 +90,11 @@ lwma_weather3 = lwma_weather2 %>%
          rain = if_else((lead(RAIN)-RAIN) >= 0, (lead(RAIN)-RAIN), 0),
          gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
   dplyr::rename(temp = "TAIR",
-         relh = "RELH") 
+         relh = "RELH",
+         ws10m = "WSPD",
+         ws2m = "WS2M",
+         pres = "PRES",
+         solar_rad = "SRAD") 
 # Evaporation rate equation: https://www.engineeringtoolbox.com/evaporation-water-surface-d_690.html
 # gh = Θ A (xs - x); amounted of water evaporated per hour
 # gh = (25 + (19*v)) * A * (xs - x)
@@ -104,7 +103,7 @@ lwma_weather3 = lwma_weather2 %>%
 # xs = max humidity ratio of saturated air
 # x = humidity air ratio (relh in our equation)
 
-lwma_missing = lwma_weather3 %>% dplyr::filter(is.na(temp)==TRUE)
+lwma_missing = lwma_weather3 %>% dplyr::filter(is.na(temp)==TRUE) # no missing values which is good!
 
 # labels <- seq(0,1435,5)
 # bins <- cut(lwma_weather$mas,seq(0,1440,5), labels = labels, right = FALSE)#make 5 minute bins
@@ -134,7 +133,7 @@ sswma_weather <- okmts(begintime=beginTime,
                 missingNA = TRUE) #downloads date time into UTC
 sswma_weather$date_time = as_datetime(sswma_weather$TIME, tz = "UTC");sswma_weather$date_time
 
-load("sswma_sunrise.Rdata")
+load("data/mesonet_data/sswma_sunrise.Rdata")
 
 # sswma_sunrise = NULL
 # for(i in 1:length(sswma_weather$date_time)){
@@ -151,21 +150,13 @@ load("sswma_sunrise.Rdata")
 sswma_weather2 = inner_join(sswma_weather,
                             sswma_sunrise, by = c("date_time"))
 sswma_weather2 = sswma_weather2 %>% dplyr::arrange(date_time)
-
-sswma_weather2$TAIR = na.approx(sswma_weather2$TAIR, na.rm = FALSE)
-sswma_weather2$RELH = na.approx(sswma_weather2$RELH, na.rm = FALSE)
-sswma_weather2$PRES = na.approx(sswma_weather2$PRES, na.rm = FALSE)
 sswma_weather2$TAIR = na.approx(sswma_weather2$TAIR, na.rm = FALSE) # air temperature at 1.5 m
 sswma_weather2$RELH = na.approx(sswma_weather2$RELH, na.rm = FALSE) # relative humidity at 1.5 m
 sswma_weather2$PRES = na.approx(sswma_weather2$PRES, na.rm = FALSE) # atmospheric pressure
 sswma_weather2$RAIN = na.approx(sswma_weather2$RAIN, na.rm = FALSE) # precipitation
 sswma_weather2$WSPD = na.approx(sswma_weather2$WSPD, na.rm = FALSE) # wind speed at 10m
 sswma_weather2$WS2M = na.approx(sswma_weather2$WS2M, na.rm = FALSE) # wind speed at 2m
-
-# find relationship between wind speed at 2m and at 10m so you can estimate wind speed at cbma and kiowa sites
-plot(sswma_weather2$WSPD, sswma_weather2$WS2M)
-lm(WS2M ~ WSPD, data = sswma_weather2) # slope = 0.7607, 
-# intercept = -0.3861
+sswma_weather2$SRAD = na.approx(sswma_weather2$SRAD, na.rm = FALSE) # solar radiation w/m2
 
 #estimating wind speed at 2m with wind speed at 10m data
 # https://www.researchgate.net/post/Is-that-possible-to-convert-wind-speed-measured-in-10-m-height-to-a-possible-2-m-height-wind-speed
@@ -187,10 +178,13 @@ sswma_weather3 = sswma_weather2 %>%
          rain = if_else((lead(RAIN)-RAIN) >= 0, (lead(RAIN)-RAIN), 0),
          gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
   dplyr::rename(temp = "TAIR",
-         relh = "RELH")
-  
+                relh = "RELH",
+                ws10m = "WSPD",
+                ws2m = "WS2M",
+                pres = "PRES",
+                solar_rad = "SRAD") 
 
-sswma_missing = sswma_weather3 %>% dplyr::filter(is.na(temp)==TRUE)
+sswma_missing = sswma_weather3 %>% dplyr::filter(is.na(temp)==TRUE) # no missing temperature values!
 
 sswma_hour = sswma_weather3 %>%
   mutate(hour = hour(date_time),
@@ -213,7 +207,7 @@ sswma_hour = sswma_weather3 %>%
 
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data/mesonet_data")
 
-cbma_weather = read_csv("cbma_mesonet.csv", col_names = TRUE, col_types = "ccnnnTnnnnnnnnnnnnnc") %>%
+cbma_weather = read_csv("data/mesonet_data/cbma_mesonet.csv", col_names = TRUE, col_types = "ccnnnTnnnnnnnnnnnnnc") %>%
   dplyr::rename(station = "Station_ID",
                 name = "Name",
                 lat = "Latitude",
@@ -230,7 +224,7 @@ cbma_weather = read_csv("cbma_mesonet.csv", col_names = TRUE, col_types = "ccnnn
 
 # Need to convert Cbma wind values from knots to m/s
 #1 kn = 0.514444 m/s
-cbma_wind = read_csv("cbma_mesonet_wind.csv", col_names = TRUE, col_types = "ccnnnTnnnnn") %>%
+cbma_wind = read_csv("data/mesonet_data/cbma_mesonet_wind.csv", col_names = TRUE, col_types = "ccnnnTnnnnn") %>%
   dplyr::rename(station = "Station_ID",
                 name = "Name",
                 lat = "Latitude",
@@ -241,24 +235,31 @@ cbma_wind = read_csv("cbma_mesonet_wind.csv", col_names = TRUE, col_types = "ccn
                 peak_wind_speed = "Peak_Wind Speed (mph)",
                 wind_dir = "Wind Direction 10m (deg)",
                 wind_gust = "Wind Gust 10m (kn)",
-                wind_speed_10m = "Wind Speed 10m (kn)") %>%
+                ws10m = "Wind Speed 10m (kn)") %>%
   dplyr::filter(date(date_time) > "2021-04-30") %>%
-  dplyr::mutate(ws10m = 0.514444*wind_speed_10m) %>%
+  dplyr::mutate(ws10m = 0.514444*ws10m) %>% #convert from miles/hour to m/s
   dplyr::mutate(ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))
     )
 
+# approximating missing weather values
 cbma_weather = cbma_weather %>% arrange(date_time)
 cbma_weather$temp = na.approx(cbma_weather$temp, na.rm = FALSE)
 cbma_weather$relh = na.approx(cbma_weather$relh, na.rm = FALSE)
 cbma_weather$pres = na.approx(cbma_weather$pres, na.rm = FALSE)
 cbma_weather$dew = na.approx(cbma_weather$dew, na.rm = FALSE)
+
+# apporximating missing wind values
+cbma_wind = cbma_wind %>% dplyr::arrange(date_time)
+cbma_wind$ws10m = na.approx(cbma_wind$ws10m, na.rm = FALSE)
+cbma_wind$ws2m = na.approx(cbma_wind$ws2m, na.rm = FALSE)
+
 # cbma_weather$rain = na.approx(cbma_weather$rain, na.rm = FALSE)
 # cbma_weather$rain24 = na.approx(cbma_weather$rain24, 
                                  # na.rm = FALSE)
 
 # don't need to approximate rain, only using presence/absence of rain to filter out files where rain would distort audio
 # Get Sunrise data for CBMA site (or load it if you have already obtained it)
-load("cbma_sunrise.Rdata")
+load("data/mesonet_data/cbma_sunrise.Rdata")
 
 # cbma_sunrise = NULL
 # for(i in 1:length(cbma_weather$date_time)){ #have to use lwma date_time because it is complete data_time vector
@@ -275,21 +276,6 @@ load("cbma_sunrise.Rdata")
 cbma_weather1.5 = right_join(cbma_weather,cbma_wind[,-c(1:5)], by = c("date_time"))
 
 cbma_weather2 = right_join(cbma_weather1.5,cbma_sunrise, by = "date_time")
-# cbma_weather2= cbma_weather%>%arrange(date_time) %>%
-#   dplyr::filter(minute(date_time) == 0 | 
-#                   minute(date_time) == 5|
-#                   minute(date_time) == 10|
-#                   minute(date_time) == 15|
-#                   minute(date_time) == 20|
-#                   minute(date_time) == 25|
-#                   minute(date_time) == 30|
-#                   minute(date_time) == 35|
-#                   minute(date_time) == 40|
-#                   minute(date_time) == 45|
-#                   minute(date_time) == 50|
-#                   minute(date_time) == 55)
-# cbma_weather2 = cbma_weather2 %>%
-#   dplyr::filter(is.na(sunrise) == TRUE)
 
 # Approximating values again so there are no NA values
 cbma_weather2 = cbma_weather2 %>% arrange(date_time)
@@ -297,8 +283,8 @@ cbma_weather2$temp = na.approx(cbma_weather2$temp, na.rm = FALSE)
 cbma_weather2$relh = na.approx(cbma_weather2$relh, na.rm = FALSE)
 cbma_weather2$pres = na.approx(cbma_weather2$pres, na.rm = FALSE)
 cbma_weather2$dew = na.approx(cbma_weather2$dew, na.rm = FALSE)
-cbma_weather2$ws2m = na.approx(cbma_weather2$ws2m, 
-                               na.rm = FALSE)
+cbma_weather2$ws10m = na.approx(cbma_weather2$ws10m, na.rm = FALSE)
+cbma_weather2$ws2m = na.approx(cbma_weather2$ws2m, na.rm = FALSE)
 # cbma_weather$relh2 = relhum(cbma_weather$temp, cbma_weather$dew)
 ##just use relh from cbma sites
 
@@ -344,27 +330,30 @@ ggplot(data = cbma_weather3,
 # Clean Kiowa Dataset obtained from Texas Mesonet -------------------------
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data/mesonet_data")
 
+# DEPRECATED CODE!!! Using ASOS Mesonet data from Mills Canyon because it provides more data variables and wind speed and rain
 
-kiowa_weather = read_csv("/data/mesonet_data/kiowa_mesonet.csv", 
-                         col_names = TRUE, 
-                         col_types = "ccnnnTnnnnnnnnnnc") %>%
-  dplyr::rename(station = "Station_ID",
-                lat = "Latitude",
-                lon = "Longitude",
-                elev_m = "Elevation (m)",
-                date_time = "Date_Time (UTC)",
-                temp = "Temperature (c)",
-                relh = "Relative Humidity (%)",
-                rain_acc = "Precipitation accumulated (mm)")%>%
-  arrange(date_time)
+# kiowa_weather = read_csv("data/mesonet_data/kiowa_mesonet.csv", 
+#                          col_names = TRUE, 
+#                          col_types = "ccnnnTnnnnnnnnnnc") %>%
+#   dplyr::rename(station = "Station_ID",
+#                 lat = "Latitude",
+#                 lon = "Longitude",
+#                 elev_m = "Elevation (m)",
+#                 date_time = "Date_Time (UTC)",
+#                 temp = "Temperature (c)",
+#                 relh = "Relative Humidity (%)",
+#                 rain_acc = "Precipitation accumulated (mm)")%>%
+#   arrange(date_time)
+# 
+# # Determine kiowa rain (mm) per day like OK mesonet sites
+# kiowa_weather = kiowa_weather %>%
+#   dplyr::mutate(rain = if_else((lead(rain_acc)-rain_acc) >= 0, (lead(rain_acc)-rain_acc), 0))
 
-# Determine kiowa rain (mm) per day like OK mesonet sites
-kiowa_weather = kiowa_weather %>%
-  dplyr::mutate(rain = if_else((lead(rain_acc)-rain_acc) >= 0, (lead(rain_acc)-rain_acc), 0))
-
+### kiowa_wind will now be known as kiowa_weather 02/05/2023
 # Determine kiowa wind speeds from ASOS iowa mesonet from Mills Canyon weather station (mlcn5)
 # all units are in US/Imperial, will need to convert to metric
-kiowa_wind <- read_csv("~/Downloads/kiowa_wind.csv") %>% 
+# assuming wind is at 10m, will need to convert to 2m wind speeds
+kiowa_weather <- read_csv("data/mesonet_data/kiowa_wind.csv") %>% 
   dplyr::rename(date_time = "utc_valid",
                 rain_acc = "PCIRGZ",
                 rain = "PPHRGZ",
@@ -373,10 +362,31 @@ kiowa_wind <- read_csv("~/Downloads/kiowa_wind.csv") %>%
                 temp_max = "TAIRGX",
                 temp = "TAIRGZ",
                 wind_dir = "UDIRGZ",
-                peak_wind) %>%
-  dplyr::arrange(date_time)
+                peak_ws = "UPHRGZ",
+                peak_ws_deg = "URHRGZ",
+                ws10m = "USIRGZ",
+                relh = "XRIRGZ") %>%
+  dplyr::arrange(date_time) %>%
+  dplyr::mutate(ws10m = 0.514444*ws10m, # convert miles/hour to m/s
+                temp = (temp-32)*(5/9),
+                rain_acc = rain_acc*25.4,
+                rain = rain*25.4,
+                local_time = as_datetime(date_time, tz = "US/Mountain"), # mountain time (mdt cuz of daylight saving time) is 6 hours behind utc
+                lat = 36.0544,
+                lon = -104.3244,
+                elevation = 1776) %>%
+  dplyr::mutate(ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))) #convert wind speed (m/s) at 10m to wind speed at 2m
+
+# comparing data from texas and iowa mesonets
+kiowa_compare = left_join(kiowa_wind,kiowa_weather, by = "date_time") %>%
+  dplyr::mutate(temp_diff = temp.x-temp.y,
+                relh_diff = relh.x-relh.y,
+                rain_accdiff = rain_acc.x-rain_acc.y,
+                rain_diff = rain.x-rain.y) %>%
+  dplyr::select(temp.x,temp.y,temp_diff,relh.x,relh.y,relh_diff,rain_acc.x,rain_acc.y,rain_accdiff,rain_diff,rain.x,rain.y)
+
 # Calculate sunrise times for kiowa site (or load data if calculated before)
-load("kiowa_sunrise.Rdata")
+load("data/mesonet_data/kiowa_sunrise.Rdata")
 
 
 # kiowa_sunrise = NULL
@@ -395,14 +405,17 @@ load("kiowa_sunrise.Rdata")
 # names(kiowa_date) = c("date_time")
 # kiowa_weather2 = full_join(kiowa_weather1.5,kiowa_sunrise, by = c("date_time")) %>% arrange(date_time) %>% dplyr::distinct(date_time, .keep_all = TRUE)
 
-kiowa_weather2 = full_join(kiowa_weather1.5,kiowa_sunrise, by = c("date_time"))%>%
+kiowa_weather2 = full_join(kiowa_weather,kiowa_sunrise, by = c("date_time"))%>%
   arrange(date_time)
 
 
 kiowa_weather2$temp = na.approx(kiowa_weather2$temp, na.rm = FALSE)
 kiowa_weather2$relh = na.approx(kiowa_weather2$relh, na.rm = FALSE)
 kiowa_weather2$rain = na.approx(kiowa_weather2$rain, na.rm = FALSE)
-kiowa_weather2$ws10m = na.approx(kiowa_weather2$sknt, na.rm = FALSE)
+kiowa_weather2$temp_min = na.approx(kiowa_weather2$temp_min, na.rm = FALSE)
+kiowa_weather2$temp_max = na.approx(kiowa_weather2$temp_max, na.rm = FALSE)
+kiowa_weather2$ws10m = na.approx(kiowa_weather2$ws10m, na.rm = FALSE)
+kiowa_weather2$ws2m = na.approx(kiowa_weather2$ws2m, na.rm = FALSE)
 
 
 # kiowa_weather2$altitude = na.approx(kiowa_weather2$altitude, na.rm = FALSE)
@@ -418,11 +431,10 @@ kiowa_weather3 = kiowa_weather2 %>%
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,
                                    sunrise,
-                                   units = c("mins"))),
-         ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))) %>%
+                                   units = c("mins")))) %>%
   dplyr::mutate(gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))))
 
-kiowa_missing = kiowa_weather %>% dplyr::filter(is.na(temp)==TRUE)
+kiowa_missing = kiowa_weather3 %>% dplyr::filter(is.na(temp)==TRUE) # only 08/31 data so were good!
 
 kiowa_hour = kiowa_weather3 %>%
   mutate(hour = hour(date_time),
@@ -445,15 +457,17 @@ save(cbma_sunrise, file = "cbma_sunrise.Rdata")
 save(kiowa_sunrise, file = "kiowa_sunrise.Rdata")
 
 lwma_mesonet = lwma_weather3 %>%
-  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m)
+  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 sswma_mesonet = sswma_weather3 %>%
-  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m)
+  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 cbma_mesonet = cbma_weather3 %>%
-  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m)
+  select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 kiowa_mesonet = kiowa_weather3 %>%
-  dplyr::select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m)
+  dplyr::select(site, date_time,sunrise,hour,temp,relh,dew,arid,mas,altitude,gh, rain, ws2m,ws10m)
 
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean/mesonet_data")
+
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data")
 
 save(lwma_mesonet, file = "lwma_mesonet.Rdata")
 save(sswma_mesonet, file = "sswma_mesonet.Rdata")
