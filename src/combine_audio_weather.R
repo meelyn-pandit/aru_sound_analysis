@@ -371,7 +371,7 @@ save(wfull, file = "mesonet_historic_weather.Rdata")
 ## Aridity Gradient - Combine 2021 Mesonet Data together (NOT HISTORIC DATA)-----------------------
 
 # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
-setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
+# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis/data_clean")
 # acoustic2 = import("acoustic_and_birdnet_data.Rdata")
 
 sites = as.list(c("lwma","sswma","cbma","kiowa"))
@@ -427,8 +427,8 @@ wfull$arid_across = scale(wfull$gh)
 wfull = wfull %>%
   dplyr::select(-arid)
 
-setwd("data_clean/mesonet_data")
-save(wfull, file = "mesonet_weather.Rdata")
+# setwd("data_clean/mesonet_data")
+save(wfull, file = "data_clean/mesonet_data/mesonet_weather.Rdata")
 
 ## Aridity Gradient - Combine Acoustic and Weather Data --------------------
 setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")

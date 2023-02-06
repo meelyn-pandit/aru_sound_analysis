@@ -15,12 +15,11 @@ library(bbmle) #AIC comparisons
 library(performance) #performance
 library(emmeans)
 library(magrittr)
-library(pca3d)
+# library(pca3d)
 library(gt)
 library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
-library(dotwhisker)
 library(broom)
 # library(cowplot)
 # library(magick)
@@ -35,7 +34,7 @@ install_github("vqv/ggbiplot")
 devtools::install_github("fsolt/dotwhisker")
 
 
-# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
+setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
 load("data_clean/audio_and_weather_data.Rdata")
 
 # Aridity Gradient - Create PCA of Audio Variables, filter out files with NA ACI and  --------
@@ -51,6 +50,9 @@ aw3 = setdiff(aw2, aw_bad_total)
 aw3$site = factor(aw3$site, levels = c("lwma","sswma","cbma","kiowa"))
 aw3 = aw3 %>% dplyr::filter(is.na(mas_bin) == FALSE)
 
+# enter in 0 for rows with rain == NA
+aw3 = aw3 %>%
+  dplyr::mutate(rain = replace_na(rain,0))
 
 # Filter out NA aci and only look at values before 2021-08-16
 aw4 = aw3 %>%
@@ -84,14 +86,14 @@ aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
-ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
+ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI
 
 aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
-aw4$pc2 = audio_pcadf$PC2*-1 # Multiply PC2 by -1 to make num vocals/species diversity have positive values
+aw4$pc2 = audio_pcadf$PC2 
 aw4$pc3 = audio_pcadf$PC3
 
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
@@ -272,54 +274,66 @@ load("data_clean/aridity_data_clean.Rdata")
 aw6 = aw4 %>%
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
+  # mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
+  mutate_at(c("arid_withinf", "arid_acrossf"), as.numeric) %>%
   group_by(site, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
                            gh, 
-                           gh_within,
-                           arid_within,
-                           hist_within:arid_across,
-                           arid_withinf:hist_acrossf,
+                           # gh_within,
+                           # arid_within,
+                           # arid_across,
+                           # arid_withinf,
+                           # arid_acrossf,
+                           # hist_within:arid_across,
+                           # arid_withinf:hist_acrossf,
                            sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
-  mutate_at(c("arid_withinf","arid_acrossf","hist_within","hist_across"), round_factor)
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+  
+# mutate_at(c("arid_withinf","arid_acrossf","hist_within","hist_across"), round_factor)
 
-# Checking which scaled aridity matches gh distribution, the summarized arid_withinf above matches histogram of gh
+# Creating normalized aridity variable and factor within sites
 
+all_sites = NULL
+for(i in unique(aw6$site)) {
+  aw_site = aw6 %>% dplyr::filter(site == i) %>%
+    dplyr::arrange(gh)
+  aw_site$arid_within = as.vector(scale(aw_site$gh))
+  aw_site$arid_withinf = cut(aw_site$arid_within, breaks = 5, labels = c(1,2,3,4,5))
+  all_sites = rbind(all_sites,aw_site)
+}
+aw6 = all_sites
+
+# Checking to see if histograms match
+hist(aw6$gh)
 hist(aw6$arid_within)
 hist(as.numeric(aw6$arid_withinf))
 
-arid_check = aw6 %>%
-  arrange(site,gh) %>%
-  dplyr::mutate(arid_within2 = scale_this(gh),
-    arid_withinf2 = cut(gh,
-                    breaks = 5,
-                    labels = c(1,2,3,4,5))) %>%
-  dplyr::select(site,
-                mas_bin,
-                gh,
-                arid_within,
-                arid_withinf,
-                arid_within2,
-                arid_withinf2) %>%
-  arrange(site,gh)
 
-hist(as.numeric(aw6$arid_withinf))
-# y = factor(y, levels = c(1,2,3,4,5))
+# Creating aridity variable and factor normalized across sites
+aw6 = aw6 %>% 
+  arrange(gh)
+aw6$arid_across = as.vector(scale(aw6$gh))
+aw6$arid_acrossf = cut(aw6$arid_across, breaks = 5, labels = c(1,2,3,4,5))
+
+# Checking to see if histograms match
+hist(aw6$gh)
+hist(as.numeric(aw6$arid_across))
+hist(as.numeric(aw6$arid_acrossf))
+
+aw6$arid_within-aw6$arid_across
 
 ggplot(data = aw6, 
-       aes(x = as.numeric(arid_within),
+       aes(x = arid_across,
            y = pc2,
            color = site
        )) + 
+  geom_point() +
   geom_smooth()
 
-arid_check = aw6 %>% group_by(site,
-                              mas_bin,
-                              arid_withinf) %>% tally()
+aw6 %>% group_by(site,arid_withinf) %>% tally(n())
 
-aw6 %>% group_by(site,arid_acrossf) %>% tally(gh)
+aw6 %>% group_by(site,arid_acrossf) %>% tally()
 
 
 save(aw6, file = "data_clean/aridity_gradient_mas.Rdata")
@@ -332,7 +346,7 @@ ggplot(data = aw4,
   # geom_point() +
   facet_wrap(~mas_bin)
 
-m1_lmm = lmer(pc1 ~ gh + (gh|site/mas_bin), 
+m1_lmm = lmer(pc1 ~ arid_across + (arid_across|site/mas_bin), 
           data = aw4, REML = FALSE,
           control=lmerControl(optimizer="bobyqa",
                               optCtrl=list(maxfun=2e5)))
@@ -345,6 +359,33 @@ broom.mixed::tidy(m1_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100)
 broom.mixed::tidy(m1_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
 broom.mixed::tidy(m1_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 
+m2_lmm = lmer(pc2 ~ arid_across + (arid_across|site/mas_bin), 
+              data = aw4, REML = FALSE,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+m2_lmm = lmer(pc2 ~ arid_across*scale(date_time) + (1|site), 
+              data = aw4, REML = FALSE,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+
+summary(m2_lmm)
+
+broom.mixed::tidy(m2_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m2_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m2_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m2_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
+
+m3_lmm = lmer(pc3 ~ arid_across + (arid_across|site/mas_bin), 
+              data = aw4, REML = FALSE,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+
+summary(m3_lmm)
+
+broom.mixed::tidy(m3_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m3_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m3_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m3_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 # Making a dot and whisker plot with data from ran_vals
 m1_re = broom.mixed::tidy(m1, effects = "ran_vals", conf.int = TRUE)
 ggplot(data = m1_re,
