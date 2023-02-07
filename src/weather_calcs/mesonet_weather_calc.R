@@ -241,7 +241,7 @@ cbma_wind = read_csv("data/mesonet_data/cbma_mesonet_wind.csv", col_names = TRUE
                 ws10m = "Wind Speed 10m (kn)") %>%
   dplyr::filter(date(date_time) > "2021-04-30") %>%
   dplyr::mutate(ws10m = 0.514444*ws10m) %>% #convert from miles/hour to m/s
-  dplyr::mutate(ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))
+  dplyr::mutate(ws2m = (ws10m*4.87)/(log((67.8*10)-5.42)) # convert from wind speed at 10m to wind speed at 2m
     )
 
 # approximating missing weather values

@@ -1,3 +1,203 @@
+# Aridity Gradient - Date and MAS - Statistical Analysis - LINEAR Mixed MODELs REGRESSION ONLY -----------------------------------------
+
+ggplot(data = aw4,
+       aes(x = gh, y = pc1, color = site)) +
+  geom_smooth(method = lm) +
+  # geom_point() +
+  facet_wrap(~mas_bin)
+
+m1_lmm = lmer(pc1 ~ arid_across + (arid_across|site/mas_bin), 
+              data = aw4, REML = FALSE,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+
+summary(m1_lmm)
+lattice::dotplot(lme4::ranef(m1))
+
+broom.mixed::tidy(m1_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m1_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m1_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m1_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
+
+m2_lmm = lmer(pc2 ~ arid_across + (arid_across|site/mas_bin), 
+              data = aw4, REML = FALSE,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+m2_lmm = lmer(pc2 ~ arid_across*scale(date_time) + (1|site), 
+              data = aw4, REML = FALSE,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+
+summary(m2_lmm)
+
+broom.mixed::tidy(m2_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m2_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m2_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m2_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
+
+m3_lmm = lmer(pc3 ~ arid_across + (arid_across|site/mas_bin), 
+              data = aw4, REML = FALSE,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+
+summary(m3_lmm)
+
+broom.mixed::tidy(m3_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m3_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m3_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m3_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
+# Making a dot and whisker plot with data from ran_vals
+m1_re = broom.mixed::tidy(m1, effects = "ran_vals", conf.int = TRUE)
+ggplot(data = m1_re,
+       aes(x = estimate, y = level, 
+           color = term, group = term)) +
+  geom_errorbar(aes(xmax = conf.high, xmin = conf.low, 
+                    width = 0)) +
+  geom_point() +
+  facet_wrap(~term)
+
+## PC2 - Linear mixed model Regression with full dataset
+ggplot(data = aw4,
+       aes(x = gh, y = pc2, color = site)) +
+  geom_smooth(method = lm)
+
+m2 = lmer(pc2 ~ gh + scale(date_time) + (gh|site), 
+          data = aw4, REML = FALSE,
+          control=lmerControl(optimizer="bobyqa",
+                              optCtrl=list(maxfun=2e5)))
+
+summary(m2)
+lattice::dotplot(lme4::ranef(m2))
+
+broom.mixed::tidy(m2, effects = "ran_coefs", conf.int = TRUE) #fixed + random effects
+broom.mixed::tidy(m2, effects = "fixed", conf.int = TRUE) #fixed effects
+broom.mixed::tidy(m2, effects = "ran_vals", conf.int = TRUE) # random effects intercepts and slopes
+broom.mixed::tidy(m2, effects = "ran_pars", conf.int = TRUE)
+
+# Making a dot and whisker plot with data from ran_vals
+m2_re = broom.mixed::tidy(m2, effects = "ran_vals", conf.int = TRUE)
+ggplot(data = m2_re,
+       aes(x = estimate, y = level, 
+           color = term, group = term)) +
+  geom_errorbar(aes(xmax = conf.high, xmin = conf.low, 
+                    width = 0)) +
+  geom_point() +
+  facet_wrap(~term)
+
+m3 = lmer(pc3 ~ gh + scale(date_time) + (gh|site), 
+          data = aw4, REML = FALSE,
+          control=lmerControl(optimizer="bobyqa",
+                              optCtrl=list(maxfun=2e5)))
+
+summary(m3)
+lattice::dotplot(lme4::ranef(m3))
+
+broom.mixed::tidy(m3, effects = "ran_coefs", conf.int = TRUE) #fixed + random effects
+broom.mixed::tidy(m3, effects = "fixed", conf.int = TRUE) #fixed effects
+broom.mixed::tidy(m3, effects = "ran_vals", conf.int = TRUE) # random effects intercepts and slopes
+broom.mixed::tidy(m3, effects = "ran_pars", conf.int = TRUE)
+
+# Making a dot and whisker plot with data from ran_vals
+m3_re = broom.mixed::tidy(m3, effects = "ran_vals", conf.int = TRUE)
+ggplot(data = m3_re,
+       aes(x = estimate, y = level, 
+           color = term, group = term)) +
+  geom_errorbar(aes(xmax = conf.high, xmin = conf.low, 
+                    width = 0)) +
+  geom_point() +
+  facet_wrap(~term)
+
+
+
+
+# Aridity Gradient - Dot Plots - Datetime --------------------------------------
+
+cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
+
+dt_graphs = aw6 %>%
+  group_by(site, date_time, arid_withinf) %>%
+  dplyr::summarise(pc1_mean = mean(pc1),
+                   pc1_se = (sd(pc1))/sqrt(n()),
+                   pc2_mean = mean(pc2),
+                   pc2_se = (sd(pc2))/sqrt(n()),
+                   pc3_mean = mean(pc3),
+                   pc3_se = (sd(pc3))/sqrt(n()))
+
+ggplot(data = dt_graphs,
+       aes(x=arid_withinf, y=pc1_mean, color = site)) +
+  geom_point(position = position_dodge(0))+
+  # ggtitle("Datetime Summarized - PC1 - Acoustic Diversity")+
+  geom_line(aes(group = site, 
+                color = site),
+            position = position_dodge(0))+
+  geom_errorbar(aes(ymin = pc1_mean-pc1_se, 
+                    ymax = pc1_mean+pc1_se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = cbpalette, 
+                     name = "Site",
+                     labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
+  scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  scale_y_continuous(name = "PC1 - Evenness to Diversity")+
+  # facet_grid(~facet_type) +
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+        plot.title = element_text(hjust = 0, vjust = 0),
+        legend.position = "right") +
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc1_dt.png', dpi = 600, height = 11, width = 8, units = "in")
+
+### PC2 - Num vocals and Species Diversity
+ggplot(data = dt_graphs,
+       aes(x=arid_withinf, y=pc2_mean, color = site)) +
+  geom_point(position = position_dodge(0))+
+  # ggtitle("Datetime Summarized - PC2 - Avian Vocal Abundance")+
+  geom_line(aes(group = site, 
+                color = site),
+            position = position_dodge(0))+
+  geom_errorbar(aes(ymin = pc2_mean-pc2_se, 
+                    ymax = pc2_mean+pc2_se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = cbpalette, 
+                     name = "Site",
+                     labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
+  scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  scale_y_continuous(name = "PC2 - Num. Vocals and Species Diversity")+
+  # facet_grid(~facet_type) +
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+        plot.title = element_text(hjust = 0, vjust = 0),
+        legend.position = "right") +
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc2_dt.png', dpi = 600, height = 11, width = 8, units = "in")
+
+### PC3 - ACI and BIO
+ggplot(data = dt_graphs,
+       aes(x=arid_withinf, y=pc3_mean, color = site)) +
+  geom_point(position = position_dodge(0))+
+  # ggtitle("Datetime Summarized - PC3 - Acoustic Complexity")+
+  geom_line(aes(group = site, 
+                color = site),
+            position = position_dodge(0))+
+  geom_errorbar(aes(ymin = pc3_mean-pc3_se, 
+                    ymax = pc3_mean+pc3_se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = cbpalette, 
+                     name = "Site",
+                     labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
+  scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
+  scale_y_continuous(name = "PC3 - Simple to Complex")+
+  # facet_grid(~facet_type) +
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+        plot.title = element_text(hjust = 0, vjust = 0),
+        legend.position = "right")+
+  facet_grid(vars(mas_bin)) + 
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/arid_pc3_dt.png', dpi = 600, height = 11, width = 8, units = "in")
+
+
 # Water Supp - SSWMA - Datetime - Statistical Analyses  - Pairwise -----------------
 
 sswma_watermas = sswma_water %>%
