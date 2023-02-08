@@ -1090,3 +1090,24 @@ cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
                           expand = 100,
                           vwidth = 20000, 
                           vheight = 15000)
+
+### Plotting CBMA Water Supp Lag data
+### Creating Labels for Graphs
+# mas labels
+cbma_maslag$mas_labels = factor(cbma_maslag$mas_bin, levels = c("0","1","2","3"),
+                                labels = c("Predawn","Early","Mid","Late"))
+
+# site labels
+cbma_maslag$wssite_labels = factor(cbma_maslag$ws_site, levels = c("1","2"),
+                                   labels = c("Water Site 1", "Water Site 2"))
+cbma_water_site_paper(cbma_maslag,
+                      cbma_maslag$pc1,
+                      cbma_maslag$gh,
+                      "PC1 - Acoustic Diversity",
+                      "Evaporation Rate (kg of water/h)")
+
+cbma_water_site_paper(cbma_maslag,
+                      cbma_maslag$pc2,
+                      cbma_maslag$gh,
+                      "PC2 - Acoustic Diversity",
+                      "Evaporation Rate (kg of water/h)")
