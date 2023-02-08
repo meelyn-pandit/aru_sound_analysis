@@ -1,10 +1,10 @@
-load("src/cbma_water_table.R")
+# load("src/cbma_water_table.R")
 cbma_water_contrasts = function(data,
                                  pc){
-  m = lm(pc ~ ws_site*water*arid_withinf + mas_bin + date, data = data)
+  m = lm(pc ~ ws_site*water*gh*mas_bin + date, data = data)
   summary = summary(m)
   diagnostics = assump(m)
-  emm = emmeans(m, ~ ws_site*water|arid_withinf)
+  emm = emtrends(m, ~ ws_site*water|mas_bin, var = "gh", type = 'response',weights = "cells")
   # # Setting up comparisons for emmeans contrast function
   ws1w0 = c(1,0,0,0)
   ws2w0 = c(0,1,0,0)
@@ -21,6 +21,7 @@ cbma_water_contrasts = function(data,
   # cbmaw_table = cbma_water_table(emm_cntrst);cbmaw_table
   my_list = list(summary, 
                  diagnostics, 
+                 summary(emm),
                  emm_cntrst_summary, 
                  emm_confi_summary 
                  # cbmaw_table

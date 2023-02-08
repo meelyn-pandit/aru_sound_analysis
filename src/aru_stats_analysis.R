@@ -440,18 +440,19 @@ ggplot(data = aw6,
 
 m3 = lm(pc3 ~ gh*site*mas_bin + scale(date), data = aw6)
 summary(m3)
-emtrends(m3, pairwise ~ site|mas_bin, var = "gh", type = 'response',weights = "cells") # across sites
 emtrends(m3, pairwise ~ mas_bin|site, var = "gh", type = 'response',weights = "cells") # within sites, across time
 
+emtrends(m3, pairwise ~ site|mas_bin, var = "gh", type = 'response',weights = "cells") # across sites
+
 ag_graph_site_paper(aw6$pc3, 
-                    aw6$sound_atten08,
+                    aw6$gh,
                     "PC3 - Acoustic Complexity",
-                    "Sound Attenuation at 8kHz")
+                    "Evaporation Rate (kg of water/h")
 
 ag_graph_time_paper(aw6$pc3, 
-                    aw6$sound_atten08,
+                    aw6$gh,
                     "PC3 - Acoustic Complexity",
-                    "Sound Attenuation at 8kHz")
+                    "Evaporation Rate (kg of water/h")
 
 assump(m3)
 # emmeans(m3, ~ gh*site|mas_bin, type = "response")
@@ -624,6 +625,7 @@ load("data_clean/water_audio_and_weather_data.Rdata")
 ww = water_weather3 %>%
   dplyr::filter(date_time < "2021-08-16") %>%
   dplyr::filter(year(date_time) == 2021) %>%
+  dplyr::mutate(rain = replace_na(rain,0)) %>%
   dplyr::filter(rain == 0) %>%
   arrange(desc(aci))
 
@@ -664,6 +666,8 @@ sswma_water_pcadf = as.data.frame(sswma_water_pca[["x"]])
 ggbiplot(sswma_water_pca, choices = c(1,2), ellipse = TRUE, alpha = 0, groups = sswma_water$ws_site) 
 ggbiplot(sswma_water_pca, choices = c(1,3), ellipse = TRUE, alpha = 0, groups = sswma_water$ws_site) 
 
+
+
 ### PC1: ADI and AEI, higher values mean higher diversity
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI and higher BIO
@@ -674,6 +678,7 @@ sswma_water$pc3 = sswma_water_pcadf$PC3
 #*-1 # multiply pc3 by -1 to make aci values have positive values
 
 save(sswma_water, file = "data_clean/sswma_water.Rdata")
+
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 m1 = lmer(pc1 ~ ws_site*water*arid_withinf + scale(date_time) + (1|ws_site), data = sswma_water)
 summary(m1)
@@ -809,6 +814,7 @@ sswma_wlag = rbind(sswma_wlag1, sswma_wlag2, sswma_wlag3)  %>%
 # sswma_wlag$pc2 = sswma_fullwater_pcadf$PC2
 # sswma_wlag$pc3 = sswma_fullwater_pcadf$PC3
 
+### Try a GAM for the lag dataset?
 library(mgcv)
 library(tidymv)
 
@@ -859,31 +865,49 @@ sswma_maslag = sswmawl %>%
                     sound_atten04:sound_atten12,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
-# sswma_maslag$water_int = interaction(sswma_maslag$ws_site, sswma_maslag$water)
-# m_int = lm(pc1 ~ water_int*arid_withinf*mas_bin + date, data = sswma_maslag)
-# summary(m_int)
-# emm = emmeans(m_int,pairwise ~ water_int*arid_withinf|mas_bin);emm$contrast
+### Creating Labels for Graphs
+# mas labels
+sswma_maslag$mas_labels = factor(sswma_maslag$mas_bin, levels = c("0","1","2","3"),
+                        labels = c("Predawn","Early","Mid","Late"))
+
+# site labels
+sswma_maslag$wssite_labels = factor(sswma_maslag$ws_site, levels = c("1","2","3"),
+                         labels = c("Water Site 1", "Water Site 2", "Water Site 3"))
+
+
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
                                            pc = sswma_maslag$pc1); sswma_lag_pc1
 # sswma_lag_pc1[[5]] %>% gtsave("results/sswma_water_pc1_lag.png")
 # plot(sswma_lag_pc1[[4]])
+# Create graph to show water site slopes
+sswma_water_site_paper(sswma_maslag,
+                       sswma_maslag$pc1,
+                       sswma_maslag$gh,
+                       "PC1 - Acoustic Diversity",
+                       "Evaporation Rate (kg of water/h)")
 
 # PC2: Num vocals and species diversity
 sswma_lag_pc2 = sswma_water_contrasts(data = sswma_maslag,
                                            pc = sswma_maslag$pc2); sswma_lag_pc2
 # sswma_lag_pc2[[5]] %>% gtsave("results/sswma_water_pc2_lag.png")
 # plot(sswma_lag_pc2[[4]])
+# Create graph to show water site slopes
+sswma_water_site_paper(sswma_maslag,
+                       sswma_maslag$pc2,
+                       sswma_maslag$gh,
+                       "PC2 - Avian Abundance",
+                       "Evaporation Rate (kg of water/h)")
 
 # PC3: ACI and BIO
 sswma_lag_pc3 = sswma_water_contrasts(data = sswma_maslag,
                                            pc = sswma_maslag$pc3); sswma_lag_pc3
 # sswma_lag_pc3[[5]] %>% gtsave(paste0("results/sswma_water_pc3_lag.png"))
 # plot(sswma_lag_pc3[[4]])
-sswma_pc_table = sswma_water_table2(sswma_lag_pc1[[3]],
-                                    sswma_lag_pc2[[3]],
-                                    sswma_lag_pc3[[3]]); sswma_pc_table
+sswma_pc_table = sswma_water_table3(sswma_lag_pc1[[4]],
+                                    sswma_lag_pc2[[4]],
+                                    sswma_lag_pc3[[4]]); sswma_pc_table
 sswma_pc_table %>% gtsave("results/sswma_water_allpcs_lag.png",
                           expand = 100,
                           vwidth = 2000, 
@@ -898,7 +922,8 @@ cbma_water = ww3 %>%
   mutate(ws_site = as.factor(ws_site),
          water = as.factor(water),
          date = date(date_time),
-         week = week(date_time)) %>%
+         week = week(date_time),
+         sound_atten) %>%
   arrange(date_time,ws_site,water)
 
 cbma_water_pca = prcomp(cbma_water[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
@@ -1036,28 +1061,31 @@ cbma_maslag = cbmawl %>%
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
-cbma_lag_pc1 = cbma_water_contrasts(data = cbma_maslag,
+cbma_lag_pc1 = cbma_water_contrasts2(data = cbma_maslag,
                                       pc = cbma_maslag$pc1); cbma_lag_pc1
 
 # cbma_lag_pc1[[5]] %>% gtsave("results/cbma_water_pc1_lag.png")
 # plot(cbma_lag_pc1[[4]])
 
 # PC2: Num vocals and species diversity
-cbma_lag_pc2 = cbma_water_contrasts(data = cbma_maslag,
+cbma_lag_pc2 = cbma_water_contrasts2(data = cbma_maslag,
                                       pc = cbma_maslag$pc2); cbma_lag_pc2
 # cbma_lag_pc2[[5]] %>% gtsave("results/cbma_water_pc2_lag.png")
 # plot(cbma_lag_pc2[[4]])
 
 # PC3: ACI and BIO
-cbma_lag_pc3 = cbma_water_contrasts(data = cbma_maslag,
+cbma_lag_pc3 = cbma_water_contrasts2(data = cbma_maslag,
                                       pc = cbma_maslag$pc3); cbma_lag_pc3
 # cbma_lag_pc3[[5]] %>% gtsave(paste0("results/cbma_water_pc3_lag.png"))
 # plot(cbma_lag_pc3[[4]])
 
 # Combining all CBMA Mas-binned data into one table
-cbma_pc_table = cbma_water_table2(cbma_lag_pc1[[3]],
-                                  cbma_lag_pc2[[3]],
-                                  cbma_lag_pc3[[3]]);cbma_pc_table
+# cbma_pc_table = cbma_water_table2(cbma_lag_pc1[[3]],
+#                                   cbma_lag_pc2[[3]],
+#                                   cbma_lag_pc3[[3]]);cbma_pc_table
+cbma_pc_table = cbma_water_table3(cbma_lag_pc1[[4]],
+                                  cbma_lag_pc2[[4]],
+                                  cbma_lag_pc3[[4]]);cbma_pc_table
 cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
                           expand = 100,
                           vwidth = 20000, 
