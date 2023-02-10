@@ -66,7 +66,9 @@ aw4 = aw3 %>%
          pres = na.approx(pres, na.rm = FALSE), # approximating missing pressure data
          sound_atten04 = att_coef(4000, temp, relh, (pres/1000)),
          sound_atten08 = att_coef(8000, temp, relh, (pres/1000)),
-         sound_atten12 = att_coef(12000, temp, relh, (pres/1000)))
+         sound_atten12 = att_coef(12000, temp, relh, (pres/1000)),
+         gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))) # correct gh equation (25+(19*ws2m)) whole thing needs to be in parentheses
+  )
 
 # see how many gh rows are within each arid factor
 
@@ -88,6 +90,7 @@ aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
+ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
@@ -101,8 +104,8 @@ aw4$pc3 = audio_pcadf$PC3
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 
 # Checking full dataset and gam plots
-ggplot(data = aw6, aes(x = gh,
-                              y = pc3,
+ggplot(data = aw4, aes(x = gh,
+                              y = pc2,
                               color = site)) +
   geom_smooth(method = lm)
 # # Sound Attenuation PCAs - all pcs in the same direction
@@ -336,6 +339,7 @@ ggplot(data = aw6,
 aw6 %>% group_by(site,arid_withinf) %>% tally(n())
 
 aw6 %>% group_by(site,arid_acrossf) %>% tally()
+
 # Creating MAS bin labels for graphs
 aw6$mas_labels = factor(aw6$mas_bin, levels = c("0","1","2","3"),
                         labels = c("Predawn","Early","Mid","Late"))
@@ -623,6 +627,7 @@ ggsave('results/arid_pc3_mas.png', dpi = 600, height = 6, width = 8, units = "in
 load("data_clean/water_audio_and_weather_data.Rdata")
 
 ww = water_weather3 %>%
+  dplyr::mutate(gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100)))) %>%
   dplyr::filter(date_time < "2021-08-16") %>%
   dplyr::filter(year(date_time) == 2021) %>%
   dplyr::mutate(rain = replace_na(rain,0)) %>%
@@ -881,12 +886,14 @@ sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
                                            pc = sswma_maslag$pc1); sswma_lag_pc1
 # sswma_lag_pc1[[5]] %>% gtsave("results/sswma_water_pc1_lag.png")
 # plot(sswma_lag_pc1[[4]])
+
 # Create graph to show water site slopes
 sswma_water_site_paper(sswma_maslag,
                        sswma_maslag$pc1,
                        sswma_maslag$gh,
                        "PC1 - Acoustic Diversity",
                        "Evaporation Rate (kg of water/h)")
+
 
 # PC2: Num vocals and species diversity
 sswma_lag_pc2 = sswma_water_contrasts(data = sswma_maslag,
@@ -1110,4 +1117,10 @@ cbma_water_site_paper(cbma_maslag,
                       cbma_maslag$pc2,
                       cbma_maslag$gh,
                       "PC2 - Acoustic Diversity",
+                      "Evaporation Rate (kg of water/h)")
+
+cbma_water_site_paper(cbma_maslag,
+                      cbma_maslag$pc3,
+                      cbma_maslag$gh,
+                      "PC3 - Acoustic Complexity",
                       "Evaporation Rate (kg of water/h)")
