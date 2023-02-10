@@ -360,7 +360,7 @@ setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/R
 # Determine kiowa wind speeds from ASOS iowa mesonet from Mills Canyon weather station (mlcn5)
 # all units are in US/Imperial, will need to convert to metric
 # assuming wind is at 10m, will need to convert to 2m wind speeds
-kiowa_weather <- read_csv("data/mesonet_data/kiowa_wind.csv") %>% 
+kiowa_weather <- read_csv("data/mesonet_data/kiowa_wind_weather.csv") %>% 
   dplyr::rename(date_time = "utc_valid",
                 rain_acc = "PCIRGZ",
                 rain = "PPHRGZ",

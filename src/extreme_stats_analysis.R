@@ -37,42 +37,43 @@ extreme_arid_n = aw4 %>%
 # Aridwithin Dataframe Subsetting -----------------------------------------
 
 exa_lwma = aw4 %>%
-  dplyr::filter(site == "lwma") %>%
+  dplyr::filter(site == "lwma") %>% # 12006 obs
   # mutate(gh_within = scale_this(gh)) %>%
-  arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = 601)
+  arrange(desc(gh)) %>%
+  slice_max(gh,n = 601)
 
 exa_sswma = aw4 %>%
-  dplyr::filter(site == "sswma") %>%
-  arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = 620)
+  dplyr::filter(site == "sswma") %>% # 12461 obs
+  arrange(desc(gh)) %>%
+  slice_max(gh,n = 623)
 
 exa_cbma = aw4 %>%
-  dplyr::filter(site == "cbma") %>%
-  arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = 662)
+  dplyr::filter(site == "cbma") %>% # 13158 obs
+  arrange(desc(gh)) %>%
+  slice_max(gh,n = 658)
 
 exa_kiowa = aw4 %>%
-  dplyr::filter(site == "kiowa") %>%
-  arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = 816) # min gh_within = 
+  dplyr::filter(site == "kiowa") %>% # 16325 obs
+  arrange(desc(gh)) %>%
+  slice_max(gh,n = 816) # min gh_within = 
 
 extreme_aridwithin = rbind(exa_lwma, exa_sswma, exa_cbma, exa_kiowa)
 
 ea_aridwithin = extreme_aridwithin %>%
-  dplyr::select(site, gh, gh_within,arid_within) %>%
+  dplyr::select(site, gh ,arid_within) %>%
   group_by(site) %>%
   dplyr::summarise(min_aw = min(arid_within),
                    max_aw = max(arid_within),
-                   min_gw = min(gh_within),
-                   max_gw = max(gh_within),
                    min_gh = min(gh),
                    max_gh = max(gh))
-# lwma  gh_within min = 1.74, max = 2.66
-# sswma gh_within min = 1.73, max = 3.04
-# cbma  gh_within min = 1.74, max = 2.72
-# kiowa gh_within min = 1.88, max = 2.56
+# lwma  gh = 25
+# sswma gh = 25
+# cbma  gh = 25
+# kiowa gh = 25
+# all top aridity values are 25
 
+#checking to see if that is really the case
+gh2 = ((25+(19*exa_lwma$ws2m))* 1 *(max_sat(exa_lwma$temp)-(exa_lwma$relh/100)))
 
 # Arid Across Dataframe Subsetting ----------------------------------------
 
