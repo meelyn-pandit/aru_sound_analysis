@@ -116,9 +116,10 @@ cbma_water_climate_table = function(pc1_contrast_table,
 }
 
 
-cbma_water_impact = function(pc){
+cbma_water_impact = function(data,
+                             pc){
   im1_cbmawl = lm(pc ~ ws_site*water + mas_bin + scale(date), 
-                   data = cbmawl_thres)
+                   data = data)
   summary = summary(im1_cbmawl)
   emm = emmeans(im1_cbmawl,~ ws_site*water);emm
   

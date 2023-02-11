@@ -66,14 +66,13 @@ ea_aridwithin = extreme_aridwithin %>%
                    max_aw = max(arid_within),
                    min_gh = min(gh),
                    max_gh = max(gh))
-# lwma  gh = 25
-# sswma gh = 25
-# cbma  gh = 25
-# kiowa gh = 25
-# all top aridity values are 25
+# max lwma  gh = -15.9
+# max sswma gh = -12.8
+# max cbma  gh = -3.18
+# max kiowa gh = -2.76
 
 #checking to see if that is really the case
-gh2 = ((25+(19*exa_lwma$ws2m))* 1 *(max_sat(exa_lwma$temp)-(exa_lwma$relh/100)))
+# gh2 = ((25+(19*exa_lwma$ws2m))* 1 *(max_sat(exa_lwma$temp)-(exa_lwma$relh/100)))
 
 # Arid Across Dataframe Subsetting ----------------------------------------
 
@@ -122,10 +121,10 @@ ggplot(data = aw4, aes(x = arid_within, y = pc2, color = site)) +
 
 # Climate ECE - Statistical Analysis ----------------------------------------------------
 
-m1ex = lmer(pc1 ~ site + (1|site), data = extreme_aridwithin)
+m1ex = lmer(pc1 ~ mas_bin + (1|site), data = extreme_aridwithin)
 summary(m1ex)  
 assump(m1ex)
-emmeans(m1ex, pairwise ~ site)
+emmeans(m1ex, ~ mas_bin)
 
 m2ex = lmer(pc2 ~ site + (1|site), data = extreme_aridwithin)
 summary(m2ex)  
@@ -141,21 +140,22 @@ summary(m3ex)
 exaw_mas = extreme_aridwithin %>%
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
+  # mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
   group_by(site, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
                            gh, 
-                           gh_within,
-                           arid_within, 
-                           hist_within:arid_across,
-                           arid_withinf:hist_acrossf,
+                           # gh_within,
+                           # arid_within, 
+                           # hist_within:arid_across,
+                           # arid_withinf:hist_acrossf,
                            sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
-  mutate_at(c("arid_withinf",
-              "arid_acrossf",
-              "hist_withinf",
-              "hist_acrossf"), round_factor) 
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+# %>%
+#   mutate_at(c("arid_withinf",
+#               "arid_acrossf",
+#               "hist_withinf",
+#               "hist_acrossf"), round_factor) 
 
 exaa_mas = extreme_aridacross %>%
   dplyr::filter(year(date_time)==2021) %>%
@@ -178,10 +178,10 @@ exaa_mas = extreme_aridacross %>%
 
 
 # Climate ECE - MAS and Date ----------------------------------------------
-# ex1mas = lm(pc1 ~ site + scale(date), data = exaw_mas)
-# summary(ex1mas)  
-# assump(ex1mas)
-# emmeans(ex1mas, pairwise ~ site)
+ex1mas = lm(pc1 ~ site + scale(date), data = exaw_mas)
+summary(ex1mas)
+assump(ex1mas)
+emmeans(ex1mas, pairwise ~ site)
 
 ece_pc1_mas = ece_contrast_mas(exaw_mas, 
                                exaw_mas$pc1)
@@ -213,32 +213,57 @@ ece_pc3_mas[[5]] %>% gtsave('results/climate_ece_mas_pc3_arid_across.png', expan
 
 library(mgcv)
 # gam1 = gam(pc2 ~ s(arid_within, by = site), data = aw6)
-gam1 = gam(pc1 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
+# gam1 = gam(pc1 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
+gam1 = gam(pc1 ~ s(gh, bs = "cs", k = -1), data = aw4)
+gam1b = gam(pc1 ~ s(gh), data = aw4)
+plot(gam1b)
 summary(gam1)
-gam1$smooth[[1]]$xp #0.95
+gam1$smooth[[1]]$xp 
 coef(gam1)
 plot(gam1, se=TRUE,col="blue")
+abline(v=-62, col="red")
+abline(v=-54.34, col="green")
+
+# Find inflection points in gam model, first load functions in inflection_points.R script
+find_gam_ip(gam1, -80) # inflection point for pc1 is -50.20955
+
 emm(gam1, pairwise ~ site)
 contrast(emmeans(gam1, pairwise ~ site))
 
-gam2 = gam(pc2 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
+gam2 = gam(pc2 ~ s(gh, bs = "cs", k = -1), data = aw4)
 summary(gam2)
+gam2b = gam(pc2 ~ s(gh), data = aw4)
+plot(gam2b)
 gam2$smooth[[1]]$xp #0.95
 coef(gam2)
 plot(gam2, se=TRUE,col="blue")
+abline(v=-54.34, col="green")
+
+# Find inflection points in gam model, first load functions in inflection_points.R script
+find_gam_ip(gam2, -70) # inflection point for pc2 is -51.74
+abline(v = -51.74, col="green")
+abline(v = -22.66, col = "purple")
 emm(gam2, pairwise ~ site)
 contrast(emmeans(gam1, pairwise ~ site))
 
-gam3 = gam(pc3 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
+gam3 = gam(pc3 ~ s(gh, bs = "cs", k = -1), data = aw4)
 summary(gam3)
-gam3$smooth[[1]]$xp #0.98 for arid_across, 0.95 for arid_within
+gam3$smooth[[1]]$xp 
 coef(gam3)
 plot(gam3, se=TRUE,col="blue")
+abline(v=-37.96, col="green")
+
+# Find inflection points in gam model, first load functions in inflection_points.R script
+find_gam_ip(gam3, -70) # inflection point for pc3 is -54.80148
+abline(v=-54.80, col="green")
+abline(v = -22.66, col = "purple")
+emm(gam2, pairwise ~ site)
+contrast(emmeans(gam1, pairwise ~ site))
 emm(gam3, pairwise ~ site)
 contrast(emmeans(gam1, pairwise ~ site))
 ggplot(data = aw4, aes(x = arid_within, y = pc2)) +
   geom_smooth()
-# Reference: https://www.r-bloggers.com/2021/04/other-useful-functions-for-nonlinear-regression-threshold-models-and-all-that/
+# Reference: https://rpubs.com/hrlai/gam_inflection
 
 
 # ECE - Impact - MCP LMM Piecewise -------------------------------------
@@ -358,7 +383,7 @@ pp_check(fit, facet_by = "site")
 # ECE - Impact - Aridity Gradient - Impact Definition Data --------------------------------
 
 awthres = aw4 %>%
-  dplyr::filter(arid_within >0.95) %>%
+  # dplyr::filter(arid_within >0.95) %>%
   # dplyr::filter(year(date_time)==2021) %>%
   # dplyr::filter(as_date(date_time) < "2021-08-16") %>%
 #   mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
@@ -382,28 +407,29 @@ awthres_n = awthres %>%
   dplyr::summarise(total = n(),
                    percent = n()/length(awthres))
 
-exthresm1 = lm(pc1 ~ site + scale(date), data = awthres)
+exthresm1 = lm(pc1 ~ site*mas_bin + scale(date), data = aw4 %>% dplyr::filter(gh > -50.20955))
 summary(exthresm1)
 emmeans(exthresm1, pairwise ~ site)
+awthrespc1 = awthres %>% dplyr::filter(gh > -50.20955)
+ecethres_pc1_mas = ece_contrast_mas(awthrespc1, 
+                                    awthrespc1$pc1);ecethres_pc1_mas[5]
+# write.csv(ecethres_pc1_mas[[5]], 
+#           'results/ece_threshold_pc1_mas.csv', 
+#           row.names = FALSE)
 
-ecethres_pc1_mas = ece_contrast_mas(awthres, 
-                                    awthres$pc1)
-write.csv(ecethres_pc1_mas[[5]], 
-          'results/ece_threshold_pc1_mas.csv', 
-          row.names = FALSE)
-
-ecethres_pc1_mas[[5]] %>% gtsave('ece_threshold_pc1_mas.png', expand = 100)
-
-ecethres_pc2_mas = ece_contrast_mas(awthres, 
-                                    awthres$pc2)
+# ecethres_pc1_mas[[5]] %>% gtsave('ece_threshold_pc1_mas.png', expand = 100)
+awthrespc2 = awthres %>% dplyr::filter(gh > -51.74)
+ecethres_pc2_mas = ece_contrast_mas(awthrespc2, 
+                                    awthrespc2$pc2)
 write.csv(ecethres_pc2_mas[[5]], 
           'results/ece_threshold_pc2_mas.csv', 
           row.names = FALSE)
 
 ecethres_pc2_mas[[5]] %>% gtsave('ece_threshold_pc2_mas.png', expand = 100)
 
-ecethres_pc3_mas = ece_contrast_mas(awthres, 
-                                    awthres$pc3)
+awthrespc3 = awthres %>% dplyr::filter(gh > -54.80148)
+ecethres_pc3_mas = ece_contrast_mas(awthrespc3, 
+                                    awthrespc3$pc3) # -54.80148
 write.csv(ecethres_pc3_mas[[5]], 
           'results/ece_threshold_pc3_mas.csv', 
           row.names = FALSE)
@@ -524,37 +550,40 @@ sswmawl = sswma_wlag %>%
 
 # Taking top 5% of arid_within values
 # Plotting arid_within to make sure values are correct
-ggplot(sswmawl, aes(x = arid_within, y = pc1, color = ws_site)) +
+ggplot(sswmawl, aes(x = gh, y = pc1, color = as.factor(ws_site))) +
+  # geom_point() +
   geom_smooth(method = "gam")
 
 hist(sswmawl$arid_within)
 
 sswmawl_climate = sswmawl %>%
   mutate(date = as_date(date_time)) %>%
-  arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = (7271*0.05))
-sswmawl_climate = sswmawl_climate[1:384,]
+  # arrange(desc(arid_within)) %>%
+  arrange(desc(gh)) %>%
+  slice_max(gh,n = (7308*0.05))
+# sswmawl_climate = sswmawl_climate[1:384,]
 
 clsswma_dates = unique(sswmawl_climate$date) # dates with climate ece aridity:
 # 2021-05-25, 2021-07-22, 2021-07-24, 2021-07-27, 2021-07-28, 2021-07-29, 
 # 2021-07-30, 2021-07-31, 2021-08-03, 2021-08-04, 2021-08-05, 2021-08-06
 
-sswmawl_climate2 = sswmawl %>%
-  mutate(date = as_date(date_time)) %>%
-  filter(date == "2021-05-25" | 
-         date == "2021-07-22" | 
-         date == "2021-07-24" | 
-         date >= "2021-07-27" & date <= "2021-07-31" |
-         date >= "2021-08-03" & date <= "2021-08-06") 
-
-# filtering based on next day after extreme aridity
-sswmawl_climate3 = sswmawl %>%
-  mutate(date = as_date(date_time)) %>%
-  filter(date == "2021-05-26" | 
-           date == "2021-07-23" | 
-           date == "2021-07-25" | 
-           date >= "2021-07-28" & date <= "2021-08-01" |
-           date >= "2021-08-04" & date <= "2021-08-07") 
+# # filtering based on full day
+# sswmawl_climate2 = sswmawl %>%
+#   mutate(date = as_date(date_time)) %>%
+#   filter(date == "2021-05-25" | 
+#          date == "2021-07-22" | 
+#          date == "2021-07-24" | 
+#          date >= "2021-07-27" & date <= "2021-07-31" |
+#          date >= "2021-08-03" & date <= "2021-08-06") 
+# 
+# # filtering based on next day after extreme aridity
+# sswmawl_climate3 = sswmawl %>%
+#   mutate(date = as_date(date_time)) %>%
+#   filter(date == "2021-05-26" | 
+#            date == "2021-07-23" | 
+#            date == "2021-07-25" | 
+#            date >= "2021-07-28" & date <= "2021-08-01" |
+#            date >= "2021-08-04" & date <= "2021-08-07") 
 
 # ECE - Climate - Water Supp - SSWMA - Lag - MAS and Date ----------------------
 
@@ -567,7 +596,7 @@ sswmawl_clmas = sswmawl_climate %>%
   group_by(site, ws_site, water, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity,
                            gh,
-                           arid_within,
+                           # arid_within,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
 hist(sswmawl_clmas$arid_within)
@@ -596,7 +625,7 @@ sswma_pc_table %>% gtsave("results/sswma_water_allpcs_lag.png",
 # ECE - Impact - Water Supp - SSWMA ---------------------------------------
 # Do not need to do a GAM for water supp data, using threshold for aridity gradient experiment.
 sswmawl_thres = sswmawl %>%
-  dplyr::filter(arid_within >0.95) %>% # similar to aridity gradient data
+  # dplyr::filter(arid_within >0.95) %>% # similar to aridity gradient data
   # dplyr::filter(year(date_time)==2021) %>%
   # dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   #   mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
@@ -606,43 +635,49 @@ sswmawl_thres = sswmawl %>%
   group_by(site, ws_site, water, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity,
                            gh,
-                           arid_within,
+                           # arid_within,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
 
-sswmawl_immas_pc1 = sswma_water_impact(sswmawl_thres$pc1)
+sswmawl_threspc1 = sswmawl_thres %>% dplyr::filter(gh > -50.20955)
+sswmawl_immas_pc1 = sswma_water_impact(sswmawl_threspc1,
+                                       sswmawl_threspc1$pc1)
 sswmawl_immas_pc1[[3]]
 
-sswmawl_immas_pc2 = sswma_water_impact(sswmawl_thres$pc2)
+sswmawl_threspc2 = sswmawl_thres %>% dplyr::filter(gh > -51.74)
+sswmawl_immas_pc2 = sswma_water_impact(sswmawl_threspc2,
+                                       sswmawl_threspc2$pc2)
 sswmawl_immas_pc2[[3]]
 
-sswmawl_immas_pc3 = sswma_water_impact(sswmawl_thres$pc3)
+sswmawl_threspc3 = sswmawl_thres %>% dplyr::filter(gh > -54.80148)
+sswmawl_immas_pc3 = sswma_water_impact(sswmawl_threspc3,
+                                       sswmawl_threspc3$pc3)
 sswmawl_immas_pc3[[3]]
 
-# Finding cutoff for arid across for pc3
-aathres = aw4 %>%
-  dplyr::filter(arid_across >=0.98) %>%
-  group_by(site, date, mas_bin) %>%
-  dplyr::summarise_at(vars(aci:species_diversity,
-                           # temp:dew, 
-                           # gh, 
-                           # gh_within,
-                           # arid_within, 
-                           # hist_within:arid_across,
-                           # arid_withinf:hist_acrossf,
-                           # sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
-
-ecethres_pc3_mas = ece_contrast_mas2(aathres, 
-                                     aathres$pc3)
-write.csv(ecethres_pc3_mas[[5]], 
-          'results/ece_threshold_pc3_mas_arid_across.csv', 
-          row.names = FALSE)
-
-ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
-
-exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
-summary(exthresm3)
-emmeans(exthresm3, pairwise ~ site)
+# # Finding cutoff for arid across for pc3
+# aathres = aw4 %>%
+#   dplyr::filter(arid_across >=0.98) %>%
+#   group_by(site, date, mas_bin) %>%
+#   dplyr::summarise_at(vars(aci:species_diversity,
+#                            # temp:dew, 
+#                            # gh, 
+#                            # gh_within,
+#                            # arid_within, 
+#                            # hist_within:arid_across,
+#                            # arid_withinf:hist_acrossf,
+#                            # sound_atten04:sound_atten12,
+#                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+# 
+# ecethres_pc3_mas = ece_contrast_mas2(aathres, 
+#                                      aathres$pc3)
+# write.csv(ecethres_pc3_mas[[5]], 
+#           'results/ece_threshold_pc3_mas_arid_across.csv', 
+#           row.names = FALSE)
+# 
+# ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
+# 
+# exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
+# summary(exthresm3)
+# emmeans(exthresm3, pairwise ~ site)
 
 
 # SSWMA - Combining Climate and Impact Tables -----------------------------
@@ -726,9 +761,9 @@ cbmawl = rbind(cbma_wlag1, cbma_wlag2) %>%
 
 cbmawl_climate = cbmawl %>%
   # mutate(gh_within = scale_this(gh)) %>%
-  arrange(desc(arid_within)) %>%
-  slice_max(arid_within,n = (5956*0.05))
-cbmawl_climate = cbmawl_climate[1:298,]
+  arrange(desc(gh)) %>%
+  slice_max(gh,n = (5922*0.05))
+cbmawl_climate = cbmawl_climate[1:296,]
 
 # ECE - Climate - Water Supp - CBMA - Lag - MAS and Date ----------------------
 
@@ -739,11 +774,11 @@ cbmawl_clmas = cbmawl_climate %>%
   group_by(site, ws_site, water, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity,
                            gh,
-                           arid_within,
+                           # arid_within,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
-hist(cbmawl_clmas$arid_within)
-hist(as.numeric(cbmawl_clmas$arid_withinf)) # top 5% so only fours and fives
+# hist(cbmawl_clmas$arid_within)
+# hist(as.numeric(cbmawl_clmas$arid_withinf)) # top 5% so only fours and fives
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 cbmawl_clmas_pc1 = cbma_water_climate(pc = cbmawl_clmas$pc1); cbmawl_clmas_pc1
@@ -767,7 +802,7 @@ cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
 # ECE - Impact - Water Supp - CBMA ---------------------------------------
 # Do not need to do a GAM for water supp data, using threshold for aridity gradient experiment.
 cbmawl_thres = cbmawl %>%
-  dplyr::filter(arid_within >0.95) %>% # similar to aridity gradient data
+  # dplyr::filter(arid_within >0.95) %>% # similar to aridity gradient data
   # dplyr::filter(year(date_time)==2021) %>%
   # dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   #   mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
@@ -777,43 +812,49 @@ cbmawl_thres = cbmawl %>%
   group_by(site, ws_site, water, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity,
                            gh,
-                           arid_within,
+                           # arid_within,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
-cbmawl_immas_pc1 = cbma_water_impact(cbmawl_thres$pc1)
+cbmawl_threspc1 = cbmawl_thres %>% dplyr::filter(gh > -50.20955)
+cbmawl_immas_pc1 = cbma_water_impact(cbmawl_threspc1,
+                                     cbmawl_threspc1$pc1)
 cbmawl_immas_pc1[[3]]
 
-cbmawl_immas_pc2 = cbma_water_impact(cbmawl_thres$pc2)
+cbmawl_threspc2 = cbmawl_thres %>% dplyr::filter(gh > -51.74)
+cbmawl_immas_pc2 = cbma_water_impact(cbmawl_threspc2,
+                                     cbmawl_threspc2$pc2)
 cbmawl_immas_pc2[[3]]
 
-cbmawl_immas_pc3 = cbma_water_impact(cbmawl_thres$pc3)
+cbmawl_threspc3 = cbmawl_thres %>% dplyr::filter(gh > -54.80148)
+cbmawl_immas_pc3 = cbma_water_impact(cbmawl_threspc3,
+                                     cbmawl_threspc3$pc3)
 cbmawl_immas_pc3[[3]]
 
-# Finding cutoff for arid across for pc3
-aathres = aw4 %>%
-  dplyr::filter(arid_across >=0.98) %>%
-  group_by(site, date, mas_bin) %>%
-  dplyr::summarise_at(vars(aci:species_diversity,
-                           # temp:dew, 
-                           # gh, 
-                           # gh_within,
-                           # arid_within, 
-                           # hist_within:arid_across,
-                           # arid_withinf:hist_acrossf,
-                           # sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
-
-ecethres_pc3_mas = ece_contrast_mas2(aathres, 
-                                     aathres$pc3)
-write.csv(ecethres_pc3_mas[[5]], 
-          'results/ece_threshold_pc3_mas_arid_across.csv', 
-          row.names = FALSE)
-
-ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
-
-exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
-summary(exthresm3)
-emmeans(exthresm3, pairwise ~ site)
+# # Finding cutoff for arid across for pc3
+# aathres = aw4 %>%
+#   dplyr::filter(arid_across >=0.98) %>%
+#   group_by(site, date, mas_bin) %>%
+#   dplyr::summarise_at(vars(aci:species_diversity,
+#                            # temp:dew, 
+#                            # gh, 
+#                            # gh_within,
+#                            # arid_within, 
+#                            # hist_within:arid_across,
+#                            # arid_withinf:hist_acrossf,
+#                            # sound_atten04:sound_atten12,
+#                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+# 
+# ecethres_pc3_mas = ece_contrast_mas2(aathres, 
+#                                      aathres$pc3)
+# write.csv(ecethres_pc3_mas[[5]], 
+#           'results/ece_threshold_pc3_mas_arid_across.csv', 
+#           row.names = FALSE)
+# 
+# ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
+# 
+# exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
+# summary(exthresm3)
+# emmeans(exthresm3, pairwise ~ site)
 
 
 # CBMA - Combining Climate and Impact Tables -----------------------------
