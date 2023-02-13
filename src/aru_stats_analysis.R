@@ -857,15 +857,18 @@ sswma_wlag = rbind(sswma_wlag1, sswma_wlag2, sswma_wlag3)  %>%
 # sswma_wlag$pc2 = sswma_fullwater_pcadf$PC2
 # sswma_wlag$pc3 = sswma_fullwater_pcadf$PC3
 
-### Try a GAM for the lag dataset?
+
+# Try to analyze water supp data with GAM ---------------------------------
+
+
 library(mgcv)
 library(tidymv)
 
 ggplot(data = sswma_wlag,
        aes(x = date_time,
-           y = pc1)) +
+           y = pc1, color = ws_site)) +
   geom_smooth(method = "gam")
-sswma_gam1 = gam(pc1 ~ ws_site + s(arid_within, bs = "cs", k = -1) + 
+sswma_gam1 = gam(pc1 ~ ws_site + s(gh, bs = "cs", k = -1) + 
                    s(as.numeric(date_time), bs = "cs", k = -1), data = sswma_wlag);sswma_gam1
 summary(sswma_gam1)
 plot(sswma_gam1, se=TRUE,col="blue")
@@ -874,9 +877,6 @@ predict_model = predict_gam(sswma_gam1) %>%
   scale_x_continuous(sec.axis = sec_axis(~as_datetime(.), name = 'Actual Datetime'))+
   geom_smooth_ci(ws_site);predict_model
 
-# Create Lag dataframe, only focusing on last week of each water supplementation period to account for habituation period
-sswmawl = sswma_wlag %>%
-  dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07")
 
 # sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
 # 
@@ -896,6 +896,9 @@ sswmawl = sswma_wlag %>%
 # sswmawl$pc3 = sswma_waterpcadf$PC3
 
 # Water Supp - SSWMA - Date and MAS - Statistical Analysis - Lag ----------------------
+# Create Lag dataframe, only focusing on last week of each water supplementation period to account for habituation period
+sswmawl = sswma_wlag %>%
+  dplyr::filter(date(date_time)>= "2021-05-23" & date(date_time) <"2021-05-30"| date(date_time) >= "2021-06-22" & date(date_time) < "2021-07-02" & date(date_time) >= "2021-06-06" & date(date_time) <"2021-06-12"| date(date_time) >= "2021-07-21" & date(date_time) < "2021-08-07")
 
 sswma_maslag = sswmawl %>%
   mutate(date = date(date_time),
@@ -1104,6 +1107,7 @@ cbma_maslag = cbmawl %>%
                     arid_within,
                     sound_atten04:sound_atten12,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 cbma_lag_pc1 = cbma_water_contrasts2(data = cbma_maslag,
