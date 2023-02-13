@@ -28,7 +28,7 @@ setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/R
 load("data_clean/aridity_data_clean.Rdata")
 
 extreme_arid_n = aw4 %>%
-  arrange(desc(gh_within)) %>%
+  arrange(desc(arid_within)) %>%
   group_by(site) %>%
   dplyr::summarise(n = n(),
          top5per = 0.05*n())
@@ -178,36 +178,42 @@ exaa_mas = extreme_aridacross %>%
 
 
 # Climate ECE - MAS and Date ----------------------------------------------
-ex1mas = lm(pc1 ~ site + scale(date), data = exaw_mas)
+ex1mas = lm(pc1 ~ site*gh*mas_bin + scale(date), data = exaw_mas)
 summary(ex1mas)
 assump(ex1mas)
-emmeans(ex1mas, pairwise ~ site)
+emmeans(ex1mas,  ~ site|mas_bin)
+emtrends(ex1mas, ~ site|mas_bin, var = "gh", type = 'response',weights = "cells")
+
 
 ece_pc1_mas = ece_contrast_mas(exaw_mas, 
-                               exaw_mas$pc1)
-write.csv(ece_pc1_mas[[5]], 
-          'results/climate_ece_mas_pc1.csv', 
-          row.names = FALSE)
+                               exaw_mas$pc1,
+                               exaw_mas$gh); ece_pc1_mas[[6]]
+# write.csv(ece_pc1_mas[[6]], 'results/climate_ece_mas_slopes_pc1.csv', row.names = FALSE)
+# write.csv(ece_pc1_mas[[5]], 
+#           'results/climate_ece_mas_contrasts_pc1.csv', 
+#           row.names = FALSE)
 # ece_pc1_mas[[5]] %>% gtsave('results/climate_ece_mas_pc1.png', expand = 100)
 
 ece_pc2_mas = ece_contrast_mas(exaw_mas, 
-                               exaw_mas$pc2)
-write.csv(ece_pc2_mas[[5]], 
-          'results/climate_ece_mas_pc2.csv', 
-          row.names = FALSE)
+                               exaw_mas$pc2,
+                               exaw_mas$gh); ece_pc2_mas[[6]]
+# write.csv(ece_pc2_mas[[5]], 
+#           'results/climate_ece_mas_pc2.csv', 
+#           row.names = FALSE)
 # ece_pc2_mas[[5]] %>% gtsave('results/climate_ece_mas_pc2.png', expand = 100)
 
 ece_pc3_mas = ece_contrast_mas(exaw_mas, 
-                               exaw_mas$pc3)
-write.csv(ece_pc3_mas[[5]], 
-          'results/climate_ece_mas_pc3.csv', 
-          row.names = FALSE)
+                               exaw_mas$pc3,
+                               exaw_mas$gh)
+# write.csv(ece_pc3_mas[[5]], 
+#           'results/climate_ece_mas_pc3.csv', 
+#           row.names = FALSE)
 
-ece_pc3_mas[[5]] %>% gtsave('results/climate_ece_mas_pc3_arid_within.png', expand = 100)
+# ece_pc3_mas[[5]] %>% gtsave('results/climate_ece_mas_pc3_arid_within.png', expand = 100)
 
-ece_pc3_mas = ece_contrast_mas(exaa_mas, 
-                               exaa_mas$pc3)
-ece_pc3_mas[[5]] %>% gtsave('results/climate_ece_mas_pc3_arid_across.png', expand = 100)
+# ece_pc3_mas = ece_contrast_mas(exaa_mas, 
+#                                exaa_mas$pc3)
+# ece_pc3_mas[[5]] %>% gtsave('results/climate_ece_mas_pc3_arid_across.png', expand = 100)
 
 # General Additive Model --------------------------------------------------
 
@@ -395,8 +401,8 @@ awthres = aw4 %>%
 #                            arid_within, 
 #                            hist_within:arid_across,
 #                            arid_withinf:hist_acrossf,
-#                            sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+                           sound_atten04:sound_atten12,
+                           pc1:pc3), ~ mean(.x, na.rm = TRUE))
 #   mutate_at(c("arid_withinf",
 #               "arid_acrossf",
 #               "hist_withinf",
@@ -412,7 +418,8 @@ summary(exthresm1)
 emmeans(exthresm1, pairwise ~ site)
 awthrespc1 = awthres %>% dplyr::filter(gh > -50.20955)
 ecethres_pc1_mas = ece_contrast_mas(awthrespc1, 
-                                    awthrespc1$pc1);ecethres_pc1_mas[5]
+                                    awthrespc1$pc1,
+                                    awthrespc1$gh);ecethres_pc1_mas[6]
 # write.csv(ecethres_pc1_mas[[5]], 
 #           'results/ece_threshold_pc1_mas.csv', 
 #           row.names = FALSE)
@@ -420,47 +427,49 @@ ecethres_pc1_mas = ece_contrast_mas(awthrespc1,
 # ecethres_pc1_mas[[5]] %>% gtsave('ece_threshold_pc1_mas.png', expand = 100)
 awthrespc2 = awthres %>% dplyr::filter(gh > -51.74)
 ecethres_pc2_mas = ece_contrast_mas(awthrespc2, 
-                                    awthrespc2$pc2)
-write.csv(ecethres_pc2_mas[[5]], 
-          'results/ece_threshold_pc2_mas.csv', 
-          row.names = FALSE)
+                                    awthrespc2$pc2,
+                                    awthrespc2$gh);ecethres_pc2_mas[6]
+# write.csv(ecethres_pc2_mas[[5]], 
+#           'results/ece_threshold_pc2_mas.csv', 
+#           row.names = FALSE)
 
 ecethres_pc2_mas[[5]] %>% gtsave('ece_threshold_pc2_mas.png', expand = 100)
 
 awthrespc3 = awthres %>% dplyr::filter(gh > -54.80148)
 ecethres_pc3_mas = ece_contrast_mas(awthrespc3, 
-                                    awthrespc3$pc3) # -54.80148
-write.csv(ecethres_pc3_mas[[5]], 
-          'results/ece_threshold_pc3_mas.csv', 
-          row.names = FALSE)
+                                    awthrespc3$pc3,
+                                    awthrespc3$gh);ecethres_pc3_mas[6]
+# write.csv(ecethres_pc3_mas[[5]], 
+#           'results/ece_threshold_pc3_mas.csv', 
+#           row.names = FALSE)
+# 
+# ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas.png', expand = 100)
 
-ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas.png', expand = 100)
-
-# Finding cutoff for arid across for pc3
-aathres = aw4 %>%
-  dplyr::filter(arid_across >=0.98) %>%
-  group_by(site, date, mas_bin) %>%
-  dplyr::summarise_at(vars(aci:species_diversity,
-                           #                            temp:dew, 
-                           #                            gh, 
-                           #                            gh_within,
-                           #                            arid_within, 
-                           #                            hist_within:arid_across,
-                           #                            arid_withinf:hist_acrossf,
-                           #                            sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
-
-ecethres_pc3_mas = ece_contrast_mas2(aathres, 
-                                    aathres$pc3)
-write.csv(ecethres_pc3_mas[[5]], 
-          'results/ece_threshold_pc3_mas_arid_across.csv', 
-          row.names = FALSE)
-
-ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
-
-exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
-summary(exthresm3)
-emmeans(exthresm3, pairwise ~ site)
+# # Finding cutoff for arid across for pc3
+# aathres = aw4 %>%
+#   dplyr::filter(arid_across >=0.98) %>%
+#   group_by(site, date, mas_bin) %>%
+#   dplyr::summarise_at(vars(aci:species_diversity,
+#                            #                            temp:dew, 
+#                            #                            gh, 
+#                            #                            gh_within,
+#                            #                            arid_within, 
+#                            #                            hist_within:arid_across,
+#                            #                            arid_withinf:hist_acrossf,
+#                            #                            sound_atten04:sound_atten12,
+#                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
+# 
+# ecethres_pc3_mas = ece_contrast_mas2(aathres, 
+#                                     aathres$pc3)
+# write.csv(ecethres_pc3_mas[[5]], 
+#           'results/ece_threshold_pc3_mas_arid_across.csv', 
+#           row.names = FALSE)
+# 
+# ecethres_pc3_mas[[5]] %>% gtsave('ece_threshold_pc3_mas_arid_across.png', expand = 100)
+# 
+# exthresm3 = lm(pc3 ~ site + scale(date), data = awthres)
+# summary(exthresm3)
+# emmeans(exthresm3, pairwise ~ site)
 
 
 # ECE - Climate and Impact Tables Together -----------------------------
@@ -475,7 +484,16 @@ ece_pc_table = ece_tables_combined2(ece_pc1_mas[[5]],
                     ); ece_pc_table
 ece_pc_table %>% gtsave("results/ece_all_pcs.png", vwidth = 2000, vheight = 1500, expand = 100)
 
+### ECE Aridity gradient slopes table - climate and threshold combined table
 
+ece_all_tables_table = ece_tables_combined3(ece_pc1_mas[[6]],
+                                            ecethres_pc1_mas[[6]],
+                                            ece_pc2_mas[[6]],
+                                            ecethres_pc2_mas[[6]],
+                                            ece_pc3_mas[[6]],
+                                            ecethres_pc3_mas[[6]])
+
+ece_all_tables_table %>% gtsave("results/ece_all_pcs_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
 
 
 

@@ -1,6 +1,8 @@
-ece_contrast_mas = function(data,pc){
+ece_contrast_mas = function(data,
+                            yvar,
+                            xvar){
 
-  m = lm(pc ~ site*mas_bin + scale(date), data = data)
+  m = lm(yvar ~ site*xvar*mas_bin + scale(date), data = data)
   summary = summary(m)
   diagnostics = assump(m)
   # emm = emmeans(m, pairwise ~ x3*x2)
@@ -11,7 +13,7 @@ ece_contrast_mas = function(data,pc){
   kiowa = c(0,0,0,1)
   
   # emm = emtrends(m, ~ site|mas_bin)
-  emm = emtrends(m, ~ site|mas_bin, var = "site", type = 'response',weights = "cells")
+  emm = emtrends(m, ~ site|mas_bin, var = "xvar", type = 'response',weights = "cells")
   
   emm_cntrst = contrast(emm,
                         method = list(
@@ -31,7 +33,7 @@ ece_contrast_mas = function(data,pc){
                  emm_cntrst_summary,
                  emm_confi_summary,
                  ece_table,
-                 emm)
+                 summary(emm))
   # my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, emm)
   return(my_list)
 }
@@ -273,3 +275,176 @@ ece_tables_combined2 = function(climate_table1,
     )
   return(ece_allpcs)
 }
+
+ece_tables_combined3 = function(climate_table1,
+                                impact_table1,
+                                climate_table2,
+                                impact_table2,
+                                climate_table3,
+                                impact_table3){
+  # Combine all tables into a list
+  pcs = list(climate_table1,impact_table1,
+             climate_table2,impact_table2,
+             climate_table3,impact_table3)
+  
+  pcs_clim = NULL
+  pcs_impact = NULL
+  
+  # Loop through all the mas bins and create a confidence interval table for the site specific slopes
+  for(i in 1:length(pcs)){
+    table_temp <- pcs[[i]] %>%
+      data.frame(stringsAsFactors = FALSE) %>%
+      dplyr::rename(estimate = "xvar.trend") %>%
+      dplyr::mutate(site = toupper(site),
+             estimate = round(estimate, 3),
+             SE = round(SE, 3),
+             lower.CL = round(lower.CL, 3),
+             upper.CL = round(upper.CL, 3),
+             sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," "))
+    
+    if(i == 1 | i == 3 | i == 5){
+      table_temp = table_temp %>% dplyr::select(-mas_bin) %>%
+        dplyr::relocate(site,
+                        estimate,
+                        SE,
+                        df,
+                        lower.CL,
+                        upper.CL,
+                        sig)
+      names(table_temp) = paste0(names(table_temp),i)
+      assign(paste0("table_temp",i),table_temp)
+      # pcs_clim = cbind(pcs_clim, table_temp)
+      
+    } else {
+      table_temp = table_temp %>% dplyr::select(-site,
+                                                -mas_bin) %>%
+        dplyr::relocate(estimate,
+                        SE,
+                        df,
+                        lower.CL,
+                        upper.CL,
+                        sig)
+      
+      names(table_temp) = paste0(names(table_temp),i)
+      # pcs_impact = rbind(pcs_impact, table_temp)
+      assign(paste0("table_temp",i),table_temp)
+      
+    }
+  }
+  
+  pc1_ece = cbind(table_temp1, table_temp2)
+  pc2_ece = cbind(table_temp3, table_temp4)
+  pc3_ece = cbind(table_temp5, table_temp6)
+  
+  pc_all_ece = cbind(pc1_ece,pc2_ece,pc3_ece) %>%
+    dplyr::select(-site3, -site5)
+  
+  ece_ag_pcs = pc_all_ece %>%
+    gt(.) %>%
+    cols_align('center') %>%
+    tab_spanner(
+      label = md("**Climate ECE**"),
+      id = "pc1_clim",
+      columns = c(estimate1, SE1, df1, lower.CL1, upper.CL1, sig1)) %>%
+    tab_spanner(
+      label = md("**Impact ECE**"),
+      id = "pc1_impact",
+      columns = c(estimate2, SE2, df2, lower.CL2, upper.CL2, sig2)) %>%
+    tab_spanner(
+      label = md("**PC1 - Acoustic Diversity**"),
+      columns = c(estimate1, SE1, df1, lower.CL1, upper.CL1, sig1,
+                  estimate2, SE2, df2, lower.CL2, upper.CL2, sig2)) %>%
+    tab_spanner(
+      label = md("**Climate ECE**"),
+      id = "pc2_clim",
+      columns = c(estimate3, SE3, df3, lower.CL3, upper.CL3, sig3)) %>%
+    tab_spanner(
+      label = md("**Impact ECE**"),
+      id = "pc2_impact",
+      columns = c(estimate4, SE4, df4, lower.CL4, upper.CL4, sig4)) %>%
+    tab_spanner(
+      label = md("**PC2 - Avian Abundance**"),
+      columns = c(estimate3, SE3, df3, lower.CL3, upper.CL3, sig3,
+                  estimate4, SE4, df4, lower.CL4, upper.CL4, sig4)) %>%
+    tab_spanner(
+      label = md("**Climate ECE**"),
+      id = "pc3_clim",
+      columns = c(estimate5, SE5, df5, lower.CL5, upper.CL5, sig5)) %>%
+    tab_spanner(
+      label = md("**Impact ECE**"),
+      id = "pc3_impact",
+      columns = c(estimate6, SE6, df6, lower.CL6, upper.CL6, sig6)) %>%
+    tab_spanner(
+      label = md("**PC3 - Acoustic Complexity**"),
+      columns = c(estimate5, SE5, df5, lower.CL5, upper.CL5, sig5,
+                  estimate6, SE6, df6, lower.CL6, upper.CL6, sig6)) %>%
+    # tab_spanner(
+    #   label = md("**Climate ECE**"),
+    #   columns = c(estimate1, SE1, df1, lower.CL1, upper.CL1, sig1,
+    #               estimate3, SE3, df3, lower.CL3, upper.CL3, sig3,
+    #               estimate5, SE5, df5, lower.CL5, upper.CL5, sig5)) %>%
+    # tab_spanner(
+    #   label = md("**Impact ECE**"),
+    #   columns = c(estimate2, SE2, df2, lower.CL2, upper.CL2, sig2,
+    #               estimate4, SE4, df4, lower.CL4, upper.CL4, sig4,
+    #               estimate6, SE6, df6, lower.CL6, upper.CL6, sig6)) %>%
+    cols_label(site1 = md("**Site**"),
+               estimate1 = md("**Estimate**"),
+               SE1 = md("**SE**"),
+               df1 = md("**d.f.**"),
+               lower.CL1 = md("**Lower CI**"),
+               upper.CL1 = md("**Upper CI**"),
+               sig1 = md("**Sig.**")) %>%
+    cols_label(estimate2 = md("**Estimate**"),
+               SE2 = md("**SE**"),
+               df2 = md("**d.f.**"),
+               lower.CL2 = md("**Lower CI**"),
+               upper.CL2 = md("**Upper CI**"),
+               sig2 = md("**Sig.**")) %>%
+    cols_label(estimate3 = md("**Estimate**"),
+               SE3 = md("**SE**"),
+               df3 = md("**d.f.**"),
+               lower.CL3 = md("**Lower CI**"),
+               upper.CL3 = md("**Upper CI**"),
+               sig3 = md("**Sig.**")) %>%
+    cols_label(estimate4 = md("**Estimate**"),
+               SE4 = md("**SE**"),
+               df4 = md("**d.f.**"),
+               lower.CL4 = md("**Lower CI**"),
+               upper.CL4 = md("**Upper CI**"),
+               sig4 = md("**Sig.**")) %>%
+    cols_label(estimate5 = md("**Estimate**"),
+               SE5 = md("**SE**"),
+               df5 = md("**d.f.**"),
+               lower.CL5 = md("**Lower CI**"),
+               upper.CL5 = md("**Upper CI**"),
+               sig5 = md("**Sig.**")) %>%
+    cols_label(estimate6 = md("**Estimate**"),
+               SE6 = md("**SE**"),
+               df6 = md("**d.f.**"),
+               lower.CL6 = md("**Lower CI**"),
+               upper.CL6 = md("**Upper CI**"),
+               sig6 = md("**Sig.**")) %>%
+    opt_table_font(
+      font = "Times New Roman") %>%
+    # tab_row_group(
+    #   label = md("**Extremely Arid**"),
+    #   rows = c(17:20)) %>%
+    tab_row_group(
+      label = md("**Late**"),
+      rows = c(13:16)) %>%
+    tab_row_group(
+      label = md("**Mid**"),
+      rows = c(9:12)) %>%
+    tab_row_group(
+      label = md("**Early**"),
+      rows = c(5:8)) %>%
+    tab_row_group(
+      label = md("**Predawn**"),
+      rows = c(1:4)) %>%
+    tab_source_note(
+      source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
+    )
+  return(ece_ag_pcs)
+}
+
