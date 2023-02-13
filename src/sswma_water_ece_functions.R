@@ -3,7 +3,8 @@ sswma_water_climate = function(pc){
                   data = sswmawl_clmas)
   summary = summary(m1_sswmawl)
   diagnostics = assump(m1_sswmawl)
-  emm = emmeans(m1_sswmawl, ~ ws_site*water);emm
+  emm = emtrends(m1_sswmawl, ~ ws_site*water|mas_bin, var = "water", type = 'response',weights = "cells")
+  # emm = emmeans(m1_sswmawl, ~ ws_site*water);emm
   
   # Setting up comparisons for emmeans contrast function
   ws1w0 = c(1,0,0,0,0,0)

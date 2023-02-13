@@ -10,7 +10,9 @@ ece_contrast_mas = function(data,pc){
   cbma  = c(0,0,1,0)
   kiowa = c(0,0,0,1)
   
-  emm = emmeans(m, ~ site|mas_bin)
+  # emm = emtrends(m, ~ site|mas_bin)
+  emm = emtrends(m, ~ site|mas_bin, var = "site", type = 'response',weights = "cells")
+  
   emm_cntrst = contrast(emm,
                         method = list(
                           "SSWMA - LWMA" = sswma-lwma,

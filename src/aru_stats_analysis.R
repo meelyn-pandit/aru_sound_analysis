@@ -284,7 +284,8 @@ aw6 = aw4 %>%
   group_by(site, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
-                           gh, 
+                           gh:ws10m,
+                           # gh, 
                            # gh_within,
                            # arid_within,
                            # arid_across,
@@ -353,73 +354,97 @@ save(aw6, file = "data_clean/aridity_gradient_mas.Rdata")
 # Aridity Gradient - Summarized by Date and MAS - LINEAR MODELS! --------
 ### Aridity (gh) is treated as a continuous variable rather than a factor to reduce complexity
 
+load("data_clean/aridity_gradient_mas.Rdata")
+
 ### PC 1 - Acoustic Diversity
-## Across Sites
-ggplot(data = aw6,
-       aes(x = gh, y = pc1, color = site)) +
-  geom_smooth(method = lm) +
-  facet_wrap(~mas_bin)
+## LM for PC1 - Acoustic Diversity
 
-## Across Time, within Sites
-ggplot(data = aw6,
-       aes(x = gh, y = pc1, color = mas_bin)) +
-  geom_smooth(method = lm) +
-  facet_wrap(~site)
-
-### LM for PC1 - Acoustic Diversity
-
-m1 = lm(pc1 ~ gh*site*mas_bin + scale(date), data = aw6)
-summary(m1)
-tidy(m1, conf.int = TRUE) %>% print(n = 100)
-emm1 = emmeans(m1, ~ gh*site|mas_bin, type = 'response');emm1
-emtrends(m1, pairwise ~ site|mas_bin, var = "gh", type = 'response',weights = "cells") # across sites
-emtrends(m1, pairwise ~ mas_bin|site, var = "gh", type = 'response',weights = "cells") # within sites
-tidy(emm1)
+lmpc1 = ag_contrasts_convar_site(aw6,
+                                 aw6$pc1,
+                                 aw6$gh)
+lmpc1[[5]] %>% gtsave("results/ag_pc1_contrasts.png", 
+                             vwidth = 20000, 
+                             vheight = 15000, 
+                             expand = 100)
+lmpc1[[7]] %>% gtsave("results/ag_pc1_slopes.png", 
+                      vwidth = 20000, 
+                      vheight = 15000, 
+                      expand = 100)
 
 ### Good Paper graphs for lm regressions
 ag_graph_site_paper(aw6$pc1, 
                     aw6$gh,
                     "PC1 - Acoustic Diversity",
                     "Evaporation Rate (kg of water/h")
+ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
 
 ag_graph_time_paper(aw6$pc1, 
                     aw6$gh,
                     "PC1 - Acoustic Diversity",
                     "Sound Attenuation at 8kHz")
+ggsave('results/arid_grad_pc1_site_time.png', dpi = 600, height = 6, width = 8, units = "in")
 
 assump(m1)
 
 plot(emmeans(m1,~ gh*site|mas_bin, type = 'response'))
 contrast(emmeans(m1, ~ gh*site|mas_bin), type = 'response')
 
+# m1 = lm(pc1 ~ gh*site*mas_bin + scale(date), data = aw6)
+# summary(m1)
+# tidy(m1, conf.int = TRUE) %>% print(n = 100)
+# emm1 = emmeans(m1, ~ gh*site|mas_bin, type = 'response');emm1
+# emtrends(m1, pairwise ~ site|mas_bin, var = "gh", type = 'response',weights = "cells") # across sites
+# emtrends(m1, pairwise ~ mas_bin|site, var = "gh", type = 'response',weights = "cells") # within sites
+# tidy(emm1)
+
+
+
 ### PC2 - Avian Abundance
-## Across Sites
-ggplot(data = aw6,
-       aes(x = gh, y = pc2, color = site)) +
-  geom_smooth(method = lm) +
-  facet_wrap(~mas_bin)
+## LMs for PC2
+lmpc2 = ag_contrasts_convar_site(aw6,
+                                 aw6$pc2,
+                                 aw6$gh)
 
-## Within Sites, across time
-ggplot(data = aw6,
-       aes(x = gh, y = pc2, color = mas_bin)) +
-  geom_smooth(method = lm) +
-  facet_wrap(~site)
-
-m2 = lm(pc2 ~ gh*site*mas_bin + scale(date), data = aw6)
-summary(m2)
-emtrends(m2, pairwise ~ site|mas_bin, 
-         var = "gh", type = 'response',weights = "cells") # across sites
-emtrends(m2, pairwise ~ mas_bin|site, 
-         var = "gh", type = 'response',weights = "cells") # within sites, across time
+lmpc2[[5]] %>% gtsave("results/ag_pc2_contrasts.png", 
+                      vwidth = 20000, 
+                      vheight = 15000, 
+                      expand = 100)
+lmpc2[[7]] %>% gtsave("results/ag_pc2_slopes.png", 
+                      vwidth = 20000, 
+                      vheight = 15000, 
+                      expand = 100)
 
 ag_graph_site_paper(aw6$pc2, 
                     aw6$gh,
                     "PC2 - Avian Abundance",
                     "Evaporation Rate (kg of water/h")
+ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
 ag_graph_time_paper(aw6$pc2, 
                     aw6$gh,
                     "PC2 - Avian Abundance",
                     "Evaporation Rate (kg of water/h")
+ggsave('results/arid_grad_pc2_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
+# Plotting PCs across sound attenuation
+atten_graph_site_paper(aw6$pc2, 
+                       aw6$sound_atten08, 
+                       "PC2 - Avian Abundance", 
+                       "Sound Attenuation at 8kHz (m)")
+
+atten_graph_time_paper(aw6$pc2, 
+                       aw6$sound_atten08, 
+                       "PC2 - Avian Abundance", 
+                       "Sound Attenuation at 8kHz (m)")
+
+# m2 = lm(pc2 ~ gh*site*mas_bin + scale(date), data = aw6)
+# summary(m2)
+# emtrends(m2, pairwise ~ site|mas_bin, 
+#          var = "gh", type = 'response',weights = "cells") # across sites
+# emtrends(m2, pairwise ~ mas_bin|site, 
+#          var = "gh", type = 'response',weights = "cells") # within sites, across time
+
 
 assump(m2)
 
@@ -429,34 +454,39 @@ assump(m2)
 # contrast(emmeans(m2, ~ pairwise ~ gh*site|mas_bin))
 
 ### PC3 - Acoustic Complexity
-## Across sites
-ggplot(data = aw6,
-       aes(x = gh, y = pc3, color = site)) +
-  geom_smooth(method = lm) +
-  facet_wrap(~mas_bin)
+## LMs for PC2
+lmpc3 = ag_contrasts_convar_site(aw6,
+                         aw6$pc3,
+                         aw6$gh)
 
-## Within sites, across time
-ggplot(data = aw6,
-       aes(x = gh, y = pc3, color = mas_bin)) +
-  geom_smooth(method = lm) +
-  facet_wrap(~site)
+lmpc3[[5]] %>% gtsave("results/ag_pc3_contrasts.png", 
+                      vwidth = 20000, 
+                      vheight = 15000, 
+                      expand = 100)
+lmpc3[[7]] %>% gtsave("results/ag_pc3_slopes.png", 
+                      vwidth = 20000, 
+                      vheight = 15000, 
+                      expand = 100)
 
-
-m3 = lm(pc3 ~ gh*site*mas_bin + scale(date), data = aw6)
-summary(m3)
-emtrends(m3, pairwise ~ mas_bin|site, var = "gh", type = 'response',weights = "cells") # within sites, across time
-
-emtrends(m3, pairwise ~ site|mas_bin, var = "gh", type = 'response',weights = "cells") # across sites
+# m3 = lm(pc3 ~ gh*site*mas_bin + scale(date), data = aw6)
+# summary(m3)
+# emtrends(m3, pairwise ~ mas_bin|site, var = "gh", type = 'response',weights = "cells") # within sites, across time
+# 
+# emtrends(m3, pairwise ~ site|mas_bin, var = "gh", type = 'response',weights = "cells") # across sites
 
 ag_graph_site_paper(aw6$pc3, 
                     aw6$gh,
                     "PC3 - Acoustic Complexity",
                     "Evaporation Rate (kg of water/h")
+ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
 
 ag_graph_time_paper(aw6$pc3, 
                     aw6$gh,
                     "PC3 - Acoustic Complexity",
                     "Evaporation Rate (kg of water/h")
+ggsave('results/arid_grad_pc3_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
 
 assump(m3)
 # emmeans(m3, ~ gh*site|mas_bin, type = "response")
@@ -466,7 +496,15 @@ assump(m3)
 emmip(m3, site ~ gh|mas_bin, cov.reduce = range)
 contrast(emmeans(m3, ~ pairwise ~ gh*site|mas_bin))
 
+### Big table for all aridity gradient pcs
+pc_tables = ag_slopes_table(lmpc1[[6]],
+                            lmpc2[[6]],
+                            lmpc3[[6]])
 
+pc_tables %>% gtsave("results/ag_all_pcs_slopes.png", 
+                      vwidth = 1100,
+                      # vheight = 15000, 
+                      expand = 1000)
 
 # Aridity Gradient - Date and MAS - Statistical Analysis ------------------
 # PC1: ADI, AEI, positive values more likely to have higher ADI 
