@@ -372,13 +372,14 @@ lmpc1[[7]] %>% gtsave("results/ag_pc1_slopes.png",
                       expand = 100)
 
 ### Good Paper graphs for lm regressions
+## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 ag_graph_site_paper(aw6$pc1, 
                     aw6$gh,
                     "PC1 - Acoustic Diversity",
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
-
+## PC1 plotted against aridity (gh), facet grid by site (comparisons across time, within site)
 ag_graph_time_paper(aw6$pc1, 
                     aw6$gh,
                     "PC1 - Acoustic Diversity",
@@ -401,10 +402,10 @@ contrast(emmeans(m1, ~ gh*site|mas_bin), type = 'response')
 
 
 ### PC2 - Avian Abundance
-## LMs for PC2
+## LMs for PC2 with aridity (gh) as the independent variable
 lmpc2 = ag_contrasts_convar_site(aw6,
                                  aw6$pc2,
-                                 aw6$gh)
+                                 aw6$gh);lmpc2[[7]]
 
 lmpc2[[5]] %>% gtsave("results/ag_pc2_contrasts.png", 
                       vwidth = 20000, 
@@ -421,6 +422,10 @@ ag_graph_site_paper(aw6$pc2,
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
+lmpc2time = ag_contrasts_convar_time(aw6,
+                                     aw6$pc2,
+                                     aw6$gh)
+lmpc2time[[3]]
 ag_graph_time_paper(aw6$pc2, 
                     aw6$gh,
                     "PC2 - Avian Abundance",

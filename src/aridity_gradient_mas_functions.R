@@ -81,95 +81,74 @@ aridity_contrasts_mas = function(pc,
 ### Aridity Gradient - Slope table
 ## Create a table for individual slopes across sites or across mas_bins in the linear model analyses
 
-ind_slopes = function(emm_table){
-  mas = c(0,1,2,3)
-  table_all = NULL
-  # Loop through all the mas bins and create a confidence interval table for the site specific slopes
-  for(i in mas){
-    table_temp <- emm_table[emm_table$mas_bin==i,] %>%
-      data.frame(stringsAsFactors = FALSE) %>%
-      mutate(estimate = round(xvar.trend, 3),
-             SE = round(SE, 3),
-             lower.CL = round(lower.CL, 3),
-             upper.CL = round(upper.CL, 3),
-             sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," "))
-    
-    if(i == 0){
-      table_temp = table_temp %>% dplyr::select(-xvar.trend,
-                                                -mas_bin) %>%
-            dplyr::relocate(site,
-                            estimate,
-                            SE,df,
-                            lower.CL,
-                            upper.CL,
-                            sig)
-      names(table_temp) = paste0(names(table_temp),i)
-      # assign(paste0("table_temp",i),table_temp) 
-      table_all = table_temp
-      
-    } else {
-      table_temp = table_temp %>% dplyr::select(-xvar.trend,
-                                                -site,
-                                                -mas_bin, 
-                                                -df) %>%
-        dplyr::relocate(estimate,SE,lower.CL,upper.CL,sig)
-      names(table_temp) = paste0(names(table_temp),i)
-      table_all = cbind(table_all, table_temp)
-      
-    }
-  }
-  # Relabel sites so they are all capitalized
+ind_slopes_site = function(emm_table){
   
-  table_all$site0 = factor(table_all$site0, 
-                           levels = c("lwma","sswma","cbma","kiowa"),
-                           labels = c("LWMA","SSWMA","CBMA","KIOWA"))
-  
-  # Make a table using gt()
-  table_combined_horizontal = table_all %>%
-    gt(.) %>%
+  emm_table$mas_bin = factor(emm_table$mas_bin, levels = c(0,1,2,3),
+                             labels = c("Predawn","Early","Mid","Late"))
+  table_temp <- emm_table %>%
+    data.frame(stringsAsFactors = FALSE) %>%
+    dplyr::rename(estimate = "xvar.trend") %>%
+    mutate(site = toupper(site),
+           estimate = round(estimate, 3),
+           SE = round(SE, 3),
+           lower.CL = round(lower.CL, 3),
+           upper.CL = round(upper.CL, 3),
+           sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," ")) %>%
+    # dplyr::group_by(mas_bin) %>%
+    gt(groupname_col = "site", rowname_col = "mas_bin") %>%
+    # tab_row_group(label = NULL) %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold" # makes mas_bin labels bold
+                ) %>%
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
     cols_align('center') %>%
-    tab_spanner(
-      label = md("**MAS Bin 0 - Predawn**"),
-      columns = c(site0,estimate0, SE0, df0, lower.CL0,upper.CL0,sig0)) %>%
-    tab_spanner(
-      label = md("**MAS Bin 1 - Early**"),
-      columns = c(estimate1, SE1,lower.CL1, upper.CL1,sig1)
-    ) %>% 
-    tab_spanner(
-      label = md("**MAS Bin 2 - Mid**"),
-      columns = c(estimate2, SE2, lower.CL2, upper.CL2,sig2)
-    ) %>%
-    tab_spanner(
-      label = md("**MAS Bin 3 - Late**"),
-      columns = c(estimate3, SE3, lower.CL3, upper.CL3,sig3)
-    ) %>%
-    cols_align('center') %>%
-    cols_label(site0 = md("**Contrast**"),
-               estimate0 = md("**Estimate**"),
-               SE0 = md("**SE**"),
-               df0 = md("**d.f.**"),
-               lower.CL0 = md("**Lower CI**"),
-               upper.CL0 = md("**Upper CI**"),
-               sig0 = md("**Sig.**")) %>%
-    cols_label(estimate1 = md("**Estimate**"),
-               SE1 = md("**SE**"),
-               lower.CL1 = md("**Lower CI**"),
-               upper.CL1 = md("**Upper CI**"),
-               sig1 = md("**Sig.**")) %>%
-    cols_label(estimate2 = md("**Estimate**"),
-               SE2 = md("**SE**"),
-               lower.CL2 = md("**Lower CI**"),
-               upper.CL2 = md("**Upper CI**"),
-               sig2 = md("**Sig.**")) %>%
-    cols_label(estimate3 = md("**Estimate**"),
-               SE3 = md("**SE**"),
-               lower.CL3 = md("**Lower CI**"),
-               upper.CL3 = md("**Upper CI**"),
-               sig3 = md("**Sig.**")) %>%
-    
+    cols_label(site = md("**Contrast**"),
+               estimate = md("**Estimate**"),
+               SE = md("**SE**"),
+               df = md("**d.f.**"),
+               lower.CL = md("**Lower CI**"),
+               upper.CL = md("**Upper CI**"),
+               sig = md("**Sig.**")) %>%
     opt_table_font(
       font = "Times New Roman")
-  return(table_combined_horizontal)
+  return(table_temp)
+}
+
+## Create a table for individual slopes across time within sites in the linear model analyses
+ind_slopes_time = function(emm_table){
+
+  emm_table$mas_bin = factor(emm_table$mas_bin,
+                           levels = c(0,1,2,3),
+                           labels = c("Predawn","Early","Mid","Late"))
+  table_temp <- emm_table %>%
+    data.frame(stringsAsFactors = FALSE) %>%
+    dplyr::rename(estimate = "xvar.trend") %>%
+    mutate(site = toupper(site),
+           estimate = round(estimate, 3),
+           SE = round(SE, 3),
+           lower.CL = round(lower.CL, 3),
+           upper.CL = round(upper.CL, 3),
+           sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," ")) %>%
+    # dplyr::group_by(mas_bin) %>%
+    gt(groupname_col = "mas_bin", rowname_col = "site") %>%
+    # tab_row_group(label = NULL) %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold" # makes mas_bin labels bold
+    ) %>%
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
+    cols_align('center') %>%
+    cols_label(site = md("**Contrast**"),
+               estimate = md("**Estimate**"),
+               SE = md("**SE**"),
+               df = md("**d.f.**"),
+               lower.CL = md("**Lower CI**"),
+               upper.CL = md("**Upper CI**"),
+               sig = md("**Sig.**")) %>%
+    opt_table_font(
+      font = "Times New Roman")
+  return(table_temp)
 }
 
 ### Aridity Gradient - Linear Model analysis with aridity (gh) or sound attenuation at 8kHz as a continuous variable. Comparing across sites and within mas_bins
@@ -206,9 +185,9 @@ ag_contrasts_convar_site = function(data,
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
   # arid_table = aridity_table_mas2(emm_cntrst_summary);arid_table
-  arid_table = aridity_table_mas2(emm_cntrst_summary);arid_table
+  arid_table = aridity_contrast_table_site(emm_cntrst_summary);arid_table
   
-  slope_table = ind_slopes(emm_summary)
+  slope_table = ind_slopes_site(emm_summary)
   
   my_list = list(summary, # summary of linear model
                  diagnostics, # regression diagnostics plots to see if model is good
@@ -221,113 +200,127 @@ ag_contrasts_convar_site = function(data,
   return(my_list)
 }
 
-aridity_table_mas2 = function(contrast_table) {
+aridity_contrast_table_site = function(contrast_table) {
+  contrast_table$mas_bin = factor(contrast_table$mas_bin, 
+                               levels = c(0,1,2,3),
+                               labels = c("Predawn","Early","Mid","Late"))
   
-  ### Making good tables in R
-  table_predawn <- contrast_table[contrast_table$mas_bin==0,] %>%
+  table_temp <- contrast_table %>%
     data.frame(stringsAsFactors = FALSE) %>%
-    mutate(estimate = round(estimate, 3),
-           SE = round(SE, 3),
-           t.ratio = round(t.ratio, 3),
-           p.value = round(p.value, 3)) %>%
-    mutate(sig. = determine_sig(p.value)) %>%
-    mutate(p.value = as.factor(p.value)) %>%
-    mutate(p.value = dplyr::recode(p.value, "0" = "<0.001")) %>%
-    dplyr::select(-mas_bin)
-  
-  
-  table_early <- contrast_table[contrast_table$mas_bin==1,] %>%
-    data.frame(stringsAsFactors = FALSE) %>%
-    mutate(
-      estimate_e = round(estimate, 3),
-      SE_e = round(SE, 3),
-      t.ratio_e = round(t.ratio, 3),
-      p.value_e = round(p.value, 3)) %>%
-    mutate(sig._e = determine_sig(p.value_e)) %>%
-    mutate(p.value_e = as.factor(p.value_e)) %>%
-    mutate(p.value_e = dplyr::recode(p.value_e, 
-                                     "0" = "<0.001")) %>%
-    dplyr::select(-mas_bin, -contrast, -estimate, -SE, -t.ratio,-p.value, -df)
-  
-  
-  table_mid <- contrast_table[contrast_table$mas_bin==2,] %>%
-    data.frame(stringsAsFactors = FALSE) %>%
-    mutate(
-      estimate_m = round(estimate, 3),
-      SE_m = round(SE, 3),
-      t.ratio_m = round(t.ratio, 3),
-      p.value_m = round(p.value, 3)) %>%
-    mutate(sig._m = determine_sig(p.value_m)) %>%
-    mutate(p.value_m = as.factor(p.value_m)) %>%
-    mutate(p.value_m = dplyr::recode(p.value_m, 
-                                     "0" = "<0.001")) %>%
-    dplyr::select(-mas_bin, -contrast, -estimate, -SE, -t.ratio,-p.value, -df)
-  
-  table_late <- contrast_table[contrast_table$mas_bin==3,] %>%
-    data.frame(stringsAsFactors = FALSE) %>%
-    mutate(
-      estimate_l = round(estimate, 3),
-      SE_l = round(SE, 3),
-      t.ratio_l = round(t.ratio, 3),
-      p.value_l = round(p.value, 3)) %>%
-    mutate(sig._l = determine_sig(p.value_l)) %>%
-    mutate(p.value_l = as.factor(p.value_l)) %>%
-    mutate(p.value_l = dplyr::recode(p.value_l, 
-                                     "0" = "<0.001")) %>%
-    dplyr::select(-mas_bin, -contrast, -estimate, -SE, -t.ratio,-p.value, -df)
-  
-  table_combined_horizontal = cbind(table_predawn, 
-                                    table_early,
-                                    table_mid,
-                                    table_late) %>%
-    gt(.) %>%
-    cols_align('center') %>%
-    tab_spanner(
-      label = md("**MAS Bin 0 - Predawn**"),
-      columns = c(estimate, SE, df, t.ratio, p.value, sig.)) %>%
-    tab_spanner(
-      label = md("**MAS Bin 1 - Early**"),
-      columns = c(estimate_e, SE_e, t.ratio_e, p.value_e, sig._e)
-    ) %>% 
-    tab_spanner(
-      label = md("**MAS Bin 2 - Mid**"),
-      columns = c(estimate_m, SE_m, t.ratio_m, p.value_m, sig._m)
-    ) %>%
-    tab_spanner(
-      label = md("**MAS Bin 3 - Late**"),
-      columns = c(estimate_l, SE_l, t.ratio_l, p.value_l, sig._l)
-    ) %>%
+    dplyr::rename(Estimate = "estimate") %>%
+    dplyr::mutate(Estimate = round(Estimate, 3),
+                  SE = round(SE, 3),
+                  t.ratio = round(t.ratio, 3),
+                  p.value = round(p.value, 3)) %>%
+    dplyr::mutate(sig = determine_sig(p.value)) %>%
+    dplyr::mutate(p.value = as.factor(p.value)) %>%
+    dplyr::mutate(p.value = dplyr::recode(p.value, "0" = "<0.001")) %>%
+    dplyr::group_by(mas_bin) %>%
+    gt(groupname_col = "mas_bin", rowname_col = "contrast") %>%
+    # tab_row_group(label = NULL) %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold") %>% # makes contrast labels bold (rowname_col)
+    tab_style(style = cell_text(weight = "bold"), # makes mas_bin labels bold (groupname_col)
+              locations = cells_row_groups()) %>%
     cols_align('center') %>%
     cols_label(contrast = md("**Contrast**"),
-               estimate = md("**Estimate**"),
+               Estimate = md("**Estimate**"),
                SE = md("**SE**"),
                df = md("**d.f.**"),
                t.ratio = md("**t-ratio**"),
                p.value = md("**p value**"),
-               sig. = md("**sig.**")) %>%
-    cols_label(estimate_e = md("**Estimate**"),
-               SE_e = md("**SE**"),
-               # df = md("**d.f.**"),
-               t.ratio_e = md("**t-ratio**"),
-               p.value_e = md("**p value**"),
-               sig._e = md("**sig.**")) %>%
-    cols_label(estimate_m = md("**Estimate**"),
-               SE_m = md("**SE**"),
-               # df = md("**d.f.**"),
-               t.ratio_m = md("**t-ratio**"),
-               p.value_m = md("**p value**"),
-               sig._m = md("**sig.**")) %>%
-    cols_label(estimate_l = md("**Estimate**"),
-               SE_l = md("**SE**"),
-               # df = md("**d.f.**"),
-               t.ratio_l = md("**t-ratio**"),
-               p.value_l = md("**p value**"),
-               sig._l = md("**sig.**")) %>%
+               sig = md("**sig.**")) %>%
     opt_table_font(
       font = "Times New Roman")
-  return(table_combined_horizontal)
+  return(table_temp)
 }
 
+
+### Aridity Gradient - Linear Model analysis with aridity (gh) or sound attenuation at 8kHz as a continuous variable. Comparing across mourning acoustic periods and within sites
+## Includes functions to make manuscript-level tables
+ag_contrasts_convar_time = function(data,
+                                    yvar,
+                                    xvar){
+  # m = lm(pc ~ arid_within*mas_bin*x3 + scale(date), data = data)
+  m = lm(yvar ~ xvar*mas_bin*site + scale(date), data = data)
+  summary = summary(m)
+  diagnostics = assump(m)
+  # emm = emmeans(m, pairwise ~ x3*x2)
+  # # Setting up comparisons for emmeans contrast function
+  predawn = c(1,0,0,0)
+  early = c(0,1,0,0)
+  mid  = c(0,0,1,0)
+  late = c(0,0,0,1)
+  
+  emm = emtrends(m, ~ mas_bin|site, 
+                 var = "xvar", 
+                 type = 'response',
+                 weights = "cells") # across morning acoustic period
+  emm_summary = summary(emm) # have to save summary to make it a dataframe
+  emm_cntrst = contrast(emm,
+                        method = list(
+                          "Early - Predawn" = early-predawn,
+                          "Mid - Predawn"  = mid-predawn,
+                          "Late - Predawn" = late-predawn,
+                          "Mid - Early"  = mid-early,
+                          "Late - Early" = late-early,
+                          "Late - Mid" = late-mid))
+  # emm_cntrst = contrast(emm)
+  emm_cntrst_summary = summary(emm_cntrst)
+  emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
+  # arid_table = aridity_table_mas2(emm_cntrst_summary);arid_table
+  arid_table = aridity_contrast_table_time(emm_cntrst_summary);arid_table
+  
+  slope_table = ind_slopes_time(emm_summary);slope_table
+  
+  my_list = list(summary, # summary of linear model
+                 diagnostics, # regression diagnostics plots to see if model is good
+                 emm_cntrst_summary, # Emmeans contrast table w/ pvalues
+                 emm_confi_summary, # Emmeans contrast table with CI
+                 arid_table, # Good emmeans contrast table made with gh()
+                 emm_summary, # Emtrends table saved as a dataframe, slopes of each site
+                 slope_table) # Emtrends table saved as a gh() object, manuscript table
+  # my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, emm)
+  return(my_list)
+}
+
+aridity_contrast_table_time = function(contrast_table) {
+  contrast_table$site = factor(contrast_table$site, 
+                           levels = c("lwma","sswma","cbma","kiowa"),
+                           labels = c("LWMA","SSWMA","CBMA","KIOWA"))
+    table_temp <- contrast_table %>%
+      data.frame(stringsAsFactors = FALSE) %>%
+      dplyr::rename(Estimate = "estimate") %>%
+      dplyr::mutate(Estimate = round(Estimate, 3),
+                    SE = round(SE, 3),
+                    t.ratio = round(t.ratio, 3),
+                    p.value = round(p.value, 3)) %>%
+      dplyr::mutate(sig = determine_sig(p.value)) %>%
+      dplyr::mutate(p.value = as.factor(p.value)) %>%
+      dplyr::mutate(p.value = dplyr::recode(p.value, "0" = "<0.001")) %>%
+      dplyr::group_by(site) %>%
+      gt(groupname_col = "site", rowname_col = "contrast") %>%
+      # tab_row_group(label = NULL) %>%
+      tab_options(row_group.as_column = TRUE,
+                  stub.font.weight = "bold") %>% # makes mas_bin labels bold (rowname_col)
+      tab_style(style = cell_text(weight = "bold"), # makes site labels bold (groupname_col)
+                locations = cells_row_groups()) %>%
+      cols_align('center') %>%
+      cols_label(
+        # contrast = md("**Contrast**"),
+                 Estimate = md("**Estimate**"),
+                 SE = md("**SE**"),
+                 df = md("**d.f.**"),
+                 t.ratio = md("**t-ratio**"),
+                 p.value = md("**p value**"),
+                 sig = md("**sig.**")) %>%
+      opt_table_font(
+        font = "Times New Roman")
+  return(table_temp)
+}
+
+
+### Make a manuscript level table of aridity gradient slopes only (not contrasts) 
 ag_slopes_table = function(pc1_slopes,
                            pc2_slopes,
                            pc3_slopes) {
@@ -464,14 +457,18 @@ ag_slopes_table = function(pc1_slopes,
   return(pcs_ag_table)
 }
 
+# Function to make dot plot of estimates and standard error
 aridity_graph_table = function(emm_summary,
                                y_label,
                                results){
+  
+  # Add mas_bin labels into emm summary table
   table_predawn <- emm_summary[emm_summary$mas_bin==0,]
   table_early <- emm_summary[emm_summary$mas_bin==1,]
   table_mid <- emm_summary[emm_summary$mas_bin==2,] 
   table_late <- emm_summary[emm_summary$mas_bin==3,] 
   
+  # combine tables again (could do this in a for loop)
   table_combined_graph = rbind(table_predawn,
                                table_early,
                                table_mid,
