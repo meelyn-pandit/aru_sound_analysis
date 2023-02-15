@@ -1,4 +1,54 @@
 # Aridity Gradient - Date and MAS - Statistical Analysis - LINEAR Mixed MODELs REGRESSION ONLY -----------------------------------------
+# Aridity Gradient - Date and MAS - Statistical Analysis ------------------
+# PC1: ADI, AEI, positive values more likely to have higher ADI 
+# (after being multiplied by -1)
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis")
+
+m1 = lm(pc1 ~ arid_withinf*mas_bin*site + scale(date), 
+        data = aw6)
+summary(m1)
+assump(m1)
+emm = emmeans(m1,  pairwise ~ site*arid_withinf|mas_bin)
+source(aridity_contrasts_mas)
+arid_pc1_mas = aridity_contrasts_mas(aw6$pc1,
+                                     aw6$arid_withinf);arid_pc1_mas
+write.csv(arid_pc1_mas[[5]], 'results/arid_pc1_mas_table.csv', row.names = FALSE)
+arid_pc1_mas[[5]] %>% gtsave("results/arid_gradient_pc1_mas.png", 
+                             vwidth = 20000, 
+                             vheight = 15000, 
+                             expand = 100)
+plot(arid_pc1_mas[[6]])
+aridity_graph_table(arid_pc1_mas[[6]],
+                    "PC1 - Acoustic Diversity",
+                    "results/arid_pc1_mas.png")
+
+
+# PC2: Vocalization Number, Species Diversity higher with positive values
+# (after being multiplied by -1)
+arid_pc2_mas = aridity_contrasts_mas(aw6$pc2,
+                                     aw6$arid_withinf)
+arid_pc2_mas[[3]]
+
+# write.csv(arid_pc2_mas[[5]], 'results/arid_pc2_mas_table.csv', row.names = FALSE)
+arid_pc2_mas[[5]] %>% gtsave("results/arid_gradient_pc2_mas.png", vwidth = 20000, vheight = 15000, expand = 100)
+aridity_graph_table(arid_pc2_mas[[6]],
+                    "PC2 - Avian Abundance",
+                    "results/arid_pc2_mas.png")
+# plot(arid_pc2_mas[[6]])
+
+# PC3: ACI, BIO higher positive values have higher ACI and lower BIO
+# (after being multiplied by -1)
+arid_pc3_mas = aridity_contrasts_mas(aw6$pc3,
+                                     aw6$arid_withinf)
+arid_pc3_mas[[3]]
+# write.csv(arid_pc3_mas[[5]], 'results/arid_pc3_mas_table.csv', row.names = FALSE)
+
+arid_pc3_mas[[5]] %>% gtsave("results/arid_gradient_pc3_mas.png", vwidth = 20000, vheight = 15000, expand = 100)
+aridity_graph_table(arid_pc3_mas[[6]],
+                    "PC3 - Acoustic Complexity",
+                    "results/arid_pc3_mas.png")
+plot(arid_pc3_mas[[6]])
 
 ggplot(data = aw4,
        aes(x = gh, y = pc1, color = site)) +
@@ -236,6 +286,116 @@ assump(m3)
 emmeans(m3, pairwise ~ ws_site:water|arid_within)
 
 emm_options(lmerTest.limit = 54931) # set lmerTest limit so you can do the within site comparisons
+
+
+# Try to analyze water supp data with GAM ---------------------------------
+
+
+library(mgcv)
+library(tidymv)
+
+ggplot(data = sswma_wlag,
+       aes(x = date_time,
+           y = pc1, color = ws_site)) +
+  geom_smooth(method = "gam")
+sswma_gam1 = gam(pc1 ~ ws_site + s(gh, bs = "cs", k = -1) + 
+                   s(as.numeric(date_time), bs = "cs", k = -1), data = sswma_wlag);sswma_gam1
+summary(sswma_gam1)
+plot(sswma_gam1, se=TRUE,col="blue")
+predict_model = predict_gam(sswma_gam1) %>%
+  ggplot(aes(as.numeric(date_time), fit)) +
+  scale_x_continuous(sec.axis = sec_axis(~as_datetime(.), name = 'Actual Datetime'))+
+  geom_smooth_ci(ws_site);predict_model
+
+
+# sswma_waterpca = prcomp(sswmawl[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+# 
+# sswma_waterpcadf = as.data.frame(sswma_waterpca[["x"]])
+# ggbiplot(sswma_waterpca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = sswmawl$site) # Plot PCs
+
+# #3D pCA Plot
+# pca3d(sswma_waterpca, biplot = true) # only run this on windows machine
+# snapshotPCA3d("sswma_water_lag_pca.png")
+
+### PC1: ADI and AEI, higher values mean higher diversity
+### PC2: Num Vocals and Species Diversity
+### PC3: ACI and BIO, higher values = higher ACI and BIO
+
+# sswmawl$pc1 = sswma_waterpcadf$PC1*-1
+# sswmawl$pc2 = sswma_waterpcadf$PC2*-1
+# sswmawl$pc3 = sswma_waterpcadf$PC3
+
+# Aridity Gradient - Summarized by Datetime -------------------------------
+aw5 = aw4 %>%
+  dplyr::filter(year(date_time)==2021) %>%
+  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+  mutate(date = as_date(date_time)) %>%
+  group_by(site, date_time) %>%
+  dplyr::summarise(n = n(),
+                   aci_mean = mean(aci, na.rm = TRUE),
+                   bio_mean = mean(bio, na.rm = TRUE),
+                   adi_mean = mean(adi, na.rm = TRUE),
+                   aei_mean = mean(aei, na.rm = TRUE),
+                   pc1_mean = mean(pc1),
+                   pc2_mean = mean(pc2),
+                   pc3_mean = mean(pc3),
+                   vocals_mean = mean(num_vocals),
+                   species_mean = mean(species_diversity),
+                   mean_aridwithin = factor(round(mean(as.numeric(arid_within))),levels = c(1,2,3,4,5)),
+                   mean_aridacross = as.factor(round(mean(as.numeric(arid_across)))),
+                   mean_histwithin = as.factor(round(mean(as.numeric(hist_within)))),
+                   mean_histacross = as.factor(round(mean(as.numeric(hist_across)))))
+
+# audio_pca2 = prcomp(aw5[,c(4:9)], center = TRUE, scale. = TRUE)
+# audio_pca2 = prcomp(aw5[,c(5:10)], center = TRUE, scale. = TRUE) # use if summarize by date and mas_bin
+
+# ggbiplot(audio_pca2, choices = c(2,3),ellipse = TRUE, alpha = 0, groups = aw5$site) # Plot PCs
+# #3D Plot of PCAs
+# pca3d(audio_pca2, biplot = true)
+# snapshotPCA3d("audio_pca_datetime.png")
+
+# summary(audio_pca2) #PC1 and PC2 have highest proportion of variance
+# audio_pcadf2 = as.data.frame(audio_pca2[["x"]]) # Creating dataframe of PCA variance table
+# ggbiplot(audio_pca2, ellipse = TRUE, alpha = 0, groups = aw5$site) #Plotting PCAs to see directions
+# # Displaying PCAs 1 and 3
+# ggbiplot(audio_pca2, choices=c(1,2,3),ellipse = TRUE, alpha = 0, groups = aw5$site) #Plotting PCAs to see directions
+
+
+# aw5$pc1 = audio_pcadf2$PC1 # Higher PC1 leads to higher ADI i.e. acoustic diversity
+# aw5$pc2 = audio_pcadf2$PC2 # Higher PC2 leads to higher num_vocals and species_diversity
+
+# Aridity Gradient - Datetime - Statistical Analysis ----------------------
+# PC1: ACI, ADI, AEI, negative values more likely to have higher ADI
+m1 = lm(pc1_mean ~ site*mean_aridwithin + scale(date_time), data = aw5)
+m1emmeans = emmeans(m1, ~ site|mean_aridwithin)
+summary(m1)
+assump(m1)
+Anova(m1)
+pairs(emmeans(m1, ~site|mean_aridwithin, data = aw5)) #across site comparisions
+summary(m1dt_across_sites)
+pairs(emmeans(m1, ~mean_aridwithin|site, data = aw5)) # within site comparisons
+summary(m1dt_within_sites)
+
+
+# PC2: Vocalization Number, Species Diversity
+m2 = lm(pc2_mean ~ site*mean_aridwithin + scale(date_time), data = aw5)
+summary(m2)
+assump(m2)
+Anova(m2)
+pairs(emmeans(m2, ~site|mean_aridwithin, data = aw5)) #across site comparisions
+pairs(emmeans(m2, ~mean_aridwithin|site, data = aw5)) # within site comparisons
+summary(m2dt_across_sites)
+summary(m2dt_within_sites)
+pwpp(emmeans(m2, ~mean_aridwithin|site, data = aw5)) # Pairwise p-value plots
+
+# PC3: ACI and BIO
+m3 = lm(pc3_mean ~ site*mean_aridwithin + scale(date_time), data = aw5)
+summary(m3)
+assump(m3)
+Anova(m3)
+pairs(emmeans(m3, ~site|mean_aridwithin, data = aw5)) #across site comparisions
+pairs(emmeans(m3, ~mean_aridwithin|site, data = aw5)) # within site comparisons
+pwpp(emmeans(m3, ~mean_aridwithin|site, data = aw5)) # Pairwise p-value plots
 
 
 # Water Supp - SSWMA - Datetime - Stats Analysis - Lag -----------------

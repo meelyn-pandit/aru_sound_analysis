@@ -151,30 +151,6 @@ exaw_mas = extreme_aridwithin %>%
                            # arid_withinf:hist_acrossf,
                            sound_atten04:sound_atten12,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
-# %>%
-#   mutate_at(c("arid_withinf",
-#               "arid_acrossf",
-#               "hist_withinf",
-#               "hist_acrossf"), round_factor) 
-
-exaa_mas = extreme_aridacross %>%
-  dplyr::filter(year(date_time)==2021) %>%
-  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
-  group_by(site, date, mas_bin) %>%
-  dplyr::summarise_at(vars(aci:species_diversity, 
-                           temp:dew, 
-                           gh, 
-                           gh_within,
-                           arid_within, 
-                           hist_within:arid_across,
-                           arid_withinf:hist_acrossf,
-                           sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE)) %>%
-  mutate_at(c("arid_withinf",
-              "arid_acrossf",
-              "hist_withinf",
-              "hist_acrossf"), round_factor) 
 
 
 # Climate ECE - MAS and Date ----------------------------------------------
@@ -617,8 +593,8 @@ sswmawl_clmas = sswmawl_climate %>%
                            # arid_within,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
-hist(sswmawl_clmas$arid_within)
-hist(as.numeric(sswmawl_clmas$arid_withinf)) # top 5% so only fours and fives
+# hist(sswmawl_clmas$arid_within)
+# hist(as.numeric(sswmawl_clmas$arid_withinf)) # top 5% so only fours and fives
 
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
@@ -632,7 +608,7 @@ sswmawl_clmas_pc3 = sswma_water_climate(pc = sswmawl_clmas$pc3); sswmawl_clmas_p
 
 sswma_pc_climate_table = sswma_water_climate_table(sswmawl_clmas_pc1[[3]],                          sswmawl_clmas_pc2[[3]],                       sswmawl_clmas_pc3[[3]]); sswma_pc_climate_table
 
-sswma_pc_table %>% gtsave("results/sswma_water_allpcs_lag.png",
+sswma_pc_climate_table %>% gtsave("results/sswma_water_allpcs_lag.png",
                           expand = 100,
                           vwidth = 2000, 
                           vheight = 1500)
@@ -809,7 +785,7 @@ cbmawl_clmas_pc3 = cbma_water_climate(pc = cbmawl_clmas$pc3); cbmawl_clmas_pc3
 
 cbma_pc_climate_table = cbma_water_climate_table(cbmawl_clmas_pc1[[3]],                          cbmawl_clmas_pc2[[3]],                       cbmawl_clmas_pc3[[3]]); cbma_pc_climate_table
 
-cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
+cbma_pc_climate_table %>% gtsave("results/cbma_water_allpcs_lag.png",
                           expand = 100,
                           vwidth = 2000, 
                           vheight = 1500)
