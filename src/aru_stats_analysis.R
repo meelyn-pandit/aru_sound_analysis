@@ -357,27 +357,33 @@ save(aw6, file = "data_clean/aridity_gradient_mas.Rdata")
 load("data_clean/aridity_gradient_mas.Rdata")
 
 ### PC 1 - Acoustic Diversity
-## LM for PC1 - Acoustic Diversity
+## LM for PC1 - Acoustic Diversity across sites, within time periods
 
-lmpc1 = ag_contrasts_convar_site(aw6,
-                                 aw6$pc1,
-                                 aw6$gh)
-lmpc1[[5]] %>% gtsave("results/ag_pc1_contrasts.png", 
+lmpc1site = ag_contrasts_convar_site(aw6,
+                                     aw6$pc1,
+                                     aw6$gh)
+# Contrast table - across sites and within time periods
+lmpc1site[[5]] %>% gtsave("results/ag_pc1_contrasts.png", 
                              vwidth = 20000, 
                              vheight = 15000, 
                              expand = 100)
-lmpc1[[7]] %>% gtsave("results/ag_pc1_slopes.png", 
+# Slopes table - across sites and within time periods
+lmpc1site[[7]] %>% gtsave("results/ag_pc1_slopes.png", 
                       vwidth = 20000, 
                       vheight = 15000, 
                       expand = 100)
 
-### Good Paper graphs for lm regressions
 ## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 ag_graph_site_paper(aw6$pc1, 
                     aw6$gh,
                     "PC1 - Acoustic Diversity",
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
+### LM for PC1 - Acoustic Diversity, across time periods, within sites
+lmpc1time = ag_contrasts_convar_time(aw6,
+                                     aw6$pc1,
+                                     aw6$gh)
 
 ## PC1 plotted against aridity (gh), facet grid by site (comparisons across time, within site)
 ag_graph_time_paper(aw6$pc1, 
@@ -387,7 +393,6 @@ ag_graph_time_paper(aw6$pc1,
 ggsave('results/arid_grad_pc1_site_time.png', dpi = 600, height = 6, width = 8, units = "in")
 
 assump(m1)
-
 plot(emmeans(m1,~ gh*site|mas_bin, type = 'response'))
 contrast(emmeans(m1, ~ gh*site|mas_bin), type = 'response')
 
@@ -403,14 +408,16 @@ contrast(emmeans(m1, ~ gh*site|mas_bin), type = 'response')
 
 ### PC2 - Avian Abundance
 ## LMs for PC2 with aridity (gh) as the independent variable
-lmpc2 = ag_contrasts_convar_site(aw6,
+lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$pc2,
-                                 aw6$gh);lmpc2[[7]]
-
+                                 aw6$gh);lmpc2site[[5]]
+# Contrasts table, across sites, within time periods
 lmpc2[[5]] %>% gtsave("results/ag_pc2_contrasts.png", 
                       vwidth = 20000, 
                       vheight = 15000, 
                       expand = 100)
+
+# Slopes table, across sites, within time periods
 lmpc2[[7]] %>% gtsave("results/ag_pc2_slopes.png", 
                       vwidth = 20000, 
                       vheight = 15000, 
@@ -422,22 +429,19 @@ ag_graph_site_paper(aw6$pc2,
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
+
+## LM for PC2 - Avian Abundance, across time periods, within site
 lmpc2time = ag_contrasts_convar_time(aw6,
                                      aw6$pc2,
                                      aw6$gh)
-lmpc2time[[3]]
+
 ag_graph_time_paper(aw6$pc2, 
                     aw6$gh,
                     "PC2 - Avian Abundance",
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc2_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
-# Plotting PCs across sound attenuation
-atten_graph_site_paper(aw6$pc2, 
-                       aw6$sound_atten08, 
-                       "PC2 - Avian Abundance", 
-                       "Sound Attenuation at 8kHz (m)")
-
+# Plotting sound attenuation as the continuous, independent variable
 atten_graph_time_paper(aw6$pc2, 
                        aw6$sound_atten08, 
                        "PC2 - Avian Abundance", 
@@ -459,25 +463,22 @@ assump(m2)
 # contrast(emmeans(m2, ~ pairwise ~ gh*site|mas_bin))
 
 ### PC3 - Acoustic Complexity
-## LMs for PC2
-lmpc3 = ag_contrasts_convar_site(aw6,
+## LMs for PC3 across sites, within mas_bin
+lmpc3site = ag_contrasts_convar_site(aw6,
                          aw6$pc3,
-                         aw6$gh)
+                         aw6$gh);lmpc3site[[5]]
 
+# Contrast table, across sites, within time period
 lmpc3[[5]] %>% gtsave("results/ag_pc3_contrasts.png", 
                       vwidth = 20000, 
                       vheight = 15000, 
                       expand = 100)
+
+# Slopes table
 lmpc3[[7]] %>% gtsave("results/ag_pc3_slopes.png", 
                       vwidth = 20000, 
                       vheight = 15000, 
                       expand = 100)
-
-# m3 = lm(pc3 ~ gh*site*mas_bin + scale(date), data = aw6)
-# summary(m3)
-# emtrends(m3, pairwise ~ mas_bin|site, var = "gh", type = 'response',weights = "cells") # within sites, across time
-# 
-# emtrends(m3, pairwise ~ site|mas_bin, var = "gh", type = 'response',weights = "cells") # across sites
 
 ag_graph_site_paper(aw6$pc3, 
                     aw6$gh,
@@ -485,6 +486,10 @@ ag_graph_site_paper(aw6$pc3,
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
+### LM for PC3 - Acoustic Complexity, Across time periods, within sites
+lmpc3time = ag_contrasts_convar_time(aw6,
+                                     aw6$pc3,
+                                     aw6$gh);lmpc3time[[5]]
 
 ag_graph_time_paper(aw6$pc3, 
                     aw6$gh,
@@ -492,24 +497,31 @@ ag_graph_time_paper(aw6$pc3,
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc3_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
-
-assump(m3)
-# emmeans(m3, ~ gh*site|mas_bin, type = "response")
-# plot(emmeans(m3, ~ gh*site|mas_bin))
-# plot(emmeans(m3, ~ site|mas_bin))
-
-emmip(m3, site ~ gh|mas_bin, cov.reduce = range)
-contrast(emmeans(m3, ~ pairwise ~ gh*site|mas_bin))
-
-### Big table for all aridity gradient pcs
+### Big table for all aridity gradient pcs slopes
 pc_tables = ag_slopes_table(lmpc1[[6]],
                             lmpc2[[6]],
-                            lmpc3[[6]])
+                            lmpc3[[6]]); pc_tables
 
 pc_tables %>% gtsave("results/ag_all_pcs_slopes.png", 
                       vwidth = 1100,
                       # vheight = 15000, 
                       expand = 1000)
+
+pc_tables_contrasts_site = ag_contrasts_table_site(tab1 = lmpc1site[[3]],
+                                                   tab2 = lmpc2site[[3]],
+                                                   tab3 = lmpc3site[[3]]);pc_tables_contrasts_site
+pc_tables_contrasts_site %>% gtsave("results/ag_all_pcs_contrasts_site.png", 
+                     vwidth = 1100,
+                     # vheight = 15000, 
+                     expand = 1000)
+
+pc_tables_contrasts_time = ag_contrasts_table_time(tab1 = lmpc1time[[3]],
+                                                   tab2 = lmpc2time[[3]],
+                                                   tab3 = lmpc3time[[3]]);pc_tables_contrasts_time
+pc_tables_contrasts_time %>% gtsave("results/ag_all_pcs_contrasts_time.png", 
+                                    vwidth = 1100,
+                                    # vheight = 15000, 
+                                    expand = 1000)
 
 # Aridity Gradient - Date and MAS - Statistical Analysis ------------------
 # PC1: ADI, AEI, positive values more likely to have higher ADI 

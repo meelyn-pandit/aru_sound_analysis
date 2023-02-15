@@ -79,81 +79,9 @@ aridity_contrasts_mas = function(pc,
 }
 
 ### Aridity Gradient - Slope table
-## Create a table for individual slopes across sites or across mas_bins in the linear model analyses
-
-ind_slopes_site = function(emm_table){
-  
-  emm_table$mas_bin = factor(emm_table$mas_bin, levels = c(0,1,2,3),
-                             labels = c("Predawn","Early","Mid","Late"))
-  table_temp <- emm_table %>%
-    data.frame(stringsAsFactors = FALSE) %>%
-    dplyr::rename(estimate = "xvar.trend") %>%
-    mutate(site = toupper(site),
-           estimate = round(estimate, 3),
-           SE = round(SE, 3),
-           lower.CL = round(lower.CL, 3),
-           upper.CL = round(upper.CL, 3),
-           sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," ")) %>%
-    # dplyr::group_by(mas_bin) %>%
-    gt(groupname_col = "site", rowname_col = "mas_bin") %>%
-    # tab_row_group(label = NULL) %>%
-    tab_options(row_group.as_column = TRUE,
-                stub.font.weight = "bold" # makes mas_bin labels bold
-                ) %>%
-    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
-              locations = cells_row_groups()) %>%
-    cols_align('center') %>%
-    cols_label(site = md("**Contrast**"),
-               estimate = md("**Estimate**"),
-               SE = md("**SE**"),
-               df = md("**d.f.**"),
-               lower.CL = md("**Lower CI**"),
-               upper.CL = md("**Upper CI**"),
-               sig = md("**Sig.**")) %>%
-    opt_table_font(
-      font = "Times New Roman")
-  return(table_temp)
-}
-
-## Create a table for individual slopes across time within sites in the linear model analyses
-ind_slopes_time = function(emm_table){
-
-  emm_table$mas_bin = factor(emm_table$mas_bin,
-                           levels = c(0,1,2,3),
-                           labels = c("Predawn","Early","Mid","Late"))
-  table_temp <- emm_table %>%
-    data.frame(stringsAsFactors = FALSE) %>%
-    dplyr::rename(estimate = "xvar.trend") %>%
-    mutate(site = toupper(site),
-           estimate = round(estimate, 3),
-           SE = round(SE, 3),
-           lower.CL = round(lower.CL, 3),
-           upper.CL = round(upper.CL, 3),
-           sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," ")) %>%
-    # dplyr::group_by(mas_bin) %>%
-    gt(groupname_col = "mas_bin", rowname_col = "site") %>%
-    # tab_row_group(label = NULL) %>%
-    tab_options(row_group.as_column = TRUE,
-                stub.font.weight = "bold" # makes mas_bin labels bold
-    ) %>%
-    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
-              locations = cells_row_groups()) %>%
-    cols_align('center') %>%
-    cols_label(site = md("**Contrast**"),
-               estimate = md("**Estimate**"),
-               SE = md("**SE**"),
-               df = md("**d.f.**"),
-               lower.CL = md("**Lower CI**"),
-               upper.CL = md("**Upper CI**"),
-               sig = md("**Sig.**")) %>%
-    opt_table_font(
-      font = "Times New Roman")
-  return(table_temp)
-}
 
 ### Aridity Gradient - Linear Model analysis with aridity (gh) or sound attenuation at 8kHz as a continuous variable. Comparing across sites and within mas_bins
 ## Includes functions to make manuscript-level tables
-
 ag_contrasts_convar_site = function(data,
                                     yvar,
                                     xvar){
@@ -200,6 +128,7 @@ ag_contrasts_convar_site = function(data,
   return(my_list)
 }
 
+## Create a gt table for site contrasts
 aridity_contrast_table_site = function(contrast_table) {
   contrast_table$mas_bin = factor(contrast_table$mas_bin, 
                                levels = c(0,1,2,3),
@@ -235,6 +164,40 @@ aridity_contrast_table_site = function(contrast_table) {
   return(table_temp)
 }
 
+## Create a table for individual slopes across sites or across mas_bins in the linear model analyses
+ind_slopes_site = function(emm_table){
+  
+  emm_table$mas_bin = factor(emm_table$mas_bin, levels = c(0,1,2,3),
+                             labels = c("Predawn","Early","Mid","Late"))
+  table_temp <- emm_table %>%
+    data.frame(stringsAsFactors = FALSE) %>%
+    dplyr::rename(estimate = "xvar.trend") %>%
+    mutate(site = toupper(site),
+           estimate = round(estimate, 3),
+           SE = round(SE, 3),
+           lower.CL = round(lower.CL, 3),
+           upper.CL = round(upper.CL, 3),
+           sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," ")) %>%
+    # dplyr::group_by(mas_bin) %>%
+    gt(groupname_col = "site", rowname_col = "mas_bin") %>%
+    # tab_row_group(label = NULL) %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold" # makes mas_bin labels bold
+    ) %>%
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
+    cols_align('center') %>%
+    cols_label(site = md("**Contrast**"),
+               estimate = md("**Estimate**"),
+               SE = md("**SE**"),
+               df = md("**d.f.**"),
+               lower.CL = md("**Lower CI**"),
+               upper.CL = md("**Upper CI**"),
+               sig = md("**Sig.**")) %>%
+    opt_table_font(
+      font = "Times New Roman")
+  return(table_temp)
+}
 
 ### Aridity Gradient - Linear Model analysis with aridity (gh) or sound attenuation at 8kHz as a continuous variable. Comparing across mourning acoustic periods and within sites
 ## Includes functions to make manuscript-level tables
@@ -284,6 +247,7 @@ ag_contrasts_convar_time = function(data,
   return(my_list)
 }
 
+## Create a gt table for morning acoustic period contrasts
 aridity_contrast_table_time = function(contrast_table) {
   contrast_table$site = factor(contrast_table$site, 
                            levels = c("lwma","sswma","cbma","kiowa"),
@@ -319,11 +283,47 @@ aridity_contrast_table_time = function(contrast_table) {
   return(table_temp)
 }
 
+## Create a table for individual slopes across time within sites in the linear model analyses
+ind_slopes_time = function(emm_table){
+  
+  emm_table$mas_bin = factor(emm_table$mas_bin,
+                             levels = c(0,1,2,3),
+                             labels = c("Predawn","Early","Mid","Late"))
+  table_temp <- emm_table %>%
+    data.frame(stringsAsFactors = FALSE) %>%
+    dplyr::rename(estimate = "xvar.trend") %>%
+    mutate(site = toupper(site),
+           estimate = round(estimate, 3),
+           SE = round(SE, 3),
+           lower.CL = round(lower.CL, 3),
+           upper.CL = round(upper.CL, 3),
+           sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," ")) %>%
+    # dplyr::group_by(mas_bin) %>%
+    gt(groupname_col = "mas_bin", rowname_col = "site") %>%
+    # tab_row_group(label = NULL) %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold" # makes mas_bin labels bold
+    ) %>%
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
+    cols_align('center') %>%
+    cols_label(site = md("**Contrast**"),
+               estimate = md("**Estimate**"),
+               SE = md("**SE**"),
+               df = md("**d.f.**"),
+               lower.CL = md("**Lower CI**"),
+               upper.CL = md("**Upper CI**"),
+               sig = md("**Sig.**")) %>%
+    opt_table_font(
+      font = "Times New Roman")
+  return(table_temp)
+}
 
 ### Make a manuscript level table of aridity gradient slopes only (not contrasts) 
 ag_slopes_table = function(pc1_slopes,
                            pc2_slopes,
                            pc3_slopes) {
+  
   
   pcs = list(pc1_slopes,pc2_slopes,pc3_slopes)
   pcs_all = NULL
@@ -331,19 +331,19 @@ ag_slopes_table = function(pc1_slopes,
   for(i in 1:length(pcs)){
     table_temp <- pcs[[i]] %>%
       data.frame(stringsAsFactors = FALSE) %>%
-      mutate(site = toupper(site),
-             estimate = round(xvar.trend, 3),
+      dplyr::rename(estimate = "xvar.trend") %>%
+      dplyr::mutate(site = toupper(site),
+             estimate = round(estimate, 3),
              SE = round(SE, 3),
              lower.CL = round(lower.CL, 3),
              upper.CL = round(upper.CL, 3),
              sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," "))
     
     if(i == 1){
-      table_temp = table_temp %>% dplyr::select(-xvar.trend,
-                                                -mas_bin) %>%
-        dplyr::relocate(site,
+        table_temp = table_temp %>% dplyr::relocate(site,
                         estimate,
-                        SE,df,
+                        SE,
+                        df,
                         lower.CL,
                         upper.CL,
                         sig)
@@ -352,57 +352,28 @@ ag_slopes_table = function(pc1_slopes,
       pcs_all = table_temp
       
     } else {
-      table_temp = table_temp %>% dplyr::select(-xvar.trend,
+      table_temp = table_temp %>% dplyr::select(
                                                 -site,
-                                                -mas_bin, 
-                                                -df) %>%
+                                                -df,
+                                                -mas_bin) %>%
         dplyr::relocate(estimate,SE,lower.CL,upper.CL,sig)
       names(table_temp) = paste0(names(table_temp),i)
       pcs_all = cbind(pcs_all, table_temp)
       
     }
   }
-
-  # ### PC1 Table
-  # 
-  # table1 <- pc1_contrast_table %>%
-  #   data.frame(stringsAsFactors = FALSE) %>%
-  #   mutate(estimate1 = round(estimate, 3),
-  #          SE1 = round(SE, 3),
-  #          df1 = df,
-  #          t.ratio1 = round(t.ratio, 3),
-  #          p.value1 = round(p.value, 3)) %>%
-  #   mutate(sig.1 = determine_sig(p.value1)) %>%
-  #   mutate(p.value1 = as.factor(p.value1)) %>%
-  #   mutate(p.value1 = dplyr::recode(p.value1, "0" = "<0.001")) %>%
-  #   dplyr::select(-arid_withinf, -estimate, -SE, -t.ratio, -p.value, -df)
-  # 
-  # ### PC2 Table
-  # table2 <- pc2_contrast_table %>%
-  #   data.frame(stringsAsFactors = FALSE) %>%
-  #   mutate(estimate2 = round(estimate, 3),
-  #          SE2 = round(SE, 3),
-  #          t.ratio2 = round(t.ratio, 3),
-  #          p.value2 = round(p.value, 3)) %>%
-  #   mutate(sig.2 = determine_sig(p.value2)) %>%
-  #   mutate(p.value2 = as.factor(p.value2)) %>%
-  #   mutate(p.value2 = dplyr::recode(p.value2, "0" = "<0.001")) %>%
-  #   dplyr::select(-contrast, -arid_withinf, -estimate, -SE, -t.ratio, -p.value,  -df) 
-  # 
-  # ### PC3 Table
-  # table3<- pc3_contrast_table %>%
-  #   data.frame(stringsAsFactors = FALSE) %>%
-  #   mutate(estimate3 = round(estimate, 3),
-  #          SE3 = round(SE, 3),
-  #          t.ratio3 = round(t.ratio, 3),
-  #          p.value3 = round(p.value, 3)) %>%
-  #   mutate(sig.3 = determine_sig(p.value3)) %>%
-  #   mutate(p.value3 = as.factor(p.value3)) %>%
-  #   mutate(p.value3 = dplyr::recode(p.value3, "0" = "<0.001")) %>%
-  #   dplyr::select(-contrast,-arid_withinf, -estimate, -SE, -t.ratio, -p.value, -df) 
+  pcs_all$mas_bin1 = factor(pcs_all$mas_bin1,
+                             levels = c(0,1,2,3),
+                             labels = c("Predawn","Early","Mid","Late"))
   
   pcs_ag_table = pcs_all %>%
-    gt(.) %>%
+    # gt(groupname_col = "mas_bin1", rowname_col = "site1") %>%
+    gt(groupname_col = "site1", rowname_col = "mas_bin1") %>%
+    
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold") %>% # makes mas_bin labels bold
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
     cols_align('center') %>%
     tab_spanner(
       label = md("**PC1 - Acoustic Diversity**"),
@@ -436,21 +407,199 @@ ag_slopes_table = function(pc1_slopes,
                sig3 = md("**Sig.**")) %>%
     opt_table_font(
       font = "Times New Roman") %>%
-    # tab_row_group(
-    #   label = md("**Extremely Arid**"),
-    #   rows = c(17:20)) %>%
-    tab_row_group(
-      label = md("**Late**"),
-      rows = c(13:16)) %>%
-    tab_row_group(
-      label = md("**Mid**"),
-      rows = c(9:12)) %>%
-    tab_row_group(
-      label = md("**Early**"),
-      rows = c(5:8)) %>%
-    tab_row_group(
-      label = md("**Predawn**"),
-      rows = c(1:4)) %>%
+    tab_source_note(
+      source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
+    )
+  return(pcs_ag_table)
+}
+
+### Aridity gradient contrasts across sites, within time, all pcs
+ag_contrasts_table_site = function(tab1,
+                                   tab2,
+                                   tab3) {
+  
+  pcs = list(tab1,tab2,tab3)
+  pcs_all = NULL
+  # Loop through all the mas bins and create a confidence interval table for the site specific slopes
+  for(i in 1:length(pcs)){
+      
+      table_temp <- pcs[[i]] %>%
+        data.frame(stringsAsFactors = FALSE) %>%
+        dplyr::mutate(estimate = round(estimate, 3),
+                      SE = round(SE, 3),
+                      t.ratio = round(t.ratio, 3),
+                      p.value = round(p.value, 3)) %>%
+        dplyr::mutate(sig = determine_sig(p.value)) %>%
+        dplyr::mutate(p.value = as.factor(p.value)) %>%
+        dplyr::mutate(p.value = dplyr::recode(p.value, "0" = "<0.001"))
+
+    if(i == 1){
+      table_temp = table_temp %>% dplyr::relocate(
+                                                  contrast,# site,
+                                                  estimate,
+                                                  SE,
+                                                  df,
+                                                  t.ratio,
+                                                  p.value,
+                                                  sig)
+      names(table_temp) = paste0(names(table_temp),i)
+      # assign(paste0("table_temp",i),table_temp) 
+      pcs_all = table_temp
+      
+    } else {
+      table_temp = table_temp %>% dplyr::select(
+        -contrast,# -site,
+        -df,
+        -mas_bin) %>%
+        dplyr::relocate(estimate,SE,t.ratio,p.value,sig)
+      names(table_temp) = paste0(names(table_temp),i)
+      pcs_all = cbind(pcs_all, table_temp)
+    }
+  }
+  # pcs_all$site1 = factor(pcs_all$site1, 
+  #                       levels = c("lwma","sswma","cbma","kiowa"),
+  #                       labels = c("LWMA","SSWMA","CBMA","KIOWA"))
+  pcs_all$mas_bin1 = factor(pcs_all$mas_bin1,
+                            levels = c(0,1,2,3),
+                            labels = c("Predawn","Early","Mid","Late"))
+  
+  pcs_ag_table = pcs_all %>%
+    # gt(groupname_col = "mas_bin1", rowname_col = "site1") %>%
+    gt(groupname_col = "mas_bin1", 
+       rowname_col = "contrast1") %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold") %>% # makes mas_bin labels bold
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
+    cols_align('center') %>%
+    tab_spanner(
+      label = md("**PC1 - Acoustic Diversity**"),
+      columns = c(estimate1, SE1, df1, t.ratio1, p.value1, sig1)) %>%
+    tab_spanner(
+      label = md("**PC2 - Avian Abundance**"),
+      columns = c(estimate2, SE2, t.ratio2, p.value2, sig2)
+    ) %>% 
+    tab_spanner(
+      label = md("**PC3 - Acoustic Complexity**"),
+      columns = c(estimate3, SE3, t.ratio3, p.value3, sig3)) %>%
+    cols_label(contrast1 = md("**Contrast**"),
+               estimate1 = md("**Estimate**"),
+               SE1 = md("**SE**"),
+               df1 = md("**d.f.**"),
+               t.ratio1 = md("**t-ratio**"),
+               p.value1 = md("**p value**"),
+               sig1 = md("**sig.**")) %>%
+    cols_label(estimate2 = md("**Estimate**"),
+               SE2 = md("**SE**"),
+               # df1 = md("**d.f.**"),
+               t.ratio2 = md("**t-ratio**"),
+               p.value2 = md("**p value**"),
+               sig2 = md("**sig.**")) %>%
+    cols_label(estimate3 = md("**Estimate**"),
+               SE3 = md("**SE**"),
+               # df1 = md("**d.f.**"),
+               t.ratio3 = md("**t-ratio**"),
+               p.value3 = md("**p value**"),
+               sig3 = md("**sig.**")) %>%
+    opt_table_font(
+      font = "Times New Roman") %>%
+    tab_source_note(
+      source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
+    )
+  return(pcs_ag_table)
+}
+
+### Aridity gradient contrasts across time, within sites, all pcs
+ag_contrasts_table_time = function(tab1,
+                                   tab2,
+                                   tab3) {
+  
+  pcs = list(tab1,tab2,tab3)
+  pcs_all = NULL
+  # Loop through all the mas bins and create a confidence interval table for the site specific slopes
+  for(i in 1:length(pcs)){
+    
+    table_temp <- pcs[[i]] %>%
+      data.frame(stringsAsFactors = FALSE) %>%
+      dplyr::mutate(estimate = round(estimate, 3),
+                    SE = round(SE, 3),
+                    t.ratio = round(t.ratio, 3),
+                    p.value = round(p.value, 3)) %>%
+      dplyr::mutate(sig = determine_sig(p.value)) %>%
+      dplyr::mutate(p.value = as.factor(p.value)) %>%
+      dplyr::mutate(p.value = dplyr::recode(p.value, "0" = "<0.001"))
+    
+    if(i == 1){
+      table_temp = table_temp %>% dplyr::relocate(
+        site,
+        contrast,
+        estimate,
+        SE,
+        df,
+        t.ratio,
+        p.value,
+        sig)
+      names(table_temp) = paste0(names(table_temp),i)
+      # assign(paste0("table_temp",i),table_temp) 
+      pcs_all = table_temp
+      
+    } else {
+      table_temp = table_temp %>% dplyr::select(
+        -site,
+        -contrast,
+        -df) %>%
+        dplyr::relocate(estimate,SE,t.ratio,p.value,sig)
+      names(table_temp) = paste0(names(table_temp),i)
+      pcs_all = cbind(pcs_all, table_temp)
+    }
+  }
+  pcs_all$site1 = factor(pcs_all$site1,
+                        levels = c("lwma","sswma","cbma","kiowa"),
+                        labels = c("LWMA","SSWMA","CBMA","KIOWA"))
+  # pcs_all$mas_bin1 = factor(pcs_all$mas_bin1,
+  #                           levels = c(0,1,2,3),
+  #                           labels = c("Predawn","Early","Mid","Late"))
+  
+  pcs_ag_table = pcs_all %>%
+    # gt(groupname_col = "mas_bin1", rowname_col = "site1") %>%
+    gt(groupname_col = "site1", 
+       rowname_col = "contrast1") %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold") %>% # makes mas_bin labels bold
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
+    cols_align('center') %>%
+    tab_spanner(
+      label = md("**PC1 - Acoustic Diversity**"),
+      columns = c(estimate1, SE1, df1, t.ratio1, p.value1, sig1)) %>%
+    tab_spanner(
+      label = md("**PC2 - Avian Abundance**"),
+      columns = c(estimate2, SE2, t.ratio2, p.value2, sig2)
+    ) %>% 
+    tab_spanner(
+      label = md("**PC3 - Acoustic Complexity**"),
+      columns = c(estimate3, SE3, t.ratio3, p.value3, sig3)) %>%
+    cols_label(site1 = md("**Site**"),
+               estimate1 = md("**Estimate**"),
+               SE1 = md("**SE**"),
+               df1 = md("**d.f.**"),
+               t.ratio1 = md("**t-ratio**"),
+               p.value1 = md("**p value**"),
+               sig1 = md("**sig.**")) %>%
+    cols_label(estimate2 = md("**Estimate**"),
+               SE2 = md("**SE**"),
+               # df1 = md("**d.f.**"),
+               t.ratio2 = md("**t-ratio**"),
+               p.value2 = md("**p value**"),
+               sig2 = md("**sig.**")) %>%
+    cols_label(estimate3 = md("**Estimate**"),
+               SE3 = md("**SE**"),
+               # df1 = md("**d.f.**"),
+               t.ratio3 = md("**t-ratio**"),
+               p.value3 = md("**p value**"),
+               sig3 = md("**sig.**")) %>%
+    opt_table_font(
+      font = "Times New Roman") %>%
     tab_source_note(
       source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
     )
