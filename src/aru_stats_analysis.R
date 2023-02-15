@@ -93,6 +93,27 @@ audio_pcadf = as.data.frame(audio_pca[["x"]])
 ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
 
+# Create gt table of pcs table
+
+pc_df = data.frame(pc = c(1,2,3),
+                   std = c(1.413,1.273,1.008),
+                   prop_var = c(0.333, 0.27, 0.165),
+                   cum_prop = c(0.333, 0.603, 0.772),
+                   desc = c("Acoustic Diversity", "Avian Abundance", "Acoustic Complexity"))
+
+pc_gt = pc_df %>% 
+        gt() %>%
+        cols_align('center') %>%
+        cols_label(pc = md("**PC**"),
+                   std = md("**Standard Deviation**"),
+                   prop_var = md("**Proportion\nof Variance**"),
+                   cum_prop = md("**Cumulative\nProportion**"),
+                   desc = md("**Description**")) %>%
+        opt_table_font(
+    font = "Times New Roman")%>% gtsave("results/pc_table.png", 
+                                        vwidth = 20000, 
+                                        vheight = 15000, 
+                                        expand = 100)
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI
@@ -339,7 +360,7 @@ lmpc1site[[7]] %>% gtsave("results/ag_pc1_slopes.png",
 ag_graph_site_paper(aw6$pc1, 
                     aw6$gh,
                     "PC1 - Acoustic Diversity",
-                    "Evaporation Rate (kg of water/h")
+                    "Evaporation Rate (kg of water/h)")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -389,7 +410,7 @@ lmpc2site[[7]] %>% gtsave("results/ag_pc2_slopes.png",
 ag_graph_site_paper(aw6$pc2, 
                     aw6$gh,
                     "PC2 - Avian Abundance",
-                    "Evaporation Rate (kg of water/h")
+                    "Evaporation Rate (kg of water/h)")
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 
@@ -401,7 +422,7 @@ lmpc2time = ag_contrasts_convar_time(aw6,
 ag_graph_time_paper(aw6$pc2b, 
                     aw6$gh,
                     "PC2 - Avian Abundance",
-                    "Evaporation Rate (kg of water/h")
+                    "Evaporation Rate (kg of water/h)")
 ggsave('results/arid_grad_pc2_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 # Plotting sound attenuation coefficient as the continuous, independent variable
@@ -455,7 +476,7 @@ lmpc3site[[7]] %>% gtsave("results/ag_pc3_slopes.png",
 ag_graph_site_paper(aw6$pc3, 
                     aw6$gh,
                     "PC3 - Acoustic Complexity",
-                    "Evaporation Rate (kg of water/h")
+                    "Evaporation Rate (kg of water/h)")
 ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC3 - Acoustic Complexity, Across time periods, within sites
@@ -504,13 +525,15 @@ cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2",
 load("data_clean/aridity_gradient_mas.Rdata")
 
 mas_graphs = aw6 %>%
-  group_by(site, mas_bin, arid_withinf) %>%
+  group_by(site_labels, mas_bin) %>%
   dplyr::summarise(pc1_mean = mean(pc1),
                    pc1_se = (sd(pc1))/sqrt(n()),
                    pc2_mean = mean(pc2),
                    pc2_se = (sd(pc2))/sqrt(n()),
                    pc3_mean = mean(pc3),
-                   pc3_se = (sd(pc3))/sqrt(n())) %>%
+                   pc3_se = (sd(pc3))/sqrt(n()),
+                   gh_mean = mean(gh),
+                   gh_se = (sd(gh))/sqrt(n())) %>%
   dplyr::mutate(mas_bin = case_when(mas_bin == "0" ~ "Predawn",
                                     mas_bin == "1" ~ "Early",
                                     mas_bin == "2" ~ "Mid",
@@ -520,31 +543,48 @@ mas_graphs = aw6 %>%
                                             "Early",
                                             "Mid",
                                             "Late")))
-### PC1 - Acoustic Diversity
+
+### Average aridity within site, across time
 ggplot(data = mas_graphs,
-       aes(x=arid_withinf, y=pc1_mean, color = site)) +
-  geom_point(position = position_dodge(0))+
-  # ggtitle("Datetime Summarized - PC1 - Acoustic Diversity")+
-  geom_line(aes(group = site, 
-                color = site),
-            position = position_dodge(0))+
-  geom_errorbar(aes(ymin = pc1_mean-pc1_se, 
-                    ymax = pc1_mean+pc1_se), width = 0.5,
-                position = position_dodge(0))+
-  scale_color_manual(values = cbpalette, 
-                     name = "Site",
-                     labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  # scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid")) +
-  scale_x_discrete(name = "Aridity - Normalized Within") +
-  scale_y_continuous(name = "PC1 - Acoustic Diversity")+
-  facet_grid(. ~ mas_bin) +
+       aes(x=mas_bin, y=gh_mean, color = site_labels)) +
+  geom_point(position = position_dodge(0.5))+
+  geom_errorbar(aes(ymin = gh_mean-gh_se, 
+                    ymax = gh_mean+gh_se), width = 0.5,
+                position = position_dodge(0.5))+
+  scale_color_manual(values = cbpalette,
+                      name = "Site")+
+  scale_x_discrete(name = "Morning Acoustic Period") +
+  scale_y_continuous(name = "Mean Evaporation\nRate (kg/h)",
+                     limits = c(-60,-30),
+                     breaks = seq(-60,-30, by = 10))+
   theme_classic(base_size = 20) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
         plot.title = element_text(hjust = 0, vjust = 0),
         legend.position = "bottom") +
-  # facet_wrap(vars(mas_bin)) + 
   theme(strip.text.y = element_text(angle = 0))
-ggsave('results/arid_pc1_mas.png', dpi = 600, height = 6, width = 8, units = "in")
+ggsave('results/avg_arid_across_site.png', dpi = 600, height = 6, width = 8, units = "in")
+
+### Average aridity within site, across time
+ggplot(data = mas_graphs,
+       aes(x=site_labels, y=gh_mean, color = mas_bin)) +
+  geom_point(position = position_dodge(0.5))+
+  geom_errorbar(aes(ymin = gh_mean-gh_se, 
+                    ymax = gh_mean+gh_se), width = 0.5,
+                position = position_dodge(0.5))+
+  scale_color_viridis(discrete = TRUE,
+                      option = "B",
+                      name = "Morning\nAcoustic\nPeriod",
+                      labels = c("Predawn","Early","Mid","Late"))+
+  scale_x_discrete(name = "Site") +
+  scale_y_continuous(name = "Mean Aridity (kg/h)",
+                     limits = c(-60,-30),
+                     breaks = seq(-60,-30, by = 10))+
+  theme_classic(base_size = 20) +
+  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+        plot.title = element_text(hjust = 0, vjust = 0),
+        legend.position = "bottom") +
+  theme(strip.text.y = element_text(angle = 0))
+ggsave('results/avg_arid_across_time.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### PC2 - Num vocals and Species Diversity
 ggplot(data = mas_graphs,

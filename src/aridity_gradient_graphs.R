@@ -33,7 +33,7 @@ ag_graph_site_paper = function(yvar,
           plot.title = element_text(hjust = 0, vjust = 0),
           legend.position = "right") +
     # facet_wrap(vars(mas_bin)) + 
-    ggtitle(label = "Comparisons across Site") +
+    # ggtitle(label = "Comparisons across Site") +
     facet_grid(~mas_labels)+
     theme(strip.text.y = element_text(angle = 0))
 }
@@ -82,7 +82,7 @@ ag_graph_time_paper = function(yvar,
           legend.position = "right") +
     # facet_wrap(vars(mas_bin)) + 
     facet_grid(~site_labels)+
-    ggtitle(label = "Comparisons within Site, Across Morning Singing Period (mas_bin)") +
+    # ggtitle(label = "Comparisons within Site, Across Morning Singing Period (mas_bin)") +
     theme(strip.text.y = element_text(angle = 0))
 }
 
