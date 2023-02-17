@@ -345,16 +345,22 @@ load("data_clean/aridity_gradient_mas.Rdata")
 lmpc1site = ag_contrasts_convar_site(aw6,
                                      aw6$pc1,
                                      aw6$gh)
-# Contrast table - across sites and within time periods
-lmpc1site[[5]] %>% gtsave("results/ag_pc1_contrasts.png", 
-                             vwidth = 20000, 
-                             vheight = 15000, 
-                             expand = 100)
-# Slopes table - across sites and within time periods
-lmpc1site[[7]] %>% gtsave("results/ag_pc1_slopes.png", 
-                      vwidth = 20000, 
-                      vheight = 15000, 
-                      expand = 100)
+
+## PC1 - Acoustic Diversity across sound attenuation coefficient
+# 4 kHz
+atten04pc1 = ag_contrasts_convar_site(aw6,
+                         aw6$pc1,
+                         aw6$atten_alpha04)
+
+# 8 kHz
+atten08pc1 = ag_contrasts_convar_site(aw6,
+                         aw6$pc1,
+                         aw6$atten_alpha08)
+
+# 12 kHz
+atten12pc1 = ag_contrasts_convar_site(aw6,
+                         aw6$pc1,
+                         aw6$atten_alpha12)
 
 ## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 ag_graph_site_paper(aw6$pc1, 
@@ -395,18 +401,6 @@ lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$pc2,
                                  aw6$gh);lmpc2site[[5]]
 
-# Contrasts table, across sites, within time periods
-lmpc2site[[5]] %>% gtsave("results/ag_pc2_contrasts.png", 
-                      vwidth = 20000, 
-                      vheight = 15000, 
-                      expand = 100)
-
-# Slopes table, across sites, within time periods
-lmpc2site[[7]] %>% gtsave("results/ag_pc2_slopes.png", 
-                      vwidth = 20000, 
-                      vheight = 15000, 
-                      expand = 100)
-
 ag_graph_site_paper(aw6$pc2, 
                     aw6$gh,
                     "PC2 - Avian Abundance",
@@ -424,6 +418,22 @@ ag_graph_time_paper(aw6$pc2b,
                     "PC2 - Avian Abundance",
                     "Evaporation Rate (kg of water/h)")
 ggsave('results/arid_grad_pc2_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
+## PC2 - Avian Abundance across sound attenuation coefficient
+# 4 kHz
+atten04pc2 = ag_contrasts_convar_site(aw6,
+                         aw6$pc2,
+                         aw6$atten_alpha04)
+
+# 8 kHz
+atten08pc2 = ag_contrasts_convar_site(aw6,
+                         aw6$pc2,
+                         aw6$atten_alpha08)
+
+# 12 kHz
+atten12pc2 = ag_contrasts_convar_site(aw6,
+                         aw6$pc2,
+                         aw6$atten_alpha12)
 
 # Plotting sound attenuation coefficient as the continuous, independent variable
 atten_graph_time_paper(aw6$pc2, 
@@ -461,17 +471,6 @@ lmpc3site = ag_contrasts_convar_site(aw6,
                          aw6$pc3,
                          aw6$gh);lmpc3site[[5]]
 
-# Contrast table, across sites, within time period
-lmpc3site[[5]] %>% gtsave("results/ag_pc3_contrasts.png", 
-                      vwidth = 20000, 
-                      vheight = 15000, 
-                      expand = 100)
-
-# Slopes table
-lmpc3site[[7]] %>% gtsave("results/ag_pc3_slopes.png", 
-                      vwidth = 20000, 
-                      vheight = 15000, 
-                      expand = 100)
 
 ag_graph_site_paper(aw6$pc3, 
                     aw6$gh,
@@ -489,6 +488,46 @@ ag_graph_time_paper(aw6$pc3,
                     "PC3 - Acoustic Complexity",
                     "Evaporation Rate (kg of water/h")
 ggsave('results/arid_grad_pc3_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+
+## PC3 - Acoustic complexity across sound attenuation coefficient
+# 4 kHz
+atten04pc3 = ag_contrasts_convar_site(aw6,
+                                      aw6$pc3,
+                                      aw6$atten_alpha04)
+
+# 8 kHz
+atten08pc3 = ag_contrasts_convar_site(aw6,
+                                       aw6$pc3,
+                                       aw6$atten_alpha08)
+
+# 12 kHz
+atten12pc3 = ag_contrasts_convar_site(aw6,
+                                       aw6$pc3,
+                                       aw6$atten_alpha12)
+
+### Sound attenuation at 4kHz tables
+atten04_tables = ag_slopes_table(atten04pc1[[6]],
+                               atten04pc2[[6]],
+                               atten04pc3[[6]]) %>% gtsave("results/atten04_slopes.png", 
+                                                           vwidth = 1100,
+                                                           # vheight = 15000, 
+                                                           expand = 1000)
+
+### Sound attenuation at 8kHz tables
+atten08_tables = ag_slopes_table(atten08pc1[[6]],
+                               atten08pc2[[6]],
+                               atten08pc3[[6]]) %>% gtsave("results/atten08_slopes.png", 
+                                                          vwidth = 1100,
+                                                          # vheight = 15000, 
+                                                          expand = 1000)
+
+### Sound attenuation at 8kHz tables
+atten12_tables = ag_slopes_table(atten12pc1[[6]],
+                               atten12pc2[[6]],
+                               atten12pc3[[6]]) %>% gtsave("results/atten12_slopes.png", 
+                                                           vwidth = 1100,
+                                                           # vheight = 15000, 
+                                                           expand = 1000)
 
 ### Big table for all aridity gradient pcs slopes
 pc_tables = ag_slopes_table(lmpc1site[[6]],
