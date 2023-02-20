@@ -1,4 +1,4 @@
-  # Environmental Conditions ------------------------------------------------
+# Environmental Conditions ------------------------------------------------
 # current = "ERIC_current.Rdata"
 # extreme = "ERIC_current_extreme.Rdata"
 # climate_change = "ERIC_climate_change.Rdata"
@@ -6,7 +6,8 @@
 # 
 # #Weather data, replace where it says "current" with the appropriate weather dataset from above
 # weather_data = paste0("dir/",current,sep = "") #replace dir with appropriate working directory
-
+library(parallel)
+library(tidyverse)
 load("data_clean/mesonet_data/mesonet_weather.Rdata") # loads weather dataframe "wfull"
 # contains weather data for lwma, sswma, cbma, and kiowa
 
@@ -21,7 +22,7 @@ terr_size = c(1000,1500,3000)
 # ewl = c(T,F)
 ewl = T
 # site = c("lwma","sswma","cbma","kiowa")
-site = "cbma"
+site = "kiowa"
 
 terr_freq_ewl_site = expand.grid(terr_size,freq,ewl,site)
 names(terr_freq_ewl_site) = c("terr_size","freq","ewl","site")
@@ -30,7 +31,13 @@ terr_freq_ewl_site$terr_size = as.numeric(terr_freq_ewl_site$terr_size)
 # setwd("dir") #set to working directory with "Aridity_ABM_core_model_funct.R" file in it
 source("src/abm_scripts/Aridity_ABM_core_model_funct.R")
 
-ABMout <- apply(terr_freq_ewl_site, MARGIN = 1, function(x){
+numCores = detectCores()
+cl = makeCluster(numCores-2, outfile = "")
+clusterExport(cl, "aridityABM")
+clusterExport(cl, "wfull")
+clusterExport(cl, "mass")
+
+ABMout <- parApply(cl, terr_freq_ewl_site, MARGIN = 1, function(x){
   aridityABM(HexSize=x[1], #territory size in m, original territory size is 1000m
              Song_volume = 85, #song/call volume in dB
              Song_detection = 30, #song detection in dB
@@ -63,6 +70,9 @@ ABMout_final$percent_comp = ABMout_final$Done/ABMout_final$FullTerrs #determine 
 
 # setwd("dir") #set to appropriate working directory
 # fname = paste0("climate_change",HexSize,"ewl",ewl,sep = "_")
-save(ABMout_final, file = "data_clean/abm_results/cbma_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
-save(ABMout_final, file = paste0("data_clean/abm_results/",terr_freq_ewl_site$site[1],"_abmout_paste_test.Rdata")) #change file name based on which weather conditons you use and if you the EWL equation is included or not.
+# save(ABMout_final, file = "data_clean/abm_results/cbma_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
+save(ABMout_final, file = paste0("data_clean/abm_results/",terr_freq_ewl_site$site[1],"_abmout.Rdata")) #change file name based on which weather conditons you use and if you the EWL equation is included or not.
 
+stopCluster(cl) # to stop the cluster
+
+gc(reset = TRUE)

@@ -385,4 +385,5 @@ aridityABM <- function(HexSize=X, #diameter of territory
   } #end of iteration loop
 
   return(outData)
+  gc(reset = TRUE)
 } #end function
