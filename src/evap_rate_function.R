@@ -64,7 +64,7 @@ evap_rate = function(k = 0.4,
                      rh = 0.4,
                      pw = 997,
                      p = 101.3,
-                     z2 = 2,
+                     z2 = 2, # in m, equation converts to cm
                      z0 = 0.03){
   # pa = airdensity(t)
   pa = air.density(t,p)
@@ -77,7 +77,8 @@ evap_rate = function(k = 0.4,
 }
 
 evap_rate(t = 25,
-          rh = 0.4)
+          rh = 0.4,
+          u2 = 3)*86400*1000
 
 
 

@@ -67,14 +67,19 @@ aw4 = aw3 %>%
          sound_atten04 = att_coef(4000, temp, relh, (pres/1000)),
          sound_atten08 = att_coef(8000, temp, relh, (pres/1000)),
          sound_atten12 = att_coef(12000, temp, relh, (pres/1000)),
-         gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))) # correct gh equation (25+(19*ws2m)) whole thing needs to be in parentheses
-  )
+         gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))),
+         evap_wind = (evap_rate(u2 = ws2m, p = pres, t = temp, rh = (relh/100), z0 = 0.03)*1000*300), # multiply by 1000*300 to get mm/5 min evaporation, evap_wind is with 2m windspeed taken into account
+         evap_1 = (evap_rate(u2 = 1, p = pres, t = temp, rh = (relh/100), z0 = 0.03)*1000*300)) # evap_1 is windspeed set to 1 m/s
 
-# see how many gh rows are within each arid factor
+arid_comp = aw4 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1)
+cor(arid_comp)
+
+hist(aw4$evap_wind)
+hist(aw4$evap_0)
 
 arid_check = aw4 %>% group_by(site,mas_bin,arid_within,arid_withinf) %>% tally(gh)
 
-ggplot(data = arid_check, aes(x = arid_withinf,
+ggplot(data = arid_comp, aes(x = evap_wind,
                               y = n,
                               color = mas_bin)) + geom_point()
 
@@ -125,8 +130,8 @@ aw4$pc3 = audio_pcadf$PC3
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 
 # Checking full dataset and gam plots
-ggplot(data = aw4, aes(x = gh,
-                              y = pc2,
+ggplot(data = aw4, aes(x = evap_wind,
+                              y = pc3,
                               color = site)) +
   geom_smooth(method = lm)
 # # Sound Attenuation PCAs - all pcs in the same direction
@@ -234,6 +239,8 @@ aw6 = aw4 %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
                            gh:ws10m,
+                           evap_wind,
+                           evap_0,
                            # gh, 
                            # gh_within,
                            # arid_within,
@@ -250,6 +257,9 @@ aw6 = aw4 %>%
   dplyr::mutate(atten_dist04 = aud_range(f = 4000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
                 atten_dist08 = aud_range(f = 8000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
                 atten_dist12 = aud_range(f = 12000, T_cel = temp, h_rel = relh, Pa = (pres/1000)))
+
+arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind,evap_0)
+cor(arid_comp[,3:7])
 
 ### Recalculate the pc scores, not just average them
 audio_pca_mas = prcomp(aw6[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
