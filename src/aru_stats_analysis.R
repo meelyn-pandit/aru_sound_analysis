@@ -507,10 +507,8 @@ atten12pc3 = ag_contrasts_convar_site(aw6,
 
 ### Sound attenuation at 4kHz tables
 atten04_tables = ag_slopes_table(atten04pc1[[6]],
-                               atten04pc2[[6]],
-                               atten04pc3[[6]]); atten04_tables
-
-%>% gtsave("results/atten04_slopes.png", 
+                                 atten04pc2[[6]],
+                                 atten04pc3[[6]]) %>% gtsave("results/atten04_slopes.png", 
                                                            vwidth = 1100,
                                                            # vheight = 15000, 
                                                            expand = 1000)
@@ -518,9 +516,7 @@ atten04_tables = ag_slopes_table(atten04pc1[[6]],
 ### Sound attenuation at 8kHz tables
 atten08_tables = ag_slopes_table(atten08pc1[[6]],
                                atten08pc2[[6]],
-                               atten08pc3[[6]]); atten08_tables
-
-%>% gtsave("results/atten08_slopes.png", 
+                               atten08pc3[[6]]) %>% gtsave("results/atten08_slopes.png", 
                                                           vwidth = 1100,
                                                           # vheight = 15000, 
                                                           expand = 1000)
@@ -528,8 +524,7 @@ atten08_tables = ag_slopes_table(atten08pc1[[6]],
 ### Sound attenuation at 8kHz tables
 atten12_tables = ag_slopes_table(atten12pc1[[6]],
                                atten12pc2[[6]],
-                               atten12pc3[[6]]); atten12_tables 
-%>% gtsave("results/atten12_slopes.png", 
+                               atten12pc3[[6]]) %>% gtsave("results/atten12_slopes.png", 
                                                            vwidth = 1100,
                                                            # vheight = 15000, 
                                                            expand = 1000)

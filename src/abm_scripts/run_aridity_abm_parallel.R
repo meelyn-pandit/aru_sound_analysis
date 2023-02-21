@@ -17,12 +17,12 @@ mass = 21.4 #average mass of house finch
 
 # freq = as.list(c(4000, 8000, 12000))
 # freq = c(4000,8000,12000)
-freq = 8000
+freq = c(4000,12000)
 terr_size = c(1000,1500,3000)
-# ewl = c(T,F)
-ewl = T
-# site = c("lwma","sswma","cbma","kiowa")
-site = "kiowa"
+ewl = c(T,F)
+# ewl = F
+site = c("lwma","sswma","cbma","kiowa")
+# site = "kiowa"
 
 terr_freq_ewl_site = expand.grid(terr_size,freq,ewl,site)
 names(terr_freq_ewl_site) = c("terr_size","freq","ewl","site")
@@ -70,8 +70,8 @@ ABMout_final$percent_comp = ABMout_final$Done/ABMout_final$FullTerrs #determine 
 
 # setwd("dir") #set to appropriate working directory
 # fname = paste0("climate_change",HexSize,"ewl",ewl,sep = "_")
-# save(ABMout_final, file = "data_clean/abm_results/cbma_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
-save(ABMout_final, file = paste0("data_clean/abm_results/",terr_freq_ewl_site$site[1],"_abmout.Rdata")) #change file name based on which weather conditons you use and if you the EWL equation is included or not.
+save(ABMout_final, file = "data_clean/abm_results/all_sites_4_12khz_both_ewl_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
+# save(ABMout_final, file = paste0("data_clean/abm_results/",terr_freq_ewl_site$site[1],"_abmout.Rdata")) #change file name based on which weather conditons you use and if you the EWL equation is included or not.
 
 stopCluster(cl) # to stop the cluster
 
