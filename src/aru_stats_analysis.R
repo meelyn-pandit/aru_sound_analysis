@@ -145,13 +145,16 @@ ggplot(data = aw4, aes(x = evap_wind,
 
 # AIC tests to see which aridity variable to use --------------------------
 # Arid within factor
-m_aridwithin = lmer(pc2 ~ arid_withinf*site*mas_bin + 
-                      # mas_bin + 
-                      scale(date) + 
-                      (1|site), data = aw4)
+lmer1 = lmer(pc1 ~ evap_wind*mas_bin + 
+                              scale(date) + 
+                              (1|site), data = aw4)
+broom.mixed::tidy(lmer1, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(lmer1, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(lmer1, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(lmer1, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 summary(m_aridwithin)
-assump(m_aridwithin)
-emmeans(m_aridwithin, pairwise ~ site*arid_withinf|mas_bin, lmerTest.limit = 54007)
+assump(lmer1)
+emmeans(lmer1, pairwise ~ evap_wind*site|mas_bin)
 # Arid across factor
 m_aridacross = lmer(pc3 ~ arid_acrossf*site + 
                       mas_bin + 
@@ -240,7 +243,7 @@ aw6 = aw4 %>%
                            temp:dew, 
                            gh:ws10m,
                            evap_wind,
-                           evap_0,
+                           evap_1,
                            # gh, 
                            # gh_within,
                            # arid_within,
@@ -258,7 +261,7 @@ aw6 = aw4 %>%
                 atten_dist08 = aud_range(f = 8000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
                 atten_dist12 = aud_range(f = 12000, T_cel = temp, h_rel = relh, Pa = (pres/1000)))
 
-arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind,evap_0)
+arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1)
 cor(arid_comp[,3:7])
 
 ### Recalculate the pc scores, not just average them
@@ -296,27 +299,27 @@ cor(pc_comp)
 all_sites = NULL
 for(i in unique(aw6$site)) {
   aw_site = aw6 %>% dplyr::filter(site == i) %>%
-    dplyr::arrange(gh)
-  aw_site$arid_within = as.vector(scale(aw_site$gh))
+    dplyr::arrange(evap_wind)
+  aw_site$arid_within = as.vector(scale(aw_site$evap_wind))
   aw_site$arid_withinf = cut(aw_site$arid_within, breaks = 5, labels = c(1,2,3,4,5))
   all_sites = rbind(all_sites,aw_site)
 }
 aw6 = all_sites
 
 # Checking to see if histograms match
-hist(aw6$gh)
+hist(aw6$evap_wind)
 hist(aw6$arid_within)
 hist(as.numeric(aw6$arid_withinf))
 
 
 # Creating aridity variable and factor normalized across sites
 aw6 = aw6 %>% 
-  arrange(gh)
-aw6$arid_across = as.vector(scale(aw6$gh))
+  arrange(evap_wind)
+aw6$arid_across = as.vector(scale(aw6$evap_wind))
 aw6$arid_acrossf = cut(aw6$arid_across, breaks = 5, labels = c(1,2,3,4,5))
 
 # Checking to see if histograms match
-hist(aw6$gh)
+hist(aw6$evap_wind)
 hist(as.numeric(aw6$arid_across))
 hist(as.numeric(aw6$arid_acrossf))
 
@@ -354,7 +357,7 @@ load("data_clean/aridity_gradient_mas.Rdata")
 
 lmpc1site = ag_contrasts_convar_site(aw6,
                                      aw6$pc1,
-                                     aw6$gh)
+                                     aw6$evap_wind);lmpc1site
 
 ## PC1 - Acoustic Diversity across sound attenuation coefficient
 # 4 kHz
@@ -374,21 +377,21 @@ atten12pc1 = ag_contrasts_convar_site(aw6,
 
 ## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 ag_graph_site_paper(aw6$pc1, 
-                    aw6$gh,
+                    aw6$evap_wind,
                     "PC1 - Acoustic Diversity",
-                    "Evaporation Rate (kg of water/h)")
+                    "Evaporation Rate (mm/5 min)")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
 lmpc1time = ag_contrasts_convar_time(aw6,
                                      aw6$pc1,
-                                     aw6$gh)
+                                     aw6$evap_wind);lmpc1time
 
 ## PC1 plotted against aridity (gh), facet grid by site (comparisons across time, within site)
-ag_graph_time_paper(aw6$pc1b, 
-                    aw6$gh,
+ag_graph_time_paper(aw6$pc1, 
+                    aw6$evap_wind,
                     "PC1 - Acoustic Diversity",
-                    "Sound Attenuation at 8kHz")
+                    "Evaporation Rate (mm/5min)")
 ggsave('results/arid_grad_pc1_site_time.png', dpi = 600, height = 6, width = 8, units = "in")
 
 # assump(m1)
@@ -409,10 +412,10 @@ ggsave('results/arid_grad_pc1_site_time.png', dpi = 600, height = 6, width = 8, 
 ## LMs for PC2 with aridity (gh) as the independent variable
 lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$pc2,
-                                 aw6$gh);lmpc2site[[5]]
+                                 aw6$evap_wind);lmpc2site
 
 ag_graph_site_paper(aw6$pc2, 
-                    aw6$gh,
+                    aw6$evap_wind,
                     "PC2 - Avian Abundance",
                     "Evaporation Rate (kg of water/h)")
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
@@ -421,12 +424,12 @@ ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8,
 ## LM for PC2 - Avian Abundance, across time periods, within site
 lmpc2time = ag_contrasts_convar_time(aw6,
                                      aw6$pc2,
-                                     aw6$gh)
+                                     aw6$evap_wind);lmpc2time
 
-ag_graph_time_paper(aw6$pc2b, 
-                    aw6$gh,
+ag_graph_time_paper(aw6$pc2, 
+                    aw6$evap_wind,
                     "PC2 - Avian Abundance",
-                    "Evaporation Rate (kg of water/h)")
+                    "Evaporation Rate (mm/5 min")
 ggsave('results/arid_grad_pc2_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ## PC2 - Avian Abundance across sound attenuation coefficient
@@ -479,7 +482,7 @@ assump(m2)
 ## LMs for PC3 across sites, within mas_bin
 lmpc3site = ag_contrasts_convar_site(aw6,
                          aw6$pc3,
-                         aw6$gh);lmpc3site[[5]]
+                         aw6$evap_wind);lmpc3site
 
 
 ag_graph_site_paper(aw6$pc3, 
