@@ -28,15 +28,29 @@ library(broom)
 # library(patchwork)
 # library(flextable)
 
-### Install ggbiplot ###
-library(devtools)
-install_github("vqv/ggbiplot")
+# ### Install ggbiplot ###
+# library(devtools)
+# install_github("vqv/ggbiplot")
+# 
+# ### Install dotwhisker ###
+# devtools::install_github("fsolt/dotwhisker")
 
-### Install dotwhisker ###
-devtools::install_github("fsolt/dotwhisker")
+# Load Functions ----------------------------------------------------------
+
+source("src/functions.R")
+source("src/aridity_gradient_functions/aridity_gradient_mas_functions.R")
+source("src/aridity_gradient_functions/aridity_gradient_graphs.R")
+source("src/water_supp_functions/sswma_water_functions.R")
+source("src/water_supp_functions/cbma_water_functions.R")
+source("src/ece_functions/ece_functions.R")
+source("src/ece_functions/sswma_water_ece_functions.R")
+source("src/ece_functions/cbma_ece_functions.R")
+source("src/evap_rate_function.R")
 
 
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
+# Load Full Dataset and Clean ---------------------------------------------
+
+# setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis")
 load("data_clean/audio_and_weather_data.Rdata")
 
 # Aridity Gradient - Create PCA of Audio Variables, filter out files with NA ACI and  --------
@@ -68,20 +82,27 @@ aw4 = aw3 %>%
          sound_atten08 = att_coef(8000, temp, relh, (pres/1000)),
          sound_atten12 = att_coef(12000, temp, relh, (pres/1000)),
          gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))),
-         evap_wind = (evap_rate(u2 = ws2m, p = pres, t = temp, rh = (relh/100), z0 = 0.03)*1000*300), # multiply by 1000*300 to get mm/5 min evaporation, evap_wind is with 2m windspeed taken into account
-         evap_1 = (evap_rate(u2 = 1, p = pres, t = temp, rh = (relh/100), z0 = 0.03)*1000*300)) # evap_1 is windspeed set to 1 m/s
+         evap_wind = (evap_rate(u2 = ws2m, # evaporation rate in mm/day
+                                p = pres, 
+                                t = temp, 
+                                rh = (relh/100), 
+                                z0 = 0.03)*1000*86400), 
+         evap_1 = (evap_rate(u2 = 1, # evaporation rate with windspeed set at 1m/s
+                             p = pres, 
+                             t = temp, 
+                             rh = (relh/100), 
+                             z0 = 0.03)*1000*86400)) %>% 
+  dplyr::mutate(ew_vol = (evap_wind^3)/1000, # volume of water being evaporated per day
+                e1_vol = (evap_1^3)/1000) # volume of water being evaporated per day
 
-arid_comp = aw4 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1)
+arid_comp = aw4 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1,ew_vol,e1_vol)
 cor(arid_comp)
 
 hist(aw4$evap_wind)
-hist(aw4$evap_0)
+hist(aw4$evap_1)
+hist(log10(aw4$ew_vol))
+hist(aw4$e1_vol)
 
-arid_check = aw4 %>% group_by(site,mas_bin,arid_within,arid_withinf) %>% tally(gh)
-
-ggplot(data = arid_comp, aes(x = evap_wind,
-                              y = n,
-                              color = mas_bin)) + geom_point()
 
 # Full clean dataset
 
@@ -100,25 +121,25 @@ ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$sit
 
 # Create gt table of pcs table
 
-pc_df = data.frame(pc = c(1,2,3),
-                   std = c(1.413,1.273,1.008),
-                   prop_var = c(0.333, 0.27, 0.165),
-                   cum_prop = c(0.333, 0.603, 0.772),
-                   desc = c("Acoustic Diversity", "Avian Abundance", "Acoustic Complexity"))
-
-pc_gt = pc_df %>% 
-        gt() %>%
-        cols_align('center') %>%
-        cols_label(pc = md("**PC**"),
-                   std = md("**Standard Deviation**"),
-                   prop_var = md("**Proportion\nof Variance**"),
-                   cum_prop = md("**Cumulative\nProportion**"),
-                   desc = md("**Description**")) %>%
-        opt_table_font(
-    font = "Times New Roman")%>% gtsave("results/pc_table.png", 
-                                        vwidth = 20000, 
-                                        vheight = 15000, 
-                                        expand = 100)
+# pc_df = data.frame(pc = c(1,2,3),
+#                    std = c(1.413,1.273,1.008),
+#                    prop_var = c(0.333, 0.27, 0.165),
+#                    cum_prop = c(0.333, 0.603, 0.772),
+#                    desc = c("Acoustic Diversity", "Avian Abundance", "Acoustic Complexity"))
+# 
+# pc_gt = pc_df %>% 
+#         gt() %>%
+#         cols_align('center') %>%
+#         cols_label(pc = md("**PC**"),
+#                    std = md("**Standard Deviation**"),
+#                    prop_var = md("**Proportion\nof Variance**"),
+#                    cum_prop = md("**Cumulative\nProportion**"),
+#                    desc = md("**Description**")) %>%
+#         opt_table_font(
+#     font = "Times New Roman")%>% gtsave("results/pc_table.png", 
+#                                         vwidth = 20000, 
+#                                         vheight = 15000, 
+#                                         expand = 100)
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI
@@ -145,9 +166,9 @@ ggplot(data = aw4, aes(x = evap_wind,
 
 # AIC tests to see which aridity variable to use --------------------------
 # Arid within factor
-lmer1 = lmer(pc1 ~ evap_wind*mas_bin + 
+lmer1 = lmer(pc1 ~ evap_wind*mas_bin*site + 
                               scale(date) + 
-                              (1|site), data = aw4)
+                              (site|aru), data = aw4)
 broom.mixed::tidy(lmer1, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
 broom.mixed::tidy(lmer1, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
 broom.mixed::tidy(lmer1, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
@@ -244,6 +265,8 @@ aw6 = aw4 %>%
                            gh:ws10m,
                            evap_wind,
                            evap_1,
+                           ew_vol,
+                           e1_vol,
                            # gh, 
                            # gh_within,
                            # arid_within,
@@ -261,8 +284,8 @@ aw6 = aw4 %>%
                 atten_dist08 = aud_range(f = 8000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
                 atten_dist12 = aud_range(f = 12000, T_cel = temp, h_rel = relh, Pa = (pres/1000)))
 
-arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1)
-cor(arid_comp[,3:7])
+arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1, atten_alpha04, atten_alpha08, atten_alpha12)
+cor(arid_comp[,c(-1,-2)])
 
 ### Recalculate the pc scores, not just average them
 audio_pca_mas = prcomp(aw6[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
@@ -354,7 +377,7 @@ load("data_clean/aridity_gradient_mas.Rdata")
 
 ### PC 1 - Acoustic Diversity
 ## LM for PC1 - Acoustic Diversity across sites, within time periods
-
+source("src/aridity_gradient_functions/aridity_gradient_mas_functions.R")
 lmpc1site = ag_contrasts_convar_site(aw6,
                                      aw6$pc1,
                                      aw6$evap_wind);lmpc1site
@@ -379,7 +402,7 @@ atten12pc1 = ag_contrasts_convar_site(aw6,
 ag_graph_site_paper(aw6$pc1, 
                     aw6$evap_wind,
                     "PC1 - Acoustic Diversity",
-                    "Evaporation Rate (mm/5 min)")
+                    "Evaporation Rate (mm/day)")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -391,7 +414,7 @@ lmpc1time = ag_contrasts_convar_time(aw6,
 ag_graph_time_paper(aw6$pc1, 
                     aw6$evap_wind,
                     "PC1 - Acoustic Diversity",
-                    "Evaporation Rate (mm/5min)")
+                    "Evaporation Rate (mm/day)")
 ggsave('results/arid_grad_pc1_site_time.png', dpi = 600, height = 6, width = 8, units = "in")
 
 # assump(m1)
@@ -417,7 +440,7 @@ lmpc2site = ag_contrasts_convar_site(aw6,
 ag_graph_site_paper(aw6$pc2, 
                     aw6$evap_wind,
                     "PC2 - Avian Abundance",
-                    "Evaporation Rate (kg of water/h)")
+                    "Evaporation Rate (mm/day)")
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 
@@ -429,14 +452,14 @@ lmpc2time = ag_contrasts_convar_time(aw6,
 ag_graph_time_paper(aw6$pc2, 
                     aw6$evap_wind,
                     "PC2 - Avian Abundance",
-                    "Evaporation Rate (mm/5 min")
+                    "Evaporation Rate (mm/day)")
 ggsave('results/arid_grad_pc2_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ## PC2 - Avian Abundance across sound attenuation coefficient
 # 4 kHz
 atten04pc2 = ag_contrasts_convar_site(aw6,
-                         aw6$pc2,
-                         aw6$atten_alpha04)
+                                      aw6$pc2,
+                                      aw6$atten_alpha04)
 
 # 8 kHz
 atten08pc2 = ag_contrasts_convar_site(aw6,
@@ -463,21 +486,6 @@ atten_graph_time_paper(aw6$pc2,
                        "Sound Attenuation distance at 8kHz (m)")
 ggsave('results/sound_atten8khz_distance_pc2_time_paper.png', dpi = 600, height = 8, width = 6, units = "in")
 
-# m2 = lm(pc2 ~ gh*site*mas_bin + scale(date), data = aw6)
-# summary(m2)
-# emtrends(m2, pairwise ~ site|mas_bin, 
-#          var = "gh", type = 'response',weights = "cells") # across sites
-# emtrends(m2, pairwise ~ mas_bin|site, 
-#          var = "gh", type = 'response',weights = "cells") # within sites, across time
-
-
-assump(m2)
-
-# emmeans(m2, ~ gh*site|mas_bin, type = "response")
-# plot(emmeans(m2, ~ gh*site|mas_bin))
-# emmip(m2, site ~ gh|mas_bin, cov.reduce = range)
-# contrast(emmeans(m2, ~ pairwise ~ gh*site|mas_bin))
-
 ### PC3 - Acoustic Complexity
 ## LMs for PC3 across sites, within mas_bin
 lmpc3site = ag_contrasts_convar_site(aw6,
@@ -486,20 +494,20 @@ lmpc3site = ag_contrasts_convar_site(aw6,
 
 
 ag_graph_site_paper(aw6$pc3, 
-                    aw6$gh,
+                    aw6$evap_wind,
                     "PC3 - Acoustic Complexity",
-                    "Evaporation Rate (kg of water/h)")
+                    "Evaporation Rate (mm/day)")
 ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC3 - Acoustic Complexity, Across time periods, within sites
 lmpc3time = ag_contrasts_convar_time(aw6,
                                      aw6$pc3,
-                                     aw6$gh);lmpc3time[[5]]
+                                     aw6$evap_wind);lmpc3time
 
 ag_graph_time_paper(aw6$pc3, 
-                    aw6$gh,
+                    aw6$evap_wind,
                     "PC3 - Acoustic Complexity",
-                    "Evaporation Rate (kg of water/h")
+                    "Evaporation Rate (mm/day")
 ggsave('results/arid_grad_pc3_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ## PC3 - Acoustic complexity across sound attenuation coefficient
@@ -701,6 +709,18 @@ ww = water_weather3 %>%
   dplyr::filter(year(date_time) == 2021) %>%
   dplyr::mutate(rain = replace_na(rain,0)) %>%
   dplyr::filter(rain == 0) %>%
+  dplyr::mutate(evap_wind = (evap_rate(u2 = ws2m, # evaporation rate in mm/day
+                                       p = pres, 
+                                       t = temp, 
+                                       rh = (relh/100), 
+                                       z0 = 0.03)*1000*86400), 
+                evap_1 = (evap_rate(u2 = 1, # evaporation rate with windspeed set at 1m/s
+                                    p = pres, 
+                                    t = temp, 
+                                    rh = (relh/100), 
+                                    z0 = 0.03)*1000*86400)) %>% 
+  dplyr::mutate(ew_vol = (evap_wind^3)/1000, # volume of water being evaporated per day
+                e1_vol = (evap_1^3)/1000) %>% # volume of water being evaporated per day
   arrange(desc(aci))
 
 ww_bad1 = ww %>% dplyr::filter(as_date(date_time) == "2021-06-26" & site == "sswma") 
@@ -813,6 +833,7 @@ sswma_watermas = sswma_water %>%
   # summarise_at(c("pc1","pc2","pc3"), mean) 
   summarise_at(vars(gh, 
                     arid_within,
+                    evap_wind:e1_vol,
                     sound_atten04:sound_atten12,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
@@ -897,6 +918,7 @@ sswma_maslag = sswmawl %>%
   summarise_at(vars(gh, 
                     arid_within,
                     sound_atten04:sound_atten12,
+                    evap_wind:e1_vol,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
 ### Creating Labels for Graphs
@@ -908,11 +930,13 @@ sswma_maslag$mas_labels = factor(sswma_maslag$mas_bin, levels = c("0","1","2","3
 sswma_maslag$wssite_labels = factor(sswma_maslag$ws_site, levels = c("1","2","3"),
                          labels = c("Water Site 1", "Water Site 2", "Water Site 3"))
 
-
+save(sswma_maslag, file = "data_clean/sswma_maslag.Rdata")
+load("data_clean/sswma_maslag.Rdata")
 
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
-                                           pc = sswma_maslag$pc1); sswma_lag_pc1
+                                      yvar = sswma_maslag$pc1,
+                                      xvar = sswma_maslag$evap_wind); sswma_lag_pc1
 # sswma_lag_pc1[[5]] %>% gtsave("results/sswma_water_pc1_lag.png")
 # plot(sswma_lag_pc1[[4]])
 
@@ -926,19 +950,21 @@ sswma_water_site_paper(sswma_maslag,
 
 # PC2: Num vocals and species diversity
 sswma_lag_pc2 = sswma_water_contrasts(data = sswma_maslag,
-                                           pc = sswma_maslag$pc2); sswma_lag_pc2
+                                      yvar = sswma_maslag$pc2,
+                                      xvar = sswma_maslag$evap_wind); sswma_lag_pc2
 # sswma_lag_pc2[[5]] %>% gtsave("results/sswma_water_pc2_lag.png")
 # plot(sswma_lag_pc2[[4]])
 # Create graph to show water site slopes
 sswma_water_site_paper(sswma_maslag,
                        sswma_maslag$pc2,
-                       sswma_maslag$gh,
+                       sswma_maslag$evap_wind,
                        "PC2 - Avian Abundance",
                        "Evaporation Rate (kg of water/h)")
 
 # PC3: ACI and BIO
 sswma_lag_pc3 = sswma_water_contrasts(data = sswma_maslag,
-                                           pc = sswma_maslag$pc3); sswma_lag_pc3
+                                      yvar = sswma_maslag$pc3,
+                                      xvar = sswma_maslag$evap_wind); sswma_lag_pc3
 # sswma_lag_pc3[[5]] %>% gtsave(paste0("results/sswma_water_pc3_lag.png"))
 # plot(sswma_lag_pc3[[4]])
 sswma_pc_table = sswma_water_table3(sswma_lag_pc1[[4]],
@@ -1011,6 +1037,7 @@ cbma_watermas = cbma_water %>%
   summarise_at(vars(gh, 
                     arid_within,
                     sound_atten04:sound_atten12,
+                    evap_wind:e1_vol,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
 
@@ -1094,25 +1121,31 @@ cbma_maslag = cbmawl %>%
   summarise_at(vars(gh, 
                     arid_within,
                     sound_atten04:sound_atten12,
+                    evap_wind:e1_vol,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
+save(cbma_maslag, file = "data_clean/cbma_maslag.Rdata")
 
+load("data_clean/cbma_maslag.Rdata")
 # PC1: ADI, AEI, positive  values more likely to have higher ADI
 cbma_lag_pc1 = cbma_water_contrasts2(data = cbma_maslag,
-                                      pc = cbma_maslag$pc1); cbma_lag_pc1
+                                     yvar = cbma_maslag$pc1,
+                                     xvar = cbma_maslag$evap_wind); cbma_lag_pc1
 
 # cbma_lag_pc1[[5]] %>% gtsave("results/cbma_water_pc1_lag.png")
 # plot(cbma_lag_pc1[[4]])
 
 # PC2: Num vocals and species diversity
 cbma_lag_pc2 = cbma_water_contrasts2(data = cbma_maslag,
-                                      pc = cbma_maslag$pc2); cbma_lag_pc2
+                                     yvar = cbma_maslag$pc2,
+                                     xvar = cbma_maslag$evap_wind); cbma_lag_pc2
 # cbma_lag_pc2[[5]] %>% gtsave("results/cbma_water_pc2_lag.png")
 # plot(cbma_lag_pc2[[4]])
 
 # PC3: ACI and BIO
 cbma_lag_pc3 = cbma_water_contrasts2(data = cbma_maslag,
-                                      pc = cbma_maslag$pc3); cbma_lag_pc3
+                                     yvar = cbma_maslag$pc3,
+                                     xvar = cbma_maslag$evap_wind); cbma_lag_pc3
 # cbma_lag_pc3[[5]] %>% gtsave(paste0("results/cbma_water_pc3_lag.png"))
 # plot(cbma_lag_pc3[[4]])
 

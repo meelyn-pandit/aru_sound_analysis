@@ -61,7 +61,7 @@ aridity_contrasts_mas = function(pc,
                "CBMA:Extremely Arid - SSWMA:Extremely Arid"  = cbma5 -sswma5,
                "KIOWA:Extremely Arid - SSWMA:Extremely Arid" = kiowa5-sswma5,
                "KIOWA:Extremely Arid - CBMA:Extremely Arid" = kiowa5-cbma5
-               ))
+               ),adjust = "bonferroni")
   # emm_cntrst = contrast(emm)
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
@@ -228,7 +228,7 @@ ag_contrasts_convar_time = function(data,
                           "Late - Predawn" = late-predawn,
                           "Mid - Early"  = mid-early,
                           "Late - Early" = late-early,
-                          "Late - Mid" = late-mid))
+                          "Late - Mid" = late-mid),adjust = "bonferroni")
   # emm_cntrst = contrast(emm)
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function

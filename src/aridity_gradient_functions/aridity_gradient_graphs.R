@@ -34,7 +34,8 @@ ag_graph_site_paper = function(yvar,
           legend.position = "right") +
     # facet_wrap(vars(mas_bin)) + 
     # ggtitle(label = "Comparisons across Site") +
-    facet_grid(~mas_labels)+
+    facet_grid(~mas_labels) +
+    # facet_grid(rows = vars(site_labels))+
     theme(strip.text.y = element_text(angle = 0))
 }
 

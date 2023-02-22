@@ -14,7 +14,8 @@ cbma_water_climate = function(pc){
   
   cntrst_summary = contrast(emm,
                             method = list("Site1:Open - Site2:Open" = ws1w1-ws2w1,
-                                          "Site1:Closed - Site2:Open" = ws1w0-ws2w1))
+                                          "Site1:Closed - Site2:Open" = ws1w0-ws2w1),
+                            adjust = "bonferroni")
   
   cbma_climate_list = list(summary, emm, cntrst_summary)
   return(cbma_climate_list)
@@ -96,21 +97,6 @@ cbma_water_climate_table = function(pc1_contrast_table,
                sig.3 = md("**sig.**")) %>%
     opt_table_font(
       font = "Times New Roman") %>%
-    # tab_row_group(
-    #   label = md("**Extremely Arid**"),
-    #   rows = c(17:20)) %>%
-    # tab_row_group(
-    #   label = md("**Arid**"),
-    #   rows = c(13:16)) %>%
-    # tab_row_group(
-    #   label = md("**Normal**"),
-    #   rows = c(9:12)) %>%
-    # tab_row_group(
-    #   label = md("**Humid**"),
-  #   rows = c(3:4)) %>%
-  # tab_row_group(
-  #   label = md("**Extremely Humid**"),
-  #   rows = c(1:2)) %>%
   tab_source_note(
     source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
   )
@@ -135,7 +121,8 @@ cbma_water_impact = function(data,
   
   cntrst_summary = contrast(emm,
                   method = list("Site1:Open - Site2:Open" = ws1w1-ws2w1,
-                                "Site1:Closed - Site2:Open" = ws1w0-ws2w1))
+                                "Site1:Closed - Site2:Open" = ws1w0-ws2w1),
+                  adjust = "bonferroni")
   
   cbma_impact_list = list(summary, emm, cntrst_summary)
   return(cbma_impact_list)
@@ -217,21 +204,6 @@ cbma_water_impact_table = function(pc1_contrast_table,
                sig.3 = md("**sig.**")) %>%
     opt_table_font(
       font = "Times New Roman") %>%
-    # tab_row_group(
-    #   label = md("**Extremely Arid**"),
-    #   rows = c(17:20)) %>%
-    # tab_row_group(
-    #   label = md("**Arid**"),
-    #   rows = c(13:16)) %>%
-    # tab_row_group(
-    #   label = md("**Normal**"),
-    #   rows = c(9:12)) %>%
-    # tab_row_group(
-    #   label = md("**Humid**"),
-  #   rows = c(3:4)) %>%
-  # tab_row_group(
-  #   label = md("**Extremely Humid**"),
-  #   rows = c(1:2)) %>%
   tab_source_note(
     source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
   )

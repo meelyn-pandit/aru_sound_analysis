@@ -23,7 +23,8 @@ ece_contrast_mas = function(data,
                           "CBMA - SSWMA" = cbma -sswma,
                           "KIOWA - SSWMA"= kiowa-sswma,
                           "KIOWA - CBMA" = kiowa-cbma
-                        ))
+                        ),
+                        adjust = "bonferroni")
   # emm_cntrst = contrast(emm)
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function

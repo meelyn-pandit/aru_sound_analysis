@@ -1,13 +1,14 @@
 # load("src/sswma_water_table.R")
 sswma_water_contrasts = function(data,
-                                 pc){
+                                 yvar,
+                                 xvar){
   # m = lm(pc ~ ws_site*water*arid_withinf+mas_bin + date, data = data)
-  m = lm(pc ~ ws_site*water*gh*mas_bin + date, data = data)
+  m = lm(yvar ~ ws_site*water*xvar*mas_bin + date, data = data)
   
   summary = summary(m)
   diagnostics = assump(m)
   # emm = emmeans(m, ~ ws_site*water|arid_withinf)
-  emm = emtrends(m, ~ ws_site*water|mas_bin, var = "gh", type = 'response',weights = "cells")
+  emm = emtrends(m, ~ ws_site*water|mas_bin, var = "xvar", type = 'response',weights = "cells")
   # Setting up comparisons for emmeans contrast function
   ws1w0 = c(1,0,0,0,0,0)
   ws2w0 = c(0,1,0,0,0,0)
@@ -19,7 +20,8 @@ sswma_water_contrasts = function(data,
                         method = list("Site1:Open - Site2:Closed" = ws1w1-ws2w0,
                                       "Site2:Open - Site1:Closed" = ws2w1-ws1w0,
                                       "Site1:Open - Site3:Closed" = ws1w1-ws3w0,
-                                      "Site2:Open - Site3:Closed" = ws2w1-ws3w0))
+                                      "Site2:Open - Site3:Closed" = ws2w1-ws3w0),
+                        adjust = "bonferroni")
   
   emm_cntrst_summary = summary(emm_cntrst)
   # emm_cntrst_summary = summary(emm$contrasts)
@@ -47,7 +49,7 @@ sswma_water_table = function(contrast_table) {
     mutate(sig. = determine_sig(p.value)) %>%
     mutate(p.value = as.factor(p.value)) %>%
     mutate(p.value = dplyr::recode(p.value, "0" = "<0.001")) %>%
-    dplyr::select(-c("arid_within")) %>%
+    # dplyr::select(-c("arid_within")) %>%
     gt(.) %>%
     cols_align('center') %>%
     cols_label(contrast = md("**Contrast**"),
