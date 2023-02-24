@@ -90,7 +90,10 @@ aw4 = aw3 %>%
                              p = pres, 
                              t = temp, 
                              rh = (relh/100), 
-                             z0 = 0.03))) %>% 
+                             z0 = 0.03)),
+         vpd = RHtoVPD(relh,temp,pres), # in kPa
+         ewl = ewl_calc(temp,relh)) %>%
+  dplyr::mutate(ewlwvp = ewl/vpd) %>% # in g/h/kpA
   dplyr::mutate(ew_vol = (evap_wind^3)/1000, # volume of water being evaporated per day
                 e1_vol = (evap_1^3)/1000) %>%# volume of water being evaporated per day
   dplyr::mutate(atten_alpha04 = att_coef(4000, temp, relh, Pa = (pres/1000)),
@@ -101,14 +104,19 @@ aw4 = aw3 %>%
                 atten_dist12 = aud_range(f = 12000, T_cel = temp, h_rel = relh, Pa = (pres/1000)))
 
 # Create normalized aridity values using evaporation rate within sites
-arid_comp = aw4 %>% dplyr::select(temp,relh,dew,gh,evap_wind,evap_1,ew_vol,e1_vol)
-cor(arid_comp[,c(-1)])
+arid_comp = aw4 %>% dplyr::select(temp,relh,dew,gh,evap_wind,evap_1,ew_vol,e1_vol,vpd,ewlwvp)
+cor(arid_comp)
 
 # Check historgrams of evaporation rate
 hist(aw4$evap_wind)
 hist(aw4$evap_1)
 hist(log10(aw4$ew_vol))
 hist(aw4$e1_vol)
+hist(aw4$vpd)
+hist(aw4$ewlwvp)
+
+# Check histograms of vapor pressure deficit and ewl/wpd
+
 
 # Create arid_within variable based on evaporation rate, for each site separately
 all_sites = NULL
@@ -184,7 +192,7 @@ save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 
 # Checking full dataset and gam plots
 ggplot(data = aw4, aes(x = evap_wind,
-                              y = pc3,
+                              y = pc2,
                               color = site)) +
   geom_smooth(method = lm)
 # # Sound Attenuation PCAs - all pcs in the same direction
@@ -313,7 +321,7 @@ aw6 = aw4 %>%
                 atten_dist08 = aud_range(f = 8000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
                 atten_dist12 = aud_range(f = 12000, T_cel = temp, h_rel = relh, Pa = (pres/1000)))
 
-arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1, atten_alpha04, atten_alpha08, atten_alpha12)
+arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1, vpd, ewl, ewlwvp,atten_alpha04, atten_alpha08, atten_alpha12)
 cor(arid_comp[,c(-1,-2)])
 
 ### Recalculate the pc scores, not just average them
@@ -464,7 +472,7 @@ ggsave('results/arid_grad_pc1_site_time.png', dpi = 600, height = 6, width = 8, 
 ## LMs for PC2 with aridity (gh) as the independent variable
 lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$pc2,
-                                 aw6$evap_wind);lmpc2site
+                                 aw6$vpd);lmpc2site
 
 ag_graph_site_paper(aw6$pc2, 
                     aw6$evap_wind,

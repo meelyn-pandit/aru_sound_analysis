@@ -1,6 +1,8 @@
 library(humidity) # used to get saturation vapor pressure equation
 library(Thermimage) # used to get air density equation
 library(bigleaf) # used to get another air density equation
+library(plantecophys)
+library(REddyProc)
 
 # Calculate saturation vapor pressure Es at temperature t using the Clausius-Clapeyron equation or the Murray equation
 #result is in hectopascal (hPa) or millibar (mb) (1 hPa = 1 mb)
@@ -97,5 +99,46 @@ evap_rate_vol(7.2)
 
 # Calculate vapor pressure deficit, another metric of aridity -------------
 
-library(bigleaf)
-library(REddyProc)
+ex_data = data.frame("rh" = 97,
+                    "temp" = 16.7,
+                    "pres" = 94.693)
+RHtoVPD(ex_data$rh, ex_data$temp, ex_data$pres) # plantecophys calculation, relative humidity (%), temperature (C), pressure in kPa, VPD is in kPa. VPD = 0.05723602 kPa
+
+fCalcVPDfromRHandTair(ex_data$rh, ex_data$temp)/10 # REddyProc calculation, relative humidity (%), temperature (C), VPD is in hPa, need to divide by 10 to get it in kPa. VPD = 0.05712262
+
+rH.to.VPD(ex_data$rh/100, ex_data$temp) # bigLeaf calculation, relative humidity as a fraction, temperature (C), VPD is in kPa. VPD = 0.05690576
+
+### Calculate VPD in base R ###
+vpd_calc = function(temp, relh){
+  #'Calculate vapor pressure deficit using saturation vapor pressure in PSI, temperature in C, and relative humidity (%)
+  #'@param temp temperature in C
+  #'@param relh relative humidity in %
+  #'@param vpsat saturation vapor pressure in hectopascal hPa
+  #'@returns vpd in kPa
+  vpsat = SVP(temp, isK = FALSE)
+  vpd = (vpsat*(1-(relh/100)))*0.1
+  return(vpd)
+}
+
+vpd_calc(ex_data$temp,ex_data$rh) # VPD = 0.05746245
+
+
+# Calculate EWL/delta water vpd -------------------------
+# https://royalsocietypublishing.org/doi/10.1098/rspb.2017.1478#d1e1739
+# EWL equation from Albright et al. 2017
+ewl_calc = function(temp, relh, pres, mass = 21.4){
+  ewl_log = (0.1181515*temp) + (0.0224677*mass) - 3.8895978
+  ewl = (exp(ewl_log)) 
+  ewl = ewl*mass # ewl * mass to get grams of water lost, ewl is percent of body mass lost in water
+
+# wvp = RHtoVPD(ex_data$rh, ex_data$temp, ex_data$pres) # plantecophys calculation, relative humidity, temperature (C), pressure in kPa, VPD is in kPa. VPD = 0.05723602 kPa
+
+# ewl_per_wvp = ewl/wvp
+  # return(ewl_per_wvp)
+  return(ewl) # units can be g/hr or mL/hr (1g = 1mL)
+}
+
+# EWL/deltaWVP = EWL per vapor pressure deficit, a way to get how much water is lost
+# https://royalsocietypublishing.org/doi/10.1098/rspb.2017.1478#RSPB20171478F2
+
+
