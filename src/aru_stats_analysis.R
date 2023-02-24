@@ -23,6 +23,7 @@ library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
 library(broom)
+library(docstring)
 # library(cowplot)
 # library(magick)
 # library(patchwork)
@@ -46,6 +47,7 @@ source("src/ece_functions/ece_functions.R")
 source("src/ece_functions/sswma_water_ece_functions.R")
 source("src/ece_functions/cbma_ece_functions.R")
 source("src/evap_rate_function.R")
+source("src/inflection_points.R") # used to determine thresholds for ECE analysis
 
 
 # Load Full Dataset and Clean ---------------------------------------------
@@ -78,22 +80,25 @@ aw4 = aw3 %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   mutate(date = date(date_time),
          pres = na.approx(pres, na.rm = FALSE), # approximating missing pressure data
-         sound_atten04 = att_coef(4000, temp, relh, (pres/1000)),
-         sound_atten08 = att_coef(8000, temp, relh, (pres/1000)),
-         sound_atten12 = att_coef(12000, temp, relh, (pres/1000)),
          gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))),
          evap_wind = (evap_rate(u2 = ws2m, # evaporation rate in mm/day
                                 p = pres, 
                                 t = temp, 
                                 rh = (relh/100), 
-                                z0 = 0.03)*1000*86400), 
+                                z0 = 0.03)), 
          evap_1 = (evap_rate(u2 = 1, # evaporation rate with windspeed set at 1m/s
                              p = pres, 
                              t = temp, 
                              rh = (relh/100), 
-                             z0 = 0.03)*1000*86400)) %>% 
+                             z0 = 0.03))) %>% 
   dplyr::mutate(ew_vol = (evap_wind^3)/1000, # volume of water being evaporated per day
-                e1_vol = (evap_1^3)/1000) # volume of water being evaporated per day
+                e1_vol = (evap_1^3)/1000) %>%# volume of water being evaporated per day
+  dplyr::mutate(atten_alpha04 = att_coef(4000, temp, relh, Pa = (pres/1000)),
+                atten_alpha08 = att_coef(8000, temp, relh, Pa = (pres/1000)),
+                atten_alpha12 = att_coef(12000, temp, relh, Pa = (pres/1000))) %>%
+  dplyr::mutate(atten_dist04 = aud_range(f = 4000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
+                atten_dist08 = aud_range(f = 8000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
+                atten_dist12 = aud_range(f = 12000, T_cel = temp, h_rel = relh, Pa = (pres/1000)))
 
 arid_comp = aw4 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1,ew_vol,e1_vol)
 cor(arid_comp)
@@ -263,11 +268,8 @@ aw6 = aw4 %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
                            gh:ws10m,
-                           evap_wind,
-                           evap_1,
-                           ew_vol,
-                           e1_vol,
-                           # gh, 
+                           evap_wind:e1_vol,
+                           gh,
                            # gh_within,
                            # arid_within,
                            # arid_across,
@@ -646,57 +648,6 @@ ggplot(data = mas_graphs,
   theme(strip.text.y = element_text(angle = 0))
 ggsave('results/avg_arid_across_time.png', dpi = 600, height = 6, width = 8, units = "in")
 
-### PC2 - Num vocals and Species Diversity
-ggplot(data = mas_graphs,
-       aes(x=arid_withinf, y=pc2_mean, color = site)) +
-  geom_point(position = position_dodge(0))+
-  # ggtitle("Datetime Summarized - PC2 - Avian Vocal Abundance")+
-  geom_line(aes(group = site, 
-                color = site),
-            position = position_dodge(0))+
-  geom_errorbar(aes(ymin = pc2_mean-pc2_se, 
-                    ymax = pc2_mean+pc2_se), width = 0.5,
-                position = position_dodge(0))+
-  scale_color_manual(values = cbpalette, 
-                     name = "Site",
-                     labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  # scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
-  scale_x_discrete(name = "Aridity - Normalized Within") +
-  scale_y_continuous(name = "PC2 - Avian Abundance")+
-  facet_grid(. ~ mas_bin) +
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
-        plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "bottom") +
-  # facet_grid(vars(mas_bin)) + 
-  theme(strip.text.y = element_text(angle = 0))
-ggsave('results/arid_pc2_mas.png', dpi = 600, height = 6, width = 8, units = "in")
-
-### PC3 - ACI and BIO
-ggplot(data = mas_graphs,
-       aes(x=arid_withinf, y=pc3_mean, color = site)) +
-  geom_point(position = position_dodge(0))+
-  # ggtitle("Datetime Summarized - PC3 - Acoustic Complexity")+
-  geom_line(aes(group = site, 
-                color = site),
-            position = position_dodge(0))+
-  geom_errorbar(aes(ymin = pc3_mean-pc3_se, 
-                    ymax = pc3_mean+pc3_se), width = 0.5,
-                position = position_dodge(0))+
-  scale_color_manual(values = cbpalette, 
-                     name = "Site",
-                     labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-  # scale_x_discrete(name = "Aridity - Normalized Within", labels = c("Extremely Humid", "Humid", "Normal","Arid","Extremely Arid"))+
-  scale_x_discrete(name = "Aridity - Normalized Within") +
-  scale_y_continuous(name = "PC3 - Acoustic Complexity")+
-  facet_grid(. ~ mas_bin) +
-  theme_classic(base_size = 20) +
-  theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
-        plot.title = element_text(hjust = 0, vjust = 0),
-        legend.position = "bottom")+
-  # facet_grid(vars(mas_bin)) + 
-  theme(strip.text.y = element_text(angle = 0))
-ggsave('results/arid_pc3_mas.png', dpi = 600, height = 6, width = 8, units = "in")
 
 
 # Water Supp - Load Data ---------------------------------------
@@ -713,12 +664,12 @@ ww = water_weather3 %>%
                                        p = pres, 
                                        t = temp, 
                                        rh = (relh/100), 
-                                       z0 = 0.03)*1000*86400), 
+                                       z0 = 0.03)), 
                 evap_1 = (evap_rate(u2 = 1, # evaporation rate with windspeed set at 1m/s
                                     p = pres, 
                                     t = temp, 
                                     rh = (relh/100), 
-                                    z0 = 0.03)*1000*86400)) %>% 
+                                    z0 = 0.03))) %>% 
   dplyr::mutate(ew_vol = (evap_wind^3)/1000, # volume of water being evaporated per day
                 e1_vol = (evap_1^3)/1000) %>% # volume of water being evaporated per day
   arrange(desc(aci))
@@ -837,32 +788,6 @@ sswma_watermas = sswma_water %>%
                     sound_atten04:sound_atten12,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
 
-
-# PC1: ADI, AEI, positive  values more likely to have higher ADI
-sswma_pairwise_pc1 = sswma_water_contrasts(data = sswma_watermas,
-                                           pc = sswma_watermas$pc1); sswma_pairwise_pc1
-sswma_pairwise_pc1[[5]] %>% gtsave("results/sswma_water_pc1_pairwise.png")
-plot(sswma_pairwise_pc1[[4]])
-
-# PC2: Num vocals and species diversity
-sswma_pairwise_pc2 = sswma_water_contrasts(data = sswma_watermas,
-                                           pc = sswma_watermas$pc2); sswma_pairwise_pc2
-sswma_pairwise_pc2[[5]] %>% gtsave("results/sswma_water_pc2_pairwise.png")
-plot(sswma_pairwise_pc2[[4]])
-
-# PC3: ACI and BIO
-sswma_pairwise_pc3 = sswma_water_contrasts(data = sswma_watermas,
-                                           pc = sswma_watermas$pc3); sswma_pairwise_pc3
-sswma_pairwise_pc3[[5]] %>% gtsave(paste0("results/sswma_water_pc3_pairwise.png"))
-plot(sswma_pairwise_pc3[[4]])
-
-sswma_pc_table = sswma_water_table2(sswma_pairwise_pc1[[3]],
-                                    sswma_pairwise_pc2[[3]],
-                                    sswma_pairwise_pc3[[3]])
-sswma_pc_table %>% gtsave("results/sswma_water_allpcs_pairwise.png",
-                          expand = 100,
-                          vwidth = 2000, 
-                          vheight = 1500)
 
 
 # Water Supp - SSWMA - Data Organization - Lag Analysis --------
@@ -1039,29 +964,6 @@ cbma_watermas = cbma_water %>%
                     sound_atten04:sound_atten12,
                     evap_wind:e1_vol,
                     pc1:pc3), ~ mean(.x, na.rm = TRUE))
-
-
-# Water Supp - CBMA - Date and MAS - Pairwise Analysis --------------------
-
-
-# PC1: ADI, AEI, positive  values more likely to have higher ADI
-cbma_pairwise_pc1 = cbma_water_contrasts(data = cbma_watermas,
-                                           pc = cbma_watermas$pc1); cbma_pairwise_pc1
-cbma_pairwise_pc1[[5]] %>% gtsave("results/cbma_water_pc1_pairwise.png")
-plot(cbma_pairwise_pc1[[4]])
-
-# PC2: Num vocals and species diversity
-cbma_pairwise_pc2 = cbma_water_contrasts(data = cbma_watermas,
-                                           pc = cbma_watermas$pc2); cbma_pairwise_pc2
-cbma_pairwise_pc2[[5]] %>% gtsave("results/cbma_water_pc2_pairwise.png")
-plot(cbma_pairwise_pc2[[4]])
-
-# PC3: ACI and BIO
-cbma_pairwise_pc3 = cbma_water_contrasts(data = cbma_watermas,
-                                           pc = cbma_watermas$pc3); cbma_pairwise_pc3
-cbma_pairwise_pc3[[5]] %>% gtsave(paste0("results/cbma_water_pc3_pairwise.png"))
-plot(cbma_pairwise_pc3[[4]])
-
 
 # Water Supp - CBMA - Data Organization - Lag ------------------
 ### Only analyzing half of water supplementation period

@@ -126,16 +126,16 @@ signifD <- function(x, d, upper, lower, eval = 0) {
 # Find inflection points using above functions
 
 find_gam_ip = function(gam,
-                       gh_limit) {
+                       evap_wind_limit) {
   fd <- derivSimulCI(gam)  # m is the gam model object
   plot(fd, sizer = TRUE)
-  CI <- lapply(fd["gh"], function(x) t(apply(x$simulations, 1, quantile, probs = c(0.025, 0.975))))
-  first.zero.slope.index <- min(which(sign(CI$gh[, "2.5%"]) != sign(CI$gh[, "97.5%"])))
+  CI <- lapply(fd["evap_wind"], function(x) t(apply(x$simulations, 1, quantile, probs = c(0.025, 0.975))))
+  first.zero.slope.index <- min(which(sign(CI$evap_wind[, "2.5%"]) != sign(CI$evap_wind[, "97.5%"])))
   fd$eval[first.zero.slope.index]
   # the above script finds the first slope that is 0, need to find where it becomes 0 later in the dataset
-  gam_der = as.data.frame(cbind(fd$eval,CI$gh))
+  gam_der = as.data.frame(cbind(fd$eval,CI$evap_wind))
   gam_der2 = gam_der %>%
-    dplyr::filter(gh > gh_limit)
-  impact = gam_der2$gh[min(which(sign(gam_der2[, "2.5%"]) != sign(gam_der2[, "97.5%"])))]
+    dplyr::filter(evap_wind > evap_wind_limit)
+  impact = gam_der2$evap_wind[min(which(sign(gam_der2[, "2.5%"]) != sign(gam_der2[, "97.5%"])))]
   return(impact)
 }

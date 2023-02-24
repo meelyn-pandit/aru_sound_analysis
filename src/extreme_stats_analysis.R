@@ -19,8 +19,17 @@ library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
 
+
+# Loading files with functions --------------------------------------------
+
+source("src/ece_functions/ece_functions.R")
+source("src/ece_functions/sswma_water_ece_functions.R")
+source("src/ece_functions/cbma_ece_functions.R")
+source("src/evap_rate_function.R")
+source("src/inflection_points.R") # used to determine thresholds for ECE analysis
+
 # Climate ECE - top 5% of aridity data
-# Threshold ECE - when biological response crashes/threshold
+# Threshold ECE - when biological response crashes/threshold, use gam and inflection_points to find threshold
 
 # Climate ECE - Loading MAS and Date Aridity Gradient Data ------------------------------
 setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis")
@@ -28,8 +37,8 @@ setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/R
 load("data_clean/aridity_data_clean.Rdata")
 
 extreme_arid_n = aw4 %>%
-  arrange(desc(arid_within)) %>%
   group_by(site) %>%
+  arrange(desc(evap_wind)) %>%
   dplyr::summarise(n = n(),
          top5per = 0.05*n())
 
@@ -39,84 +48,43 @@ extreme_arid_n = aw4 %>%
 exa_lwma = aw4 %>%
   dplyr::filter(site == "lwma") %>% # 12006 obs
   # mutate(gh_within = scale_this(gh)) %>%
-  arrange(desc(gh)) %>%
-  slice_max(gh,n = 601)
+  arrange(desc(evap_wind)) %>%
+  slice_max(evap_wind,n = 601)
 
 exa_sswma = aw4 %>%
   dplyr::filter(site == "sswma") %>% # 12461 obs
-  arrange(desc(gh)) %>%
-  slice_max(gh,n = 623)
+  arrange(desc(evap_wind)) %>%
+  slice_max(evap_wind,n = 623)
 
 exa_cbma = aw4 %>%
   dplyr::filter(site == "cbma") %>% # 13158 obs
-  arrange(desc(gh)) %>%
-  slice_max(gh,n = 658)
+  arrange(desc(evap_wind)) %>%
+  slice_max(evap_wind,n = 658)
 
 exa_kiowa = aw4 %>%
   dplyr::filter(site == "kiowa") %>% # 16325 obs
-  arrange(desc(gh)) %>%
-  slice_max(gh,n = 816) # min gh_within = 
+  arrange(desc(evap_wind)) %>%
+  slice_max(evap_wind,n = 816) # min gh_within = 
 
 extreme_aridwithin = rbind(exa_lwma, exa_sswma, exa_cbma, exa_kiowa)
 
 ea_aridwithin = extreme_aridwithin %>%
-  dplyr::select(site, gh ,arid_within) %>%
+  dplyr::select(site, gh ,arid_within, evap_wind) %>%
   group_by(site) %>%
   dplyr::summarise(min_aw = min(arid_within),
                    max_aw = max(arid_within),
                    min_gh = min(gh),
-                   max_gh = max(gh))
-# max lwma  gh = -15.9
-# max sswma gh = -12.8
-# max cbma  gh = -3.18
-# max kiowa gh = -2.76
+                   max_gh = max(gh),
+                   min_evap = min(evap_wind),
+                   max_evap = max(evap_wind))
 
-#checking to see if that is really the case
-# gh2 = ((25+(19*exa_lwma$ws2m))* 1 *(max_sat(exa_lwma$temp)-(exa_lwma$relh/100)))
+# extreme min and max evap wind
+# lwma:  0-2.29 
+# sswma: 8.37-17.0
+# cbma:  11.7-23.4
+# kiowa: 11.4-21.3
 
-# Arid Across Dataframe Subsetting ----------------------------------------
 
-exa_lwma2 = aw4 %>%
-  dplyr::filter(site == "lwma") %>%
-  # mutate(gh_within = scale_this(gh)) %>%
-  arrange(desc(arid_across)) %>%
-  slice_max(arid_across,n = 601)
-
-exa_sswma2 = aw4 %>%
-  dplyr::filter(site == "sswma") %>%
-  arrange(desc(arid_across)) %>%
-  slice_max(arid_across,n = 620)
-
-exa_cbma2 = aw4 %>%
-  dplyr::filter(site == "cbma") %>%
-  arrange(desc(arid_across)) %>%
-  slice_max(arid_across,n = 662)
-
-exa_kiowa2 = aw4 %>%
-  dplyr::filter(site == "kiowa") %>%
-  arrange(desc(arid_across)) %>%
-  slice_max(arid_across,n = 816) # min gh_within = 
-
-extreme_aridacross = rbind(exa_lwma2, exa_sswma2, exa_cbma2, exa_kiowa2)
-
-ea_aridacross = extreme_aridacross %>%
-  dplyr::select(site, gh, arid_across) %>%
-  group_by(site) %>%
-  dplyr::summarise(min = min(arid_across),
-                   max = max(arid_across))
-
-# Climate ECE - Simple Plots ------------------------------------------------------------
-# Full Dataset
-ggplot(data = extreme_aridacross, aes(x = arid_within, y = pc2, color = site)) +
-  # geom_point() +
-  geom_smooth(method = loess)
-# we do get threshold for cbma but not the other sites
-
-# MAS Summarized data
-ggplot(data = aw4, aes(x = arid_within, y = pc2, color = site)) +
-  # geom_point() +
-  geom_smooth() +
-  geom_vline(xintercept = 1, color = "red")
 
 
 # Climate ECE - Statistical Analysis ----------------------------------------------------
@@ -145,11 +113,12 @@ exaw_mas = extreme_aridwithin %>%
   dplyr::summarise_at(vars(aci:species_diversity, 
                            temp:dew, 
                            gh, 
+                           evap_wind:e1_vol,
                            # gh_within,
                            # arid_within, 
                            # hist_within:arid_across,
                            # arid_withinf:hist_acrossf,
-                           sound_atten04:sound_atten12,
+                           atten_alpha04:atten_dist12,
                            pc1:pc3), ~ mean(.x, na.rm = TRUE)) 
 
 
@@ -163,7 +132,7 @@ emtrends(ex1mas, ~ site|mas_bin, var = "gh", type = 'response',weights = "cells"
 
 ece_pc1_mas = ece_contrast_mas(exaw_mas, 
                                exaw_mas$pc1,
-                               exaw_mas$gh); ece_pc1_mas[[6]]
+                               exaw_mas$evap_wind); ece_pc1_mas[[6]]
 # write.csv(ece_pc1_mas[[6]], 'results/climate_ece_mas_slopes_pc1.csv', row.names = FALSE)
 # write.csv(ece_pc1_mas[[5]], 
 #           'results/climate_ece_mas_contrasts_pc1.csv', 
@@ -172,7 +141,7 @@ ece_pc1_mas = ece_contrast_mas(exaw_mas,
 
 ece_pc2_mas = ece_contrast_mas(exaw_mas, 
                                exaw_mas$pc2,
-                               exaw_mas$gh); ece_pc2_mas[[6]]
+                               exaw_mas$evap_wind); ece_pc2_mas[[6]]
 # write.csv(ece_pc2_mas[[5]], 
 #           'results/climate_ece_mas_pc2.csv', 
 #           row.names = FALSE)
@@ -180,7 +149,7 @@ ece_pc2_mas = ece_contrast_mas(exaw_mas,
 
 ece_pc3_mas = ece_contrast_mas(exaw_mas, 
                                exaw_mas$pc3,
-                               exaw_mas$gh)
+                               exaw_mas$evap_wind)
 # write.csv(ece_pc3_mas[[5]], 
 #           'results/climate_ece_mas_pc3.csv', 
 #           row.names = FALSE)
@@ -196,23 +165,23 @@ ece_pc3_mas = ece_contrast_mas(exaw_mas,
 library(mgcv)
 # gam1 = gam(pc2 ~ s(arid_within, by = site), data = aw6)
 # gam1 = gam(pc1 ~ s(arid_within, bs = "cs", k = -1), data = aw4)
-gam1 = gam(pc1 ~ s(gh, bs = "cs", k = -1), data = aw4)
+gam1 = gam(pc1 ~ s(evap_wind, bs = "cs", k = -1), data = aw4)
 gam1b = gam(pc1 ~ s(gh), data = aw4)
 plot(gam1b)
 summary(gam1)
 gam1$smooth[[1]]$xp 
 coef(gam1)
 plot(gam1, se=TRUE,col="blue")
-abline(v=-62, col="red")
+abline(v=14.0154, col="red")
 abline(v=-54.34, col="green")
 
 # Find inflection points in gam model, first load functions in inflection_points.R script
-find_gam_ip(gam1, -80) # inflection point for pc1 is -50.20955
+find_gam_ip(gam1, 10) # inflection point for pc1 is 14.0154
 
 emm(gam1, pairwise ~ site)
 contrast(emmeans(gam1, pairwise ~ site))
 
-gam2 = gam(pc2 ~ s(gh, bs = "cs", k = -1), data = aw4)
+gam2 = gam(pc2 ~ s(evap_wind, bs = "cs", k = -1), data = aw4)
 summary(gam2)
 gam2b = gam(pc2 ~ s(gh), data = aw4)
 plot(gam2b)
@@ -222,13 +191,12 @@ plot(gam2, se=TRUE,col="blue")
 abline(v=-54.34, col="green")
 
 # Find inflection points in gam model, first load functions in inflection_points.R script
-find_gam_ip(gam2, -70) # inflection point for pc2 is -51.74
-abline(v = -51.74, col="green")
-abline(v = -22.66, col = "purple")
+find_gam_ip(gam2, 5) # inflection point for pc2 is 7.302139
+abline(v = 7.302139, col="green")
 emm(gam2, pairwise ~ site)
 contrast(emmeans(gam1, pairwise ~ site))
 
-gam3 = gam(pc3 ~ s(gh, bs = "cs", k = -1), data = aw4)
+gam3 = gam(pc3 ~ s(evap_wind, bs = "cs", k = -1), data = aw4)
 summary(gam3)
 gam3$smooth[[1]]$xp 
 coef(gam3)
@@ -236,8 +204,8 @@ plot(gam3, se=TRUE,col="blue")
 abline(v=-37.96, col="green")
 
 # Find inflection points in gam model, first load functions in inflection_points.R script
-find_gam_ip(gam3, -70) # inflection point for pc3 is -54.80148
-abline(v=-54.80, col="green")
+find_gam_ip(gam3, 10) # inflection point for pc3 is 10.71766, but slope becomes significantly positive later
+abline(v= 10.71766, col="green")
 abline(v = -22.66, col = "purple")
 emm(gam2, pairwise ~ site)
 contrast(emmeans(gam1, pairwise ~ site))
@@ -248,119 +216,6 @@ ggplot(data = aw4, aes(x = arid_within, y = pc2)) +
 # Reference: https://rpubs.com/hrlai/gam_inflection
 
 
-# ECE - Impact - MCP LMM Piecewise -------------------------------------
-# https://lindeloev.github.io/mcp/articles/predict.html#extracting-fitted-values-1
-library(mcp)
-library(rjags)
-Sys.setenv(JAGS_HOME="C:/Program Files/JAGS/JAGS-4.3.0") # setting path to jags library
-# plotting to see if they have similar start and end points
-
-# Creating new arid_within variable because mcp won't recognize arid_within[,1]
-aw4$arid_within2 = as.vector(aw4$arid_within)
-aw4$arid_across2 = as.vector(aw4$arid_across)
-
-# Finding Knots(changepoints) for PC1 data - Joined slopes
-# Random effects included
-
-# PC1 - Full Dataset - ADI/AEI
-
-mcp_rem1 = list(pc1 ~ 1,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2,
-                1 + (1|site) ~ 0 + arid_within2)
-
-  pc1_fit = mcp(mcp_rem1, 
-               data = aw4, 
-               sample = 'prior')
-  
-  summary(pc1_fit)
-  mcp::ranef(pc1_fit)
-  plot_pars(pc1_fit, pars = c("cp_9_site[lwma]", 
-                              "cp_9_site[sswma]", 
-                              "cp_9_site[cbma]",
-                              "cp_9_site[kiowa]"))
-  
-  # PC2 - Full Dataset - Num Vocals/Species Diversity
-  
-  mcp_rem2 = list(pc2 ~ 1,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2,
-                  1 + (1|site) ~ 0 + arid_within2)
-  
-  pc2_fit = mcp(mcp_rem2, 
-                data = aw4, 
-                sample = 'prior')
-  
-  summary(pc2_fit)
-  mcp::ranef(pc2_fit)
-  plot_pars(pc2_fit, pars = "cp_9")
-  plot_pars(pc2_fit, pars = c("cp_9_site[lwma]", 
-                              "cp_9_site[sswma]", 
-                              "cp_9_site[cbma]",
-                              "cp_9_site[kiowa]"))
-
-  # PC3 - Full Dataset - Num Vocals/Species Diversity
-  
-  mcp_rem3 = list(pc3 ~ 1,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2,
-                  1 + (1|site) ~ 0 + arid_across2)
-  
-  pc3_fit = mcp(mcp_rem3, 
-                data = aw4, 
-                sample = 'prior')
-  
-  summary(pc3_fit)
-  mcp::ranef(pc3_fit)
-  plot_pars(pc3_fit, pars = "cp_9")
-  plot_pars(pc3_fit, pars = c("cp_9_site[lwma]", 
-                              "cp_9_site[sswma]", 
-                              "cp_9_site[cbma]",
-                              "cp_9_site[kiowa]"))
-  
-# predict results using mcp_rem model and new data generated below
-new_x = rep(seq(-2, 3), 4)
-sites = c("lwma", 'sswma', 'cbma', 'kiowa')
-
-newdata = NULL
-for(s in sites) {
-  new_x = seq(-2, 2)
-  # site = rep(s, length(new_x))
-  df_temp = data.frame(site = s,
-                       arid_within2 = new_x)
-  newdata = rbind(newdata, df_temp)
-}
-
-
-fitted(pc1_fit, newdata = newdata)
-predict_forecast = predict(pc1_fit, newdata = newdata)
-summary(predict_forecast)
-
-ggplot(data = predict_forecast, aes(x = arid_within2,
-                                    y = predict,
-                                    color = site)) + 
-  geom_line()
-
-plot(predict_forecast, facet_by = "site")
-pp_check(fit, facet_by = "site")
 
 # ECE - Impact - Aridity Gradient - Impact Definition Data --------------------------------
 
@@ -372,13 +227,14 @@ awthres = aw4 %>%
   group_by(site, date, mas_bin) %>%
   dplyr::summarise_at(vars(aci:species_diversity,
 #                            temp:dew, 
-                           gh,
+                             gh,
+                             evap_wind,
 #                            gh_within,
 #                            arid_within, 
 #                            hist_within:arid_across,
 #                            arid_withinf:hist_acrossf,
-                           sound_atten04:sound_atten12,
-                           pc1:pc3), ~ mean(.x, na.rm = TRUE))
+                             atten_alpha04:atten_dist12,
+                             pc1:pc3), ~ mean(.x, na.rm = TRUE))
 #   mutate_at(c("arid_withinf",
 #               "arid_acrossf",
 #               "hist_withinf",
@@ -389,29 +245,29 @@ awthres_n = awthres %>%
   dplyr::summarise(total = n(),
                    percent = n()/length(awthres))
 
-exthresm1 = lm(pc1 ~ site*mas_bin + scale(date), data = aw4 %>% dplyr::filter(gh > -50.20955))
+exthresm1 = lm(pc1 ~ site*mas_bin + scale(date), data = aw4 %>% dplyr::filter(evap_wind > 14.0154))
 summary(exthresm1)
 emmeans(exthresm1, pairwise ~ site)
-awthrespc1 = awthres %>% dplyr::filter(gh > -50.20955)
+awthrespc1 = awthres %>% dplyr::filter(evap_wind > 14.0154)
 ecethres_pc1_mas = ece_contrast_mas(awthrespc1, 
                                     awthrespc1$pc1,
-                                    awthrespc1$gh);ecethres_pc1_mas[6]
+                                    awthrespc1$evap_wind);ecethres_pc1_mas[6]
 # write.csv(ecethres_pc1_mas[[5]], 
 #           'results/ece_threshold_pc1_mas.csv', 
 #           row.names = FALSE)
 
 # ecethres_pc1_mas[[5]] %>% gtsave('ece_threshold_pc1_mas.png', expand = 100)
-awthrespc2 = awthres %>% dplyr::filter(gh > -51.74)
+awthrespc2 = awthres %>% dplyr::filter(evap_wind > 7.302139)
 ecethres_pc2_mas = ece_contrast_mas(awthrespc2, 
                                     awthrespc2$pc2,
-                                    awthrespc2$gh);ecethres_pc2_mas[6]
+                                    awthrespc2$evap_wind);ecethres_pc2_mas[6]
 # write.csv(ecethres_pc2_mas[[5]], 
 #           'results/ece_threshold_pc2_mas.csv', 
 #           row.names = FALSE)
 
 ecethres_pc2_mas[[5]] %>% gtsave('ece_threshold_pc2_mas.png', expand = 100)
 
-awthrespc3 = awthres %>% dplyr::filter(gh > -54.80148)
+awthrespc3 = awthres %>% dplyr::filter(evap_wind > 10.71766)
 ecethres_pc3_mas = ece_contrast_mas(awthrespc3, 
                                     awthrespc3$pc3,
                                     awthrespc3$gh);ecethres_pc3_mas[6]

@@ -72,13 +72,24 @@ evap_rate = function(k = 0.4,
   # return(B)
   es = (SVP(25, isK = FALSE, formula = "Clausius-Clapeyron"))*100 # convert to Pa
   ea = es*rh
-  Ea = B*(es-ea)
+  Ea = B*(es-ea)*1000*86400 # converts to mm/day
   return(Ea)
 }
 
+# only works for water with density of 1000 kg/m3 at 20C
 evap_rate(t = 25,
           rh = 0.4,
           u2 = 3)*86400*1000
 
+evap_rate_vol = function(x) {
+  #'converts evaporation rate from mm/day to volume (m^3/ha/day) and then to microliters/cm2/day
+  #'@param x The evaporation rate in mm/day
+  evap_vol = x*10 # converts mm/day to m^3/ha/day
+  evap_vol = evap_vol*10000000000 #converts m^3 to microliter
+  evap_vol = evap_vol * (1/100000000)
+  return(evap_vol)
+}
 
+?evap_rate_vol # see docstrings
 
+evap_rate_vol(7.2)
