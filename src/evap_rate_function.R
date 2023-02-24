@@ -93,3 +93,9 @@ evap_rate_vol = function(x) {
 ?evap_rate_vol # see docstrings
 
 evap_rate_vol(7.2)
+
+
+# Calculate vapor pressure deficit, another metric of aridity -------------
+
+library(bigleaf)
+library(REddyProc)

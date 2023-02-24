@@ -100,20 +100,47 @@ aw4 = aw3 %>%
                 atten_dist08 = aud_range(f = 8000, T_cel = temp, h_rel = relh, Pa = (pres/1000)),
                 atten_dist12 = aud_range(f = 12000, T_cel = temp, h_rel = relh, Pa = (pres/1000)))
 
-arid_comp = aw4 %>% dplyr::select(temp,relh,gh,evap_wind,evap_1,ew_vol,e1_vol)
-cor(arid_comp)
+# Create normalized aridity values using evaporation rate within sites
+arid_comp = aw4 %>% dplyr::select(temp,relh,dew,gh,evap_wind,evap_1,ew_vol,e1_vol)
+cor(arid_comp[,c(-1)])
 
+# Check historgrams of evaporation rate
 hist(aw4$evap_wind)
 hist(aw4$evap_1)
 hist(log10(aw4$ew_vol))
 hist(aw4$e1_vol)
 
+# Create arid_within variable based on evaporation rate, for each site separately
+all_sites = NULL
+for(i in unique(aw4$site)){
+  aw4site = aw4 %>%
+    dplyr::filter(site == i) %>%
+    dplyr::mutate(arid_within = scale(evap_wind))
+  all_sites = rbind(all_sites,aw4site)
+}
 
+aw4 = all_sites
+
+# Create normalized aridity values using evaporation rate across sites
+aw4 = aw4 %>% 
+  dplyr::mutate(arid_across = scale(evap_wind))
+
+# Check to see if the scaling worked properly
+
+# aridity scaled within sites
+ggplot(data = aw4,
+       aes(x = arid_within,
+           y = aci,
+           color = site)) +
+  geom_smooth(method = loess)
+
+# aridity scaled across sites
+ggplot(data = aw4,
+       aes(x = arid_across,
+           y = aci,
+           color = site)) +
+  geom_smooth(method = loess)
 # Full clean dataset
-
-aw4 = aw4 %>%
-  group_by(site) %>%
-  dplyr::mutate(gh_within = scale_this(gh)) # split up datasets by site and scale!!!
 
 aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 
