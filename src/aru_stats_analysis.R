@@ -417,7 +417,7 @@ load("data_clean/aridity_gradient_mas.Rdata")
 source("src/aridity_gradient_functions/aridity_gradient_mas_functions.R")
 lmpc1site = ag_contrasts_convar_site(aw6,
                                      aw6$pc1,
-                                     aw6$evap_wind);lmpc1site
+                                     aw6$vpd);lmpc1site
 
 ## PC1 - Acoustic Diversity across sound attenuation coefficient
 # 4 kHz
@@ -437,9 +437,9 @@ atten12pc1 = ag_contrasts_convar_site(aw6,
 
 ## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 ag_graph_site_paper(aw6$pc1, 
-                    aw6$evap_wind,
+                    aw6$vpd,
                     "PC1 - Acoustic Diversity",
-                    "Evaporation Rate (mm/day)")
+                    "Water Vapor Pressure Deficit (kPa")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -475,9 +475,9 @@ lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$vpd);lmpc2site
 
 ag_graph_site_paper(aw6$pc2, 
-                    aw6$evap_wind,
+                    aw6$vpd,
                     "PC2 - Avian Abundance",
-                    "Evaporation Rate (mm/day)")
+                    "Water Vapor Pressure Deficit (kPa)")
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 
