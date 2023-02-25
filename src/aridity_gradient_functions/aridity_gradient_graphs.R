@@ -31,7 +31,7 @@ ag_graph_site_paper = function(yvar,
     theme_classic(base_size = 20) +
     theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
-          legend.position = "right") +
+          legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     # ggtitle(label = "Comparisons across Site") +
     facet_grid(~mas_labels)+
@@ -79,7 +79,7 @@ ag_graph_time_paper = function(yvar,
     theme_classic(base_size = 20) +
     theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
-          legend.position = "right") +
+          legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     facet_grid(~site_labels)+
     # ggtitle(label = "Comparisons within Site, Across Morning Singing Period (mas_bin)") +
@@ -117,7 +117,7 @@ atten_graph_site_paper = function(yvar,
     theme_classic(base_size = 20) +
     theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
-          legend.position = "right") +
+          legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     # ggtitle(label = "Comparisons across Site") +
     facet_grid(rows = vars(mas_labels)) +
@@ -164,7 +164,7 @@ atten_graph_time_paper = function(yvar,
     theme_classic(base_size = 20) +
     theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
-          legend.position = "right") +
+          legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     facet_grid(rows = vars(site_labels))+
     # ggtitle(label = "Comparisons within Site, Across Morning Singing Period (mas_bin)") +
