@@ -13,7 +13,8 @@ cbma_water_contrasts = function(data,
 # Only comparisons to site 2. Site1Open: Site2Open. Site1Closed: Site2Open
     emm_cntrst = contrast(emm, 
                           method = list("Site1:Open - Site2:Open" = ws1w1-ws2w1,
-                                        "Site1:Closed - Site2:Open" = ws1w0-ws2w1))
+                                        "Site1:Closed - Site2:Open" = ws1w0-ws2w1),
+                          adjust = "bonferroni")
 
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
@@ -29,11 +30,12 @@ cbma_water_contrasts = function(data,
 
 # load("src/cbma_water_table.R")
 cbma_water_contrasts2 = function(data,
-                                pc){
-  m = lm(pc ~ ws_site*water*gh*mas_bin + date, data = data)
+                                 yvar,
+                                 xvar){
+  m = lm(yvar ~ ws_site*water*xvar*mas_bin + date, data = data)
   summary = summary(m)
   diagnostics = assump(m)
-  emm = emtrends(m, ~ ws_site*water|mas_bin, var = "gh", type = 'response',weights = "cells")
+  emm = emtrends(m, ~ ws_site*water|mas_bin, var = "xvar", type = 'response',weights = "cells")
   # # Setting up comparisons for emmeans contrast function
   ws1w0 = c(1,0,0,0)
   ws2w0 = c(0,1,0,0)
@@ -43,7 +45,8 @@ cbma_water_contrasts2 = function(data,
   # Only comparisons to site 2. Site1Open: Site2Open. Site1Closed: Site2Open
   emm_cntrst = contrast(emm, 
                         method = list("Site 1:Open - Site 2:Open" = ws1w1-ws2w1,
-                                      "Site 1:Closed - Site2:Open" = ws1w0-ws2w1))
+                                      "Site 1:Closed - Site2:Open" = ws1w0-ws2w1),
+                        adjust = "bonferroni")
   
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
@@ -71,7 +74,7 @@ cbma_water_table = function(contrast_table) {
     mutate(sig. = determine_sig(p.value)) %>%
     mutate(p.value = as.factor(p.value)) %>%
     mutate(p.value = dplyr::recode(p.value, "0" = "<0.001")) %>%
-    dplyr::select(-c("arid_within")) %>%
+    # dplyr::select(-c("arid_within")) %>%
     gt(.) %>%
     cols_align('center') %>%
     cols_label(contrast = md("**Contrast**"),

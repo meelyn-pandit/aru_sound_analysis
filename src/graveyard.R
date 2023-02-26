@@ -1,3 +1,270 @@
+# Water Supp - SSWMA - Full Dataset - Rectangle Plots -------------------------
+
+### SSWMA Water Supplementation Rectangle Graphs - PC1
+sswma_pc1graph = sswma_rectangle_graph(sswma_water, 
+                                       sswma_water$pc1, 
+                                       # sswma_water$arid_within,
+                                       "PC1 - Acoustic Diversity"); sswma_pc1graph
+ggsave('results/sswma_fullwater_rectangle_graph_pc1.png',
+       dpi = 600, height = 6, width = 8, units = "in")
+
+### SSWMA Water Supplementation Rectangle Graphs - PC2
+sswma_pc2graph = sswma_rectangle_graph(sswma_water, 
+                                       sswma_water$pc2, 
+                                       "PC2 - Avian Abundance"); sswma_pc2graph
+ggsave('results/sswma_fullwater_rectangle_graph_pc2.png',
+       dpi = 600, height = 6, width = 8, units = "in")
+
+### SSWMA Water Supplementation Rectangle Graphs - pc3
+sswma_pc3graph = sswma_rectangle_graph(sswma_water, 
+                                       sswma_water$pc3, 
+                                       "PC3 - Acoustic Complexity"); sswma_pc3graph
+ggsave('results/sswma_fullwater_rectangle_graph_pc3.png',
+       dpi = 600, height = 6, width = 8, units = "in")
+
+# Water Supp - CBMA - Rectangle Graphs ------------------------------------
+
+### CBMA Water Supplementation Rectangle Graphs - PC1
+cbma_pc1graph = cbma_rectangle_graph(cbma_water, 
+                                     cbma_water$pc1, 
+                                     # cbma_water$arid_within,
+                                     "PC1 - Acoustic Diversity"); cbma_pc1graph
+ggsave('results/cbma_fullwater_rectangle_graph_pc1.png',
+       dpi = 600, height = 6, width = 8, units = "in")
+
+### CBMA Water Supplementation Rectangle Graphs - PC2
+cbma_pc2graph = cbma_rectangle_graph(cbma_water, 
+                                     cbma_water$pc2, 
+                                     "PC2 - Avian Abundance"); cbma_pc2graph
+ggsave('results/cbma_fullwater_rectangle_graph_pc2.png',
+       dpi = 600, height = 6, width = 8, units = "in")
+
+### CBMA Water Supplementation Rectangle Graphs - pc3
+cbma_pc3graph = cbma_rectangle_graph(cbma_water, 
+                                     cbma_water$pc3, 
+                                     "PC3 - Acoustic Complexity"); cbma_pc3graph
+ggsave('results/cbma_fullwater_rectangle_graph_pc3.png',
+       dpi = 600, height = 6, width = 8, units = "in")
+
+# Water Supp - CBMA - Date and MAS - Data Organization --------------------
+
+cbma_watermas = cbma_water %>%
+  mutate(date = date(date_time)) %>%
+  group_by(site, ws_site, water, mas_bin, date) %>%
+  # summarise_at(c("pc1","pc2","pc3"), mean) 
+  summarise_at(vars(gh, 
+                    arid_within,
+                    sound_atten04:sound_atten12,
+                    evap_wind:e1_vol,
+                    pc1:pc3), ~ mean(.x, na.rm = TRUE))
+
+# ECE - Impact - MCP LMM Piecewise -------------------------------------
+# https://lindeloev.github.io/mcp/articles/predict.html#extracting-fitted-values-1
+library(mcp)
+library(rjags)
+Sys.setenv(JAGS_HOME="C:/Program Files/JAGS/JAGS-4.3.0") # setting path to jags library
+# plotting to see if they have similar start and end points
+
+# Creating new arid_within variable because mcp won't recognize arid_within[,1]
+aw4$arid_within2 = as.vector(aw4$arid_within)
+aw4$arid_across2 = as.vector(aw4$arid_across)
+
+# Finding Knots(changepoints) for PC1 data - Joined slopes
+# Random effects included
+
+# PC1 - Full Dataset - ADI/AEI
+
+mcp_rem1 = list(pc1 ~ 1,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2)
+
+pc1_fit = mcp(mcp_rem1, 
+              data = aw4, 
+              sample = 'prior')
+
+summary(pc1_fit)
+mcp::ranef(pc1_fit)
+plot_pars(pc1_fit, pars = c("cp_9_site[lwma]", 
+                            "cp_9_site[sswma]", 
+                            "cp_9_site[cbma]",
+                            "cp_9_site[kiowa]"))
+
+# PC2 - Full Dataset - Num Vocals/Species Diversity
+
+mcp_rem2 = list(pc2 ~ 1,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2,
+                1 + (1|site) ~ 0 + arid_within2)
+
+pc2_fit = mcp(mcp_rem2, 
+              data = aw4, 
+              sample = 'prior')
+
+summary(pc2_fit)
+mcp::ranef(pc2_fit)
+plot_pars(pc2_fit, pars = "cp_9")
+plot_pars(pc2_fit, pars = c("cp_9_site[lwma]", 
+                            "cp_9_site[sswma]", 
+                            "cp_9_site[cbma]",
+                            "cp_9_site[kiowa]"))
+
+# PC3 - Full Dataset - Num Vocals/Species Diversity
+
+mcp_rem3 = list(pc3 ~ 1,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2,
+                1 + (1|site) ~ 0 + arid_across2)
+
+pc3_fit = mcp(mcp_rem3, 
+              data = aw4, 
+              sample = 'prior')
+
+summary(pc3_fit)
+mcp::ranef(pc3_fit)
+plot_pars(pc3_fit, pars = "cp_9")
+plot_pars(pc3_fit, pars = c("cp_9_site[lwma]", 
+                            "cp_9_site[sswma]", 
+                            "cp_9_site[cbma]",
+                            "cp_9_site[kiowa]"))
+
+# predict results using mcp_rem model and new data generated below
+new_x = rep(seq(-2, 3), 4)
+sites = c("lwma", 'sswma', 'cbma', 'kiowa')
+
+newdata = NULL
+for(s in sites) {
+  new_x = seq(-2, 2)
+  # site = rep(s, length(new_x))
+  df_temp = data.frame(site = s,
+                       arid_within2 = new_x)
+  newdata = rbind(newdata, df_temp)
+}
+
+
+fitted(pc1_fit, newdata = newdata)
+predict_forecast = predict(pc1_fit, newdata = newdata)
+summary(predict_forecast)
+
+ggplot(data = predict_forecast, aes(x = arid_within2,
+                                    y = predict,
+                                    color = site)) + 
+  geom_line()
+
+plot(predict_forecast, facet_by = "site")
+pp_check(fit, facet_by = "site")
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+sswma_pairwise_pc1 = sswma_water_contrasts(data = sswma_watermas,
+                                           pc = sswma_watermas$pc1); sswma_pairwise_pc1
+sswma_pairwise_pc1[[5]] %>% gtsave("results/sswma_water_pc1_pairwise.png")
+plot(sswma_pairwise_pc1[[4]])
+
+# PC2: Num vocals and species diversity
+sswma_pairwise_pc2 = sswma_water_contrasts(data = sswma_watermas,
+                                           pc = sswma_watermas$pc2); sswma_pairwise_pc2
+sswma_pairwise_pc2[[5]] %>% gtsave("results/sswma_water_pc2_pairwise.png")
+plot(sswma_pairwise_pc2[[4]])
+
+# PC3: ACI and BIO
+sswma_pairwise_pc3 = sswma_water_contrasts(data = sswma_watermas,
+                                           pc = sswma_watermas$pc3); sswma_pairwise_pc3
+sswma_pairwise_pc3[[5]] %>% gtsave(paste0("results/sswma_water_pc3_pairwise.png"))
+plot(sswma_pairwise_pc3[[4]])
+
+sswma_pc_table = sswma_water_table2(sswma_pairwise_pc1[[3]],
+                                    sswma_pairwise_pc2[[3]],
+                                    sswma_pairwise_pc3[[3]])
+sswma_pc_table %>% gtsave("results/sswma_water_allpcs_pairwise.png",
+                          expand = 100,
+                          vwidth = 2000, 
+                          vheight = 1500)
+
+# Water Supp - CBMA - Date and MAS - Pairwise Analysis --------------------
+
+
+# PC1: ADI, AEI, positive  values more likely to have higher ADI
+cbma_pairwise_pc1 = cbma_water_contrasts(data = cbma_watermas,
+                                         pc = cbma_watermas$pc1); cbma_pairwise_pc1
+cbma_pairwise_pc1[[5]] %>% gtsave("results/cbma_water_pc1_pairwise.png")
+plot(cbma_pairwise_pc1[[4]])
+
+# PC2: Num vocals and species diversity
+cbma_pairwise_pc2 = cbma_water_contrasts(data = cbma_watermas,
+                                         pc = cbma_watermas$pc2); cbma_pairwise_pc2
+cbma_pairwise_pc2[[5]] %>% gtsave("results/cbma_water_pc2_pairwise.png")
+plot(cbma_pairwise_pc2[[4]])
+
+# PC3: ACI and BIO
+cbma_pairwise_pc3 = cbma_water_contrasts(data = cbma_watermas,
+                                         pc = cbma_watermas$pc3); cbma_pairwise_pc3
+cbma_pairwise_pc3[[5]] %>% gtsave(paste0("results/cbma_water_pc3_pairwise.png"))
+plot(cbma_pairwise_pc3[[4]])
+
+# Arid Across Dataframe Subsetting ----------------------------------------
+
+exa_lwma2 = aw4 %>%
+  dplyr::filter(site == "lwma") %>%
+  # mutate(gh_within = scale_this(gh)) %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 601)
+
+exa_sswma2 = aw4 %>%
+  dplyr::filter(site == "sswma") %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 620)
+
+exa_cbma2 = aw4 %>%
+  dplyr::filter(site == "cbma") %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 662)
+
+exa_kiowa2 = aw4 %>%
+  dplyr::filter(site == "kiowa") %>%
+  arrange(desc(arid_across)) %>%
+  slice_max(arid_across,n = 816) # min gh_within = 
+
+extreme_aridacross = rbind(exa_lwma2, exa_sswma2, exa_cbma2, exa_kiowa2)
+
+ea_aridacross = extreme_aridacross %>%
+  dplyr::select(site, gh, arid_across) %>%
+  group_by(site) %>%
+  dplyr::summarise(min = min(arid_across),
+                   max = max(arid_across))
+
+# Climate ECE - Simple Plots ------------------------------------------------------------
+# Full Dataset
+ggplot(data = extreme_aridacross, aes(x = arid_within, y = pc2, color = site)) +
+  # geom_point() +
+  geom_smooth(method = loess)
+# we do get threshold for cbma but not the other sites
+
+# MAS Summarized data
+ggplot(data = aw4, aes(x = arid_within, y = pc2, color = site)) +
+  # geom_point() +
+  geom_smooth() +
+  geom_vline(xintercept = 1, color = "red")
+
+
 # Aridity Gradient - Date and MAS - Statistical Analysis - LINEAR Mixed MODELs REGRESSION ONLY -----------------------------------------
 # Aridity Gradient - Date and MAS - Statistical Analysis ------------------
 # PC1: ADI, AEI, positive values more likely to have higher ADI 

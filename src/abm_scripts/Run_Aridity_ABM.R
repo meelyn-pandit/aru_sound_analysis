@@ -1,11 +1,18 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  # Environmental Conditions ------------------------------------------------
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 #Run the Aridity ABM
 # library(pbapply)
 
 # Environmental Conditions ------------------------------------------------
+<<<<<<< HEAD
 =======
   # Environmental Conditions ------------------------------------------------
 >>>>>>> 72bfb53ac0bf5d9970ec6690e04a2d397f0c852e
+=======
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 # current = "ERIC_current.Rdata"
 # extreme = "ERIC_current_extreme.Rdata"
 # climate_change = "ERIC_climate_change.Rdata"
@@ -15,10 +22,15 @@
 # weather_data = paste0("dir/",current,sep = "") #replace dir with appropriate working directory
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis")
 
 =======
 >>>>>>> 72bfb53ac0bf5d9970ec6690e04a2d397f0c852e
+=======
+# setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/Ross Lab/Aridity and Song Attenuation/aru_sound_analysis")
+
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 load("data_clean/mesonet_data/mesonet_weather.Rdata") # loads weather dataframe "wfull"
 # contains weather data for lwma, sswma, cbma, and kiowa
 
@@ -28,11 +40,14 @@ mass = 21.4 #average mass of house finch
 
 # freq = as.list(c(4000, 8000, 12000))
 <<<<<<< HEAD
+<<<<<<< HEAD
 freq = c(4000,8000,12000)
 terr_size = c(1000,1500,3000)
 ewl = c(T,F)
 site = c("lwma","sswma","cbma","kiowa")
 =======
+=======
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 # freq = c(4000,8000,12000)
 freq = 8000
 terr_size = c(1000,1500,3000)
@@ -40,7 +55,14 @@ terr_size = c(1000,1500,3000)
 ewl = T
 # site = c("lwma","sswma","cbma","kiowa")
 site = "cbma"
+<<<<<<< HEAD
 >>>>>>> 72bfb53ac0bf5d9970ec6690e04a2d397f0c852e
+=======
+freq = c(4000,8000,12000)
+terr_size = c(1000,1500,3000)
+ewl = c(T,F)
+site = c("lwma","sswma","cbma","kiowa")
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 
 terr_freq_ewl_site = expand.grid(terr_size,freq,ewl,site)
 names(terr_freq_ewl_site) = c("terr_size","freq","ewl","site")
@@ -51,6 +73,7 @@ source("src/abm_scripts/Aridity_ABM_core_model_funct.R")
 
 ABMout <- apply(terr_freq_ewl_site, MARGIN = 1, function(x){
   aridityABM(HexSize=x[1], #territory size in m, original territory size is 1000m
+<<<<<<< HEAD
 <<<<<<< HEAD
            Song_volume = 85, #song/call volume in dB
            Song_detection = 30, #song detection in dB
@@ -70,6 +93,8 @@ ABMout <- apply(terr_freq_ewl_site, MARGIN = 1, function(x){
            plot = F,
            site_lab = "sswma") #plot the grid and hexagon territories
 =======
+=======
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
              Song_volume = 85, #song/call volume in dB
              Song_detection = 30, #song detection in dB
              SProb = 0.33, #singing probability
@@ -87,7 +112,10 @@ ABMout <- apply(terr_freq_ewl_site, MARGIN = 1, function(x){
              iter = 1, #how many iterations the model is run
              plot = F,
              site_lab = x[4]) #plot the grid and hexagon territories
+<<<<<<< HEAD
 >>>>>>> 72bfb53ac0bf5d9970ec6690e04a2d397f0c852e
+=======
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 })
 
 #Clearing saved images on dev.list(), uncomment if you plot the territory grids
@@ -95,9 +123,13 @@ ABMout <- apply(terr_freq_ewl_site, MARGIN = 1, function(x){
 #   dev.off()
 # }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> 72bfb53ac0bf5d9970ec6690e04a2d397f0c852e
+=======
+
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 
 # ABMout_final = rbind(ABMout[[1]],ABMout[[2]],ABMout[[3]])
 # ABMout_final = as.data.frame(ABMout[1])
@@ -107,9 +139,15 @@ ABMout_final$percent_comp = ABMout_final$Done/ABMout_final$FullTerrs #determine 
 # setwd("dir") #set to appropriate working directory
 # fname = paste0("climate_change",HexSize,"ewl",ewl,sep = "_")
 <<<<<<< HEAD
+<<<<<<< HEAD
 save(ABMout_final, file = "data_clean/abm_results/sswma_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
 =======
 save(ABMout_final, file = "data_clean/abm_results/cbma_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
 save(ABMout_final, file = paste0("data_clean/abm_results/",terr_freq_ewl_site$site[1],"_abmout_paste_test.Rdata")) #change file name based on which weather conditons you use and if you the EWL equation is included or not.
 >>>>>>> 72bfb53ac0bf5d9970ec6690e04a2d397f0c852e
+=======
+save(ABMout_final, file = "data_clean/abm_results/cbma_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
+save(ABMout_final, file = paste0("data_clean/abm_results/",terr_freq_ewl_site$site[1],"_abmout_paste_test.Rdata")) #change file name based on which weather conditons you use and if you the EWL equation is included or not.
+save(ABMout_final, file = "data_clean/abm_results/sswma_abmout.Rdata") #change file name based on which weather conditons you use and if you the EWL equation is included or not.
+>>>>>>> 70f892982e530b319901e6c42600445f7d0fd188
 

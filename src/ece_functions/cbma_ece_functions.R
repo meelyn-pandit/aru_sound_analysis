@@ -1,9 +1,11 @@
-cbma_water_climate = function(pc){
-  m1_cbmawl = lm(pc ~ ws_site*water*gh + mas_bin + date, 
+cbma_water_climate = function(data,
+                              yvar,
+                              xvar){
+  m1_cbmawl = lm(yvar ~ ws_site*water*xvar + mas_bin + scale(date), 
                   data = cbmawl_clmas)
   summary = summary(m1_cbmawl)
   diagnostics = assump(m1_cbmawl)
-  emm = emtrends(m1_cbmawl, ~ ws_site*water, var = "gh", type = 'response',weights = "cells")
+  emm = emtrends(m1_cbmawl, ~ ws_site*water, var = "xvar", type = 'response',weights = "cells")
   # emm = emmeans(m1_cbmawl, ~ ws_site*water);emm
   
   # Setting up comparisons for emmeans contrast function
@@ -14,7 +16,8 @@ cbma_water_climate = function(pc){
   
   cntrst_summary = contrast(emm,
                             method = list("Site1:Open - Site2:Open" = ws1w1-ws2w1,
-                                          "Site1:Closed - Site2:Open" = ws1w0-ws2w1))
+                                          "Site1:Closed - Site2:Open" = ws1w0-ws2w1),
+                            adjust = "bonferroni")
   
   cbma_climate_list = list(summary, emm, cntrst_summary)
   return(cbma_climate_list)
@@ -96,21 +99,6 @@ cbma_water_climate_table = function(pc1_contrast_table,
                sig.3 = md("**sig.**")) %>%
     opt_table_font(
       font = "Times New Roman") %>%
-    # tab_row_group(
-    #   label = md("**Extremely Arid**"),
-    #   rows = c(17:20)) %>%
-    # tab_row_group(
-    #   label = md("**Arid**"),
-    #   rows = c(13:16)) %>%
-    # tab_row_group(
-    #   label = md("**Normal**"),
-    #   rows = c(9:12)) %>%
-    # tab_row_group(
-    #   label = md("**Humid**"),
-  #   rows = c(3:4)) %>%
-  # tab_row_group(
-  #   label = md("**Extremely Humid**"),
-  #   rows = c(1:2)) %>%
   tab_source_note(
     source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
   )
@@ -119,12 +107,13 @@ cbma_water_climate_table = function(pc1_contrast_table,
 
 
 cbma_water_impact = function(data,
-                             pc){
-  im1_cbmawl = lm(pc ~ ws_site*water*gh + mas_bin + scale(date), 
+                             yvar,
+                             xvar){
+  im1_cbmawl = lm(yvar ~ ws_site*water*xvar + mas_bin + scale(date), 
                    data = data)
   summary = summary(im1_cbmawl)
   # emm = emmeans(im1_cbmawl,~ ws_site*water);emm
-  emm = emtrends(im1_cbmawl, ~ ws_site*water, var = "gh", type = 'response',weights = "cells")
+  emm = emtrends(im1_cbmawl, ~ ws_site*water, var = "xvar", type = 'response',weights = "cells")
   
   
   # Setting up comparisons for emmeans contrast function
@@ -135,7 +124,8 @@ cbma_water_impact = function(data,
   
   cntrst_summary = contrast(emm,
                   method = list("Site1:Open - Site2:Open" = ws1w1-ws2w1,
-                                "Site1:Closed - Site2:Open" = ws1w0-ws2w1))
+                                "Site1:Closed - Site2:Open" = ws1w0-ws2w1),
+                  adjust = "bonferroni")
   
   cbma_impact_list = list(summary, emm, cntrst_summary)
   return(cbma_impact_list)
@@ -217,21 +207,6 @@ cbma_water_impact_table = function(pc1_contrast_table,
                sig.3 = md("**sig.**")) %>%
     opt_table_font(
       font = "Times New Roman") %>%
-    # tab_row_group(
-    #   label = md("**Extremely Arid**"),
-    #   rows = c(17:20)) %>%
-    # tab_row_group(
-    #   label = md("**Arid**"),
-    #   rows = c(13:16)) %>%
-    # tab_row_group(
-    #   label = md("**Normal**"),
-    #   rows = c(9:12)) %>%
-    # tab_row_group(
-    #   label = md("**Humid**"),
-  #   rows = c(3:4)) %>%
-  # tab_row_group(
-  #   label = md("**Extremely Humid**"),
-  #   rows = c(1:2)) %>%
   tab_source_note(
     source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
   )

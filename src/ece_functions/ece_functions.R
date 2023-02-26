@@ -2,7 +2,91 @@ ece_contrast_mas = function(data,
                             yvar,
                             xvar){
 
-  m = lm(yvar ~ site*xvar*mas_bin + scale(date), data = data)
+  m = lm(yvar ~ site*xvar + mas_bin + scale(date), data = data)
+  summary = summary(m)
+  diagnostics = assump(m)
+  # emm = emmeans(m, pairwise ~ x3*x2)
+  # # Setting up comparisons for emmeans contrast function
+  lwma  = c(1,0,0,0)
+  sswma = c(0,1,0,0)
+  cbma  = c(0,0,1,0)
+  kiowa = c(0,0,0,1)
+
+  # emm = emtrends(m, ~ site|mas_bin)
+  emm = emtrends(m, ~ site, var = "xvar", type = 'response',weights = "cells")
+  
+  emm_cntrst = contrast(emm,
+                        method = list(
+                          "SSWMA - LWMA" = sswma-lwma,
+                          "CBMA - LWMA"  = cbma -lwma,
+                          "KIOWA - LWMA" = kiowa-lwma,
+                          "CBMA - SSWMA" = cbma -sswma,
+                          "KIOWA - SSWMA"= kiowa-sswma,
+                          "KIOWA - CBMA" = kiowa-cbma
+                        ),
+                        adjust = "bonferroni")
+  # emm_cntrst = contrast(emm)
+  emm_cntrst_summary = summary(emm_cntrst)
+  emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
+  ece_table = ece_table(emm_cntrst)
+  my_list = list(summary, 
+                 diagnostics, 
+                 emm_cntrst_summary,
+                 emm_confi_summary,
+                 ece_table,
+                 summary(emm))
+  # my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, emm)
+  return(my_list)
+}
+
+ece_impact_mas1 = function(data,
+                             yvar,
+                             xvar){
+  
+  m = lm(yvar ~ site*xvar + mas_bin + scale(date), data = data)
+  summary = summary(m)
+  diagnostics = assump(m)
+  # emm = emmeans(m, pairwise ~ x3*x2)
+  # # Setting up comparisons for emmeans contrast function
+  # lwma  = c(1,0,0,0)
+  cbma  = c(1,0)
+  kiowa = c(0,1)
+  # sswma = c(0,1,0,0)
+  # cbma  = c(0,0,1,0)
+  # kiowa = c(0,0,0,1)
+  
+  # emm = emtrends(m, ~ site|mas_bin)
+  emm = emtrends(m, ~ site, var = "xvar", type = 'response',weights = "cells")
+  
+  emm_cntrst = contrast(emm,
+                        method = list(
+                          # "SSWMA - LWMA" = sswma-lwma,
+                          # "CBMA - LWMA"  = cbma -lwma,
+                          # "KIOWA - LWMA" = kiowa-lwma,
+                          # "CBMA - SSWMA" = cbma -sswma,
+                          # "KIOWA - SSWMA"= kiowa-sswma,
+                          "KIOWA - CBMA" = kiowa-cbma
+                        ),
+                        adjust = "bonferroni")
+  # emm_cntrst = contrast(emm)
+  emm_cntrst_summary = summary(emm_cntrst)
+  emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
+  ece_table = ece_table(emm_cntrst)
+  my_list = list(summary, 
+                 diagnostics, 
+                 emm_cntrst_summary,
+                 emm_confi_summary,
+                 ece_table,
+                 summary(emm))
+  # my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, emm)
+  return(my_list)
+}
+
+ece_impact_mas2 = function(data,
+                           yvar,
+                           xvar){
+  
+  m = lm(yvar ~ site*xvar + mas_bin + scale(date), data = data)
   summary = summary(m)
   diagnostics = assump(m)
   # emm = emmeans(m, pairwise ~ x3*x2)
@@ -13,7 +97,7 @@ ece_contrast_mas = function(data,
   kiowa = c(0,0,0,1)
   
   # emm = emtrends(m, ~ site|mas_bin)
-  emm = emtrends(m, ~ site|mas_bin, var = "xvar", type = 'response',weights = "cells")
+  emm = emtrends(m, ~ site, var = "xvar", type = 'response',weights = "cells")
   
   emm_cntrst = contrast(emm,
                         method = list(
@@ -23,7 +107,45 @@ ece_contrast_mas = function(data,
                           "CBMA - SSWMA" = cbma -sswma,
                           "KIOWA - SSWMA"= kiowa-sswma,
                           "KIOWA - CBMA" = kiowa-cbma
-                        ))
+                        ),
+                        adjust = "bonferroni")
+  # emm_cntrst = contrast(emm)
+  emm_cntrst_summary = summary(emm_cntrst)
+  emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
+  ece_table = ece_table(emm_cntrst)
+  my_list = list(summary, 
+                 diagnostics, 
+                 emm_cntrst_summary,
+                 emm_confi_summary,
+                 ece_table,
+                 summary(emm))
+  # my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, emm)
+  return(my_list)
+}
+
+ece_impact_mas3 = function(data,
+                           yvar,
+                           xvar){
+  
+  m = lm(yvar ~ site*xvar + mas_bin + scale(date), data = data)
+  summary = summary(m)
+  diagnostics = assump(m)
+
+  # # Setting up comparisons for emmeans contrast function
+  sswma  = c(1,0,0)
+  cbma = c(0,1,0)
+  kiowa  = c(0,0,1)
+
+  # emm = emtrends(m, ~ site|mas_bin)
+  emm = emtrends(m, ~ site, var = "xvar", type = 'response',weights = "cells")
+  
+  emm_cntrst = contrast(emm,
+                        method = list(
+                          "CBMA - SSWMA" = cbma -sswma,
+                          "KIOWA - SSWMA"= kiowa-sswma,
+                          "KIOWA - CBMA" = kiowa-cbma
+                        ),
+                        adjust = "bonferroni")
   # emm_cntrst = contrast(emm)
   emm_cntrst_summary = summary(emm_cntrst)
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
@@ -170,7 +292,16 @@ ece_tables_combined2 = function(climate_table1,
            t.ratio_im = round(t.ratio, 3),
            p.value_im = p.value,
            sig._im = sig.) %>%
-    dplyr::select(-contrast, -estimate, -SE, -df, -t.ratio,-p.value, -sig.)
+    dplyr::select(-contrast, -estimate, -SE, -df, 
+                  -t.ratio,-p.value, -sig.) %>%
+    add_row(.before = 1)%>%
+    add_row(.before = 1)%>%
+    add_row(.before = 1)%>%
+    add_row(.before = 1)%>%
+    add_row(.before = 1)
+    # dplyr::mutate_all(~replace(., is.na(.), ""))
+
+  # add_row(estimate_im = "-", SE_im = "-", df_im = "-", t.ratio_im = "-", p.value_im = "-", sig._im = "-", .before = 1)
   
   ece_combined1 = cbind(ece_pc_climate1,
                         ece_pc_impact1)
@@ -224,7 +355,11 @@ ece_tables_combined2 = function(climate_table1,
            t.ratio_im = round(t.ratio, 3),
            p.value_im = p.value,
            sig._im = sig.) %>%
-    dplyr::select(-contrast, -estimate, -SE, -df, -t.ratio,-p.value, -sig.)
+    dplyr::select(-contrast, -estimate, -SE, -df, 
+                  -t.ratio,-p.value, -sig.)  %>%
+    add_row(.before = 1)%>%
+    add_row(.before = 1)%>%
+    add_row(.before = 1)
   
   ece_combined3 = cbind(ece_pc_climate3,
                         ece_pc_impact3) 
@@ -236,7 +371,12 @@ ece_tables_combined2 = function(climate_table1,
                      ece_combined2,
                      ece_combined3) %>%
     # gt(rowname_col = 'pc') %>%
-    gt(.) %>%
+    gt(groupname_col = "mas_bin1", 
+       rowname_col = "contrast1") %>%
+    tab_options(row_group.as_column = TRUE,
+                stub.font.weight = "bold") %>% # makes mas_bin labels bold
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
     cols_align('center') %>%
     tab_spanner(
       label = md("**Climate ECE**"),
@@ -303,7 +443,8 @@ ece_tables_combined3 = function(climate_table1,
              sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," "))
     
     if(i == 1 | i == 3 | i == 5){
-      table_temp = table_temp %>% dplyr::select(-mas_bin) %>%
+      # table_temp = table_temp %>% dplyr::select(-mas_bin) %>%
+      table_temp = table_temp %>%
         dplyr::relocate(site,
                         estimate,
                         SE,
@@ -316,14 +457,14 @@ ece_tables_combined3 = function(climate_table1,
       # pcs_clim = cbind(pcs_clim, table_temp)
       
     } else {
-      table_temp = table_temp %>% dplyr::select(-site,
-                                                -mas_bin) %>%
+      # table_temp = table_temp %>% dplyr::select(-site, -mas_bin) %>%
+      table_temp = table_temp %>% dplyr::select(-site) %>%
         dplyr::relocate(estimate,
                         SE,
                         df,
                         lower.CL,
                         upper.CL,
-                        sig)
+                        sig) 
       
       names(table_temp) = paste0(names(table_temp),i)
       # pcs_impact = rbind(pcs_impact, table_temp)
@@ -332,6 +473,11 @@ ece_tables_combined3 = function(climate_table1,
     }
   }
   
+  # Add rows to impact tables (2 and 6)
+  table_temp2 = table_temp2 %>% add_row(.before= 1) %>% add_row(.before = 1)
+  table_temp6 = table_temp6 %>% add_row(.before= 1)
+  
+  # Column combine climate and impact tables based on pc's
   pc1_ece = cbind(table_temp1, table_temp2)
   pc2_ece = cbind(table_temp3, table_temp4)
   pc3_ece = cbind(table_temp5, table_temp6)
@@ -430,21 +576,135 @@ ece_tables_combined3 = function(climate_table1,
     # tab_row_group(
     #   label = md("**Extremely Arid**"),
     #   rows = c(17:20)) %>%
-    tab_row_group(
-      label = md("**Late**"),
-      rows = c(13:16)) %>%
-    tab_row_group(
-      label = md("**Mid**"),
-      rows = c(9:12)) %>%
-    tab_row_group(
-      label = md("**Early**"),
-      rows = c(5:8)) %>%
-    tab_row_group(
-      label = md("**Predawn**"),
-      rows = c(1:4)) %>%
+    # tab_row_group(
+    #   label = md("**Late**"),
+    #   rows = c(13:16)) %>%
+    # tab_row_group(
+    #   label = md("**Mid**"),
+    #   rows = c(9:12)) %>%
+    # tab_row_group(
+    #   label = md("**Early**"),
+    #   rows = c(5:8)) %>%
+    # tab_row_group(
+    #   label = md("**Predawn**"),
+    #   rows = c(1:4)) %>%
     tab_source_note(
       source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
     )
   return(ece_ag_pcs)
 }
 
+ece_tables_slopes = function(climate_table1,
+                                impact_table1,
+                                climate_table2,
+                                impact_table2,
+                                climate_table3,
+                                impact_table3){
+  # Combine all tables into a list
+  pcs = list(climate_table1,impact_table1,
+             climate_table2,impact_table2,
+             climate_table3,impact_table3)
+  
+  
+  # Loop through all the mas bins and create a confidence interval table for the site specific slopes
+  for(i in 1:length(pcs)){
+    table_temp <- pcs[[i]] %>%
+      data.frame(stringsAsFactors = FALSE) %>%
+      dplyr::rename(estimate = "xvar.trend") %>%
+      dplyr::mutate(site = toupper(site),
+                    estimate = round(estimate, 3),
+                    SE = round(SE, 3),
+                    lower.CL = round(lower.CL, 3),
+                    upper.CL = round(upper.CL, 3),
+                    sig = if_else(sign(lower.CL) == sign(upper.CL),"*"," "))
+    
+    if(i == 1 | i == 3 | i == 5){
+      # table_temp = table_temp %>% dplyr::select(-mas_bin) %>%
+      table_temp = table_temp %>%
+        dplyr::relocate(site,
+                        estimate,
+                        SE,
+                        df,
+                        lower.CL,
+                        upper.CL,
+                        sig)
+      names(table_temp) = paste0(names(table_temp),i)
+      assign(paste0("table_temp",i),table_temp)
+      # pcs_clim = cbind(pcs_clim, table_temp)
+      
+    } else {
+      # table_temp = table_temp %>% dplyr::select(-site, -mas_bin) %>%
+      table_temp = table_temp %>% dplyr::select(-site) %>%
+        dplyr::relocate(estimate,
+                        SE,
+                        df,
+                        lower.CL,
+                        upper.CL,
+                        sig) 
+      
+      names(table_temp) = paste0(names(table_temp),i)
+      # pcs_impact = rbind(pcs_impact, table_temp)
+      assign(paste0("table_temp",i),table_temp)
+      
+    }
+  }
+  
+  # Add rows to impact tables (2 and 6)
+  table_temp2 = table_temp2 %>% add_row(.before= 1) %>% add_row(.before = 1)
+  table_temp6 = table_temp6 %>% add_row(.before= 1)
+  
+  # Column combine climate and impact tables based on pc's
+  pc1_ece = cbind(table_temp1, table_temp2)
+  pc2_ece = cbind(table_temp3, table_temp4)
+  pc3_ece = cbind(table_temp5, table_temp6)
+  
+  # Rename pc2_ece and pc3_ece names so you can rbind the three dataframes
+  names(pc2_ece) = names(pc1_ece)
+  names(pc3_ece) = names(pc1_ece)
+  
+  pc_all_ece = rbind(pc1_ece,pc2_ece,pc3_ece)
+  
+  ece_ag_pcs = pc_all_ece %>%
+    gt(
+       rowname_col = "site1"
+       ) %>%
+    # tab_options(row_group.as_column = TRUE,
+    #             stub.font.weight = "bold") %>% # uncomment to make the PC labels a grouping label
+    tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+              locations = cells_row_groups()) %>%
+    cols_align('center') %>%
+    tab_spanner(
+      label = md("**Climate ECE**"),
+      columns = c(estimate1, SE1, df1, lower.CL1, upper.CL1, sig1)) %>%
+    tab_spanner(
+      label = md("**Impact ECE**"),
+      columns = c(estimate2, SE2, df2, lower.CL2, upper.CL2, sig2)) %>%
+    cols_label(site1 = md("**Site**"),
+               estimate1 = md("**Estimate**"),
+               SE1 = md("**SE**"),
+               df1 = md("**d.f.**"),
+               lower.CL1 = md("**Lower CI**"),
+               upper.CL1 = md("**Upper CI**"),
+               sig1 = md("**Sig.**")) %>%
+    cols_label(estimate2 = md("**Estimate**"),
+               SE2 = md("**SE**"),
+               df2 = md("**d.f.**"),
+               lower.CL2 = md("**Lower CI**"),
+               upper.CL2 = md("**Upper CI**"),
+               sig2 = md("**Sig.**")) %>%
+    opt_table_font(
+      font = "Times New Roman") %>%
+    tab_row_group(
+      label = md("**PC 3 - Acoustic Complexity**"),
+      rows = c(9:12)) %>%
+    tab_row_group(
+      label = md("**PC 2 - Avian Abundance**"),
+      rows = c(5:8)) %>%
+    tab_row_group(
+      label = md("**PC 1 - Acoustic Diversity**"),
+      rows = c(1:4)) %>%
+  tab_source_note(
+    source_note = "P value adjustment: tukey method for comparing a family of 4 estimates."
+  )
+  return(ece_ag_pcs)
+}
