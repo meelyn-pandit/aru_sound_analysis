@@ -137,25 +137,26 @@ ggbiplot(audio_pca, choices = c(1,3),ellipse = TRUE, alpha = 0, groups = aw4$sit
 
 # Create gt table of pcs table
 
-# pc_df = data.frame(pc = c(1,2,3),
-#                    std = c(1.413,1.273,1.008),
-#                    prop_var = c(0.333, 0.27, 0.165),
-#                    cum_prop = c(0.333, 0.603, 0.772),
-#                    desc = c("Acoustic Diversity", "Avian Abundance", "Acoustic Complexity"))
-# 
-# pc_gt = pc_df %>% 
-#         gt() %>%
-#         cols_align('center') %>%
-#         cols_label(pc = md("**PC**"),
-#                    std = md("**Standard Deviation**"),
-#                    prop_var = md("**Proportion\nof Variance**"),
-#                    cum_prop = md("**Cumulative\nProportion**"),
-#                    desc = md("**Description**")) %>%
-#         opt_table_font(
-#     font = "Times New Roman")%>% gtsave("results/pc_table.png", 
-#                                         vwidth = 20000, 
-#                                         vheight = 15000, 
-#                                         expand = 100)
+pc_df = data.frame(pc = c(1,2,3),
+                   std = c(1.413,1.273,1.008),
+                   prop_var = c(0.333, 0.27, 0.165),
+                   cum_prop = c(0.333, 0.603, 0.772),
+                   desc = c("Acoustic Diversity", "Avian Abundance", "Acoustic Complexity"))
+
+pc_gt = pc_df %>%
+        gt() %>%
+        cols_align('center') %>%
+        cols_label(pc = md("**PC**"),
+                   std = md("**Standard Deviation**"),
+                   prop_var = md("**Proportion\nof Variance**"),
+                   cum_prop = md("**Cumulative\nProportion**"),
+                   desc = md("**Description**")) %>%
+        opt_table_font(
+    font = "Times New Roman")%>% gtsave("results/pc_table.png",
+                                        vwidth = 1100,
+                                        vheight = 1500,
+                                        expand = 10)
+
 ### PC1: ADI and AEI, higher values mean higher diversity (after running line 65)
 ### PC2: Num Vocals and Species Diversity
 ### PC3: ACI and BIO, higher values = higher ACI
@@ -289,7 +290,7 @@ ag_graph_time_paper(aw6$pc1,
                     aw6$ew_vol,
                     "PC1 - Acoustic Diversity",
                     xlab)
-ggsave('results/arid_grad_pc1_site_time.png', dpi = 600, height = 6, width = 8, units = "in")
+ggsave('results/arid_grad_pc1_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### PC2 - Avian Abundance
 ## LMs for PC2 with aridity (gh) as the independent variable
@@ -683,8 +684,8 @@ sswma_pc_table = sswma_water_table3(sswma_lag_pc1[[4]],
                                     sswma_lag_pc2[[4]],
                                     sswma_lag_pc3[[4]]); sswma_pc_table
 sswma_pc_table %>% gtsave("results/sswma_water_allpcs_lag.png",
-                          expand = 100,
-                          vwidth = 2000, 
+                          expand = 10,
+                          vwidth = 1100, 
                           vheight = 1500)
 
 # Water Supp - CBMA - Full Dataset - Data Organization -------------
@@ -812,9 +813,9 @@ cbma_pc_table = cbma_water_table3(cbma_lag_pc1[[4]],
                                   cbma_lag_pc2[[4]],
                                   cbma_lag_pc3[[4]]);cbma_pc_table
 cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
-                          expand = 100,
-                          vwidth = 20000, 
-                          vheight = 15000)
+                          expand = 10,
+                          vwidth = 1100, 
+                          vheight = 1500)
 
 ### Plotting CBMA Water Supp Lag data
 ### Creating Labels for Graphs

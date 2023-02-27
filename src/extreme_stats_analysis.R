@@ -101,11 +101,6 @@ exaw_mas = ex_arid %>%
 
 
 # Climate ECE - MAS and Date ----------------------------------------------
-ex1mas = lm(pc1 ~ site*gh*mas_bin + scale(date), data = exaw_mas)
-summary(ex1mas)
-assump(ex1mas)
-emmeans(ex1mas,  ~ site|mas_bin)
-emtrends(ex1mas, ~ site|mas_bin, var = "gh", type = 'response',weights = "cells")
 
 # PC1 - Acoustic diversity
 ece_pc1_mas = ece_contrast_mas(exaw_mas, 
@@ -182,7 +177,6 @@ awthres_n = awthres %>%
 # PC1 threshold dataframe, filtered by values 
 # greater than or equal to 1.40154
 awthrespc1 = awthres %>% dplyr::filter(ew_vol > 1.40154)
-
 ecethres_pc1_mas = ece_impact_mas1(awthrespc1, 
                                     awthrespc1$pc1,
                                     awthrespc1$ew_vol);ecethres_pc1_mas[6]
@@ -210,15 +204,25 @@ ece_pc_table = ece_tables_combined2(ece_pc1_mas[[5]],
 ece_pc_table %>% gtsave("results/ece_all_pcs.png", vwidth = 2000, vheight = 1500, expand = 100)
 
 ### ECE Aridity gradient slopes table - climate and threshold combined table
+# create NA table for PC3 impact table
+na_table = data.frame(site = c(NA,NA,NA),
+                      xvar.trend = c(NA,NA,NA),
+                      SE = c(NA,NA,NA),
+                      df = c(NA,NA,NA),
+                      lower.CL = c(NA,NA,NA),
+                      upper.CL = c(NA,NA,NA))
 
 ece_all_tables_table = ece_tables_slopes(ece_pc1_mas[[6]],
-                                            ecethres_pc1_mas[[6]],
-                                            ece_pc2_mas[[6]],
-                                            ecethres_pc2_mas[[6]],
-                                            ece_pc3_mas[[6]],
-                                            ecethres_pc3_mas[[6]])
+                                        ecethres_pc1_mas[[6]],
+                                        ece_pc2_mas[[6]],
+                                        ecethres_pc2_mas[[6]],
+                                        ece_pc3_mas[[6]],
+                                        na_table)
 
-ece_all_tables_table %>% gtsave("results/ece_all_pcs_mas.png", vwidth = 2000, vheight = 1500, expand = 100)
+ece_all_tables_table %>% gtsave("results/ece_all_pcs_mas.png", 
+                                vwidth = 1100, 
+                                vheight = 1500, 
+                                expand = 10)
 
 
 
@@ -357,17 +361,13 @@ sswmawl_clmas_pc3 = sswma_water_climate(data = sswmawl_clmas,
 sswma_pc_climate_table = sswma_water_climate_table(sswmawl_clmas_pc1[[3]],                          sswmawl_clmas_pc2[[3]],                       sswmawl_clmas_pc3[[3]]); sswma_pc_climate_table
 # 
 sswma_pc_climate_table %>% gtsave("results/sswmawl_lag_climate_ece_tables.png",
-                          expand = 100,
-                          vwidth = 2000,
+                          expand = 10,
+                          vwidth = 1100,
                           vheight = 1500)
 
 # ECE - Impact - Water Supp - SSWMA ---------------------------------------
 # Do not need to do a GAM for water supp data, using threshold for aridity gradient experiment.
 sswmawl_thres = sswmawl %>%
-  # dplyr::filter(arid_within >0.95) %>% # similar to aridity gradient data
-  # dplyr::filter(year(date_time)==2021) %>%
-  # dplyr::filter(as_date(date_time) < "2021-08-16") %>%
-  #   mutate_at(c("arid_withinf", "arid_acrossf", "hist_withinf", "hist_acrossf"), as.numeric) %>%
   dplyr::mutate(date = as_date(date_time),
                 ws_site = as.factor(ws_site),
                 water = as.factor(water)) %>%
@@ -386,21 +386,20 @@ summary(gam1)
 gam1$smooth[[1]]$xp 
 coef(gam1)
 plot(gam1, se=TRUE,col="blue")
-abline(v=1.214664, col="red")
 
 # Find inflection points in gam model, first load functions in inflection_points.R script
 find_gam_ip(gam1, 0.5) # inflection point for sswma pc1 is 0.5906158 but becomes positive afterwards
+abline(v=0.5906158, col="red")
 
 gam2 = gam(pc2 ~ s(ew_vol, bs = "cs", k = -1), data = sswmawl)
 summary(gam2)
 gam2$smooth[[1]]$xp #0.95
 coef(gam2)
 plot(gam2, se=TRUE,col="blue")
-abline(v= 0.6060231, col="green")
 
 # Find inflection points in gam model, first load functions in inflection_points.R script
 find_gam_ip(gam2, 0.5) # inflection point for pc2 is 0.6060231 but becomes positive afterwards
-abline(v = 0.6501019, col="green")
+abline(v = 0.6060231, col="green")
 
 gam3 = gam(pc3 ~ s(ew_vol, bs = "cs", k = -1),
            data = sswmawl)
@@ -408,7 +407,6 @@ summary(gam3)
 gam3$smooth[[1]]$xp 
 coef(gam3)
 plot(gam3, se=TRUE,col="blue")
-abline(v=0.4790224, col="green")
 
 # Find inflection points in gam model, first load functions in inflection_points.R script
 find_gam_ip(gam3, 0.3) # inflection point for pc3 is 0.5443937, but slope becomes significantly positive after
@@ -427,14 +425,16 @@ sswmawl_immas_pc1 = sswma_water_impact(sswmawl_threspc1,
                                        sswmawl_threspc1$ew_vol)
 sswmawl_immas_pc1[[3]]
 
-sswmawl_threspc2 = sswmawl_thres %>% dplyr::filter(gh >= 0.6060231)
+sswmawl_threspc2 = sswmawl_thres %>% dplyr::filter(ew_vol >= 0.6060231)
 sswmawl_immas_pc2 = sswma_water_impact(sswmawl_threspc2,
-                                       sswmawl_threspc2$pc2)
+                                       sswmawl_threspc2$pc2,
+                                       sswmawl_threspc2$ew_vol)
 sswmawl_immas_pc2[[3]]
 
-sswmawl_threspc3 = sswmawl_thres %>% dplyr::filter(gh >= 0.5443937)
+sswmawl_threspc3 = sswmawl_thres %>% dplyr::filter(ew_vol >= 0.5443937)
 sswmawl_immas_pc3 = sswma_water_impact(sswmawl_threspc3,
-                                       sswmawl_threspc3$pc3)
+                                       sswmawl_threspc3$pc3,
+                                       sswmawl_threspc3$ew_vol)
 sswmawl_immas_pc3[[3]]
 
 # # Finding cutoff for arid across for pc3
@@ -582,12 +582,12 @@ cbma_excl = cbma_water_climate_table(cbmawl_clmas_pc1[[3]],
                                      cbmawl_clmas_pc2[[3]],
                                      cbmawl_clmas_pc3[[3]]);cbma_excl
 
-cbma_excl %>% gtsave("results/cbma_water_allpcs_lag.png",
-                          expand = 100,
-                          vwidth = 2000, 
+cbma_excl %>% gtsave("results/cbma_water_exclim.png",
+                          expand = 10,
+                          vwidth = 1100, 
                           vheight = 1500)
 
-
+cbma_exclooxml = cbma_excl %>% as_word();View(cbma_exclooxml)
 # Determine Thresholds for CBMA Water Supplementation experiment ---------
 library(mgcv)
 
@@ -639,8 +639,9 @@ cbmawl_thres = cbmawl %>%
 
 cbmawl_threspc1 = cbmawl_thres %>% dplyr::filter(ew_vol >= 1.542871)
 cbmawl_immas_pc1 = cbma_water_impact(cbmawl_threspc1,
-                                     cbmawl_threspc1$pc1)
-cbmawl_immas_pc1[[3]]
+                                     cbmawl_threspc1$pc1,
+                                     cbmawl_threspc1$ew_vol)
+cbmawl_immas_pc1
 
 cbmawl_threspc2 = cbmawl_thres %>% dplyr::filter(ew_vol >= 1.24843)
 cbmawl_immas_pc2 = cbma_water_impact(cbmawl_threspc2,
@@ -657,11 +658,19 @@ cbmawl_immas_pc3[[3]]
 
 # CBMA - Combining Climate and Impact Tables -----------------------------
 
+na_table2 = data.frame(contrast = c(NA,NA),
+                      estimate = c(NA,NA),
+                      SE = c(NA,NA),
+                      df = c(NA,NA),
+                      t.ratio = c(NA,NA),
+                      p.value = c(NA,NA))
+
 cbma_all_eces = cbma_ece_table(cbmawl_clmas_pc1[[3]],
                                cbmawl_clmas_pc2[[3]],
                                cbmawl_clmas_pc3[[3]],
-                               cbmawl_immas_pc1[[3]],
+                               # cbmawl_immas_pc1[[3]],
+                               na_table2,
                                cbmawl_immas_pc2[[3]],
-                               cbmawl_immas_pc3[[3]]);cbma_all_eces
+                               na_table2);cbma_all_eces
 
-cbma_all_eces %>% gtsave("results/cbma_water_ece_pcs.png", vwidth = 20000, vheight = 15000, expand = 100)
+cbma_all_eces %>% gtsave("results/cbma_water_ece_pcs.png", vwidth = 1100, vheight = 1500, expand = 10)

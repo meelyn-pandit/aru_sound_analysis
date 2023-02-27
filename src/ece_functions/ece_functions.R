@@ -595,11 +595,11 @@ ece_tables_combined3 = function(climate_table1,
 }
 
 ece_tables_slopes = function(climate_table1,
-                                impact_table1,
-                                climate_table2,
-                                impact_table2,
-                                climate_table3,
-                                impact_table3){
+                              impact_table1,
+                              climate_table2,
+                              impact_table2,
+                              climate_table3,
+                              impact_table3){
   # Combine all tables into a list
   pcs = list(climate_table1,impact_table1,
              climate_table2,impact_table2,
