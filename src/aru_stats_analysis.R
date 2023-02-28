@@ -275,9 +275,9 @@ atten12pc1 = ag_contrasts_convar_site(aw6,
 xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
 
 ag_graph_site_paper(aw6$pc1, 
-                    aw6$ew_vol,
+                    aw6$e1_vol,
                     "PC1 - Acoustic Diversity",
-                    xlab)
+                    "evap_rate constant")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -287,7 +287,7 @@ lmpc1time = ag_contrasts_convar_time(aw6,
 
 ## PC1 plotted against aridity (gh), facet grid by site (comparisons across time, within site)
 ag_graph_time_paper(aw6$pc1, 
-                    aw6$ew_vol,
+                    aw6$e1_vol,
                     "PC1 - Acoustic Diversity",
                     xlab)
 ggsave('results/arid_grad_pc1_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
@@ -299,7 +299,7 @@ lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$ew_vol);lmpc2site
 
 ag_graph_site_paper(aw6$pc2, 
-                    aw6$ew_vol,
+                    aw6$e1_vol,
                     "PC2 - Avian Abundance",
                     xlab)
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")

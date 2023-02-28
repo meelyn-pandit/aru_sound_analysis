@@ -27,7 +27,7 @@ airdensity(25) # 1.17 (kg/(m^3))
 
 # Calculate air density using bigleaf equation ----------------------------
 
-air.density(25,101.3)
+air.density(25,101.3) # temperature in C, pressure in kPa, result is in kg/m3
 
 # Calculate evaporation rate based on aerodynamic method ------------------
 ### http://mgebrekiros.github.io/IntroductoryHydrology/EvaporationAndTranspiration.pdf
