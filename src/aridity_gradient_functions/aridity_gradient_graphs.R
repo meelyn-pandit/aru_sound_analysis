@@ -104,7 +104,7 @@ ag_graph_time_paper = function(yvar,
     #                    labels = c("Predawn","Early","Mid","Late")) +
     scale_color_viridis(discrete = TRUE,
                         option = "B",
-                        name = "Morning\nAcoustic\nPeriod",
+                        name = "Morning Acoustic Period",
                         labels = c("Predawn","Early","Mid","Late"))+
     # scale_color_brewer(palette = "YlGnBu",
     #                    name = "Morning\nAcoustic\nPeriod",
@@ -113,7 +113,7 @@ ag_graph_time_paper = function(yvar,
     scale_x_continuous(name = xlabel) +
     scale_y_continuous(name = ylabel) +
     # facet_grid(~facet_type) +
-    theme_classic(base_size = 20) +
+    theme_classic(base_size = 15) +
     theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
           legend.position = "bottom") +

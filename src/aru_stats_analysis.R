@@ -5,7 +5,6 @@ library(lubridate) #manipulating date and time
 library(hms) #manipulate time
 library(zoo) #for na.approx to approximate missing values in weather dataset
 library(gridExtra) #ggplot multi panels
-# library(ggpubr)
 library(lme4) #lmm and glmm analysis
 library(lmerTest) #get p-values for lmm tests
 library(reshape2) #???
@@ -17,17 +16,12 @@ library(bbmle) #AIC comparisons
 library(performance) #performance
 library(emmeans)
 library(magrittr)
-# library(pca3d)
 library(gt)
 library(htmltools)
 library(webshot2)
 library(ggbiplot) # plot pcas
 library(broom)
 library(docstring)
-# library(cowplot)
-# library(magick)
-# library(patchwork)
-# library(flextable)
 
 # ### Install ggbiplot ###
 # library(devtools)
@@ -80,7 +74,7 @@ aw4 = aw3 %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   mutate(date = date(date_time),
          pres = na.approx(pres, na.rm = FALSE), # approximating missing pressure data
-         gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))),
+         # gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))),
          evap_wind = (evap_rate(u2 = ws2m, # evaporation rate in mm/day
                                 p = pres, 
                                 t = temp, 
@@ -90,9 +84,7 @@ aw4 = aw3 %>%
                              p = pres, 
                              t = temp, 
                              rh = (relh/100), 
-                             z0 = 0.03)),
-         vpd = RHtoVPD(relh,temp,pres), # in kPa
-         ewl = ewl_calc(temp,relh)) %>%
+                             z0 = 0.03))) %>%
   dplyr::mutate(ewlwvp = ewl/vpd) %>% # in g/h/kpA
   dplyr::mutate(ew_vol = evap_wind*0.1, # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
                 e1_vol = evap_1*0.1) %>% # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
@@ -113,8 +105,9 @@ aw4 = aw3 %>%
                                          Pa = (pres/1000)),
                 ewlwvp = if_else(ewlwvp == Inf, 0, ewlwvp))
 
-# Create normalized aridity values using evaporation rate within sites
-arid_comp = aw4 %>% dplyr::select(temp,relh,dew,gh,evap_wind,evap_1,ew_vol,e1_vol,vpd,ewl,ewlwvp)
+# Check correlations among weather variables
+arid_comp = aw4 %>% dplyr::select(temp,relh,dew,gh,
+                                  evap_wind,evap_1,ew_vol,e1_vol)
 cor(arid_comp)
 
 # Check historgrams of evaporation rate
@@ -181,11 +174,65 @@ aw4_pc2 = aw4 %>%
 cor(aw4_pc2[,-c(1:6)])
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 
-# Checking full dataset and gam plots
-ggplot(data = aw4, aes(x = ew_vol,
-                              y = pc2,
-                              color = site)) +
-  geom_smooth(method = "gam") +
+# aw4_linux = aw4
+# save(aw4_linux, file = "data_clean/aridity_data_clean_linux.Rdata")
+
+# Checking full dataset and lm plots
+pas = lmer(pc2 ~ ew_vol*mas_bin + scale(date) + (1|site), data = aw4)
+summary(pas)
+
+pas_lm = lm(pc2 ~ ew_vol*mas_bin + scale(date), data = aw6)
+summary(pas_lm)
+emm = emtrends(pas_lm, ~ mas_bin, 
+               var = "ew_vol", 
+               type = 'response',
+               weights = "cells") # across sites
+
+mas0 = c(1,0,0,0)
+mas1 = c(0,1,0,0)
+mas2 = c(0,0,1,0)
+mas3 = c(0,0,0,1)
+contrast = summary(contrast(emm, 
+                            method = list("Early-Predawn" = mas1-mas0,
+                                          "Mid-Predawn" = mas2-mas0,
+                                          "Late-Predawn" = mas3-mas0,
+                                          "Mid-Early" = mas2-mas1,
+                                          "Late-Early" = mas3-mas1,
+                                          "Late-Mid" = mas3-mas2),
+                           adjust = "bonferroni")) 
+contrast_gt = contrast %>%
+  dplyr::mutate(estimate = round(estimate, 3),
+                SE = round(SE, 3),
+                t.ratio = round(t.ratio, 3),
+                # z.ratio = round(z.ratio, 3),
+                p.value = round(p.value, 3)) %>%
+  dplyr::mutate(sig = determine_sig(p.value)) %>%
+  dplyr::mutate(p.value = as.factor(p.value)) %>%
+  dplyr::mutate(p.value = dplyr::recode(p.value, "0" = "<0.001")) %>%
+  gt(rowname_col = "contrast") %>%
+  # tab_row_group(label = NULL) %>%
+  tab_options(row_group.as_column = TRUE,
+              stub.font.weight = "bold") %>% # makes mas_bin labels bold
+  tab_style(style = cell_text(weight = "bold"), # makes site labels bold
+            locations = cells_row_groups()) %>%
+  cols_align('center') %>%
+  cols_label(contrast = md("**Contrast**"),
+             estimate = md("**Estimate**"),
+             SE = md("**SE**"),
+             df = md("**d.f.**"),
+             t.ratio = md("**t-ratio**"),
+             # z.ratio = md("**z-ratio**"),
+             p.value = md("**p-value**"),
+             sig = md("**Sig.**")) %>%
+  opt_table_font(
+    font = "Times New Roman") %>%
+  gtsave("results/pool_data_contrasts_lm.png")
+  # gtsave("results/pool_data_contrasts_lmer.png")
+
+
+ggplot(data = aw6, aes(x = ew_vol,
+                       y = pc2)) +
+  geom_smooth(method = lm) +
   facet_grid(~mas_bin)
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
@@ -196,6 +243,28 @@ ggplot(data = aw4, aes(x = ew_vol,
 # pca3d(audio_pca, biplot = true) # only run this on windows machine
 # snapshotPCA3d("audio_pca.png")
 
+# Running lmm with fixed and random effects to see if the random intercepts and slopes differed across sites and mas bins --------
+### predictions would be that there would be site and mas bin differences in intercepts and that ewl_vol would drive the differences in slopes
+
+m1_lmm = lmer(pc1 ~ ew_vol*mas_bin + scale(date) + (ew_vol|site/mas_bin), 
+              data = aw4,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+
+broom.mixed::tidy(m1_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m1_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m1_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m1_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
+
+m2_lmm = lmer(pc2 ~ ew_vol*mas_bin + scale(date) + (ew_vol|site/mas_bin), 
+              data = aw4,
+              control=lmerControl(optimizer="bobyqa",
+                                  optCtrl=list(maxfun=2e5)))
+
+broom.mixed::tidy(m2_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m2_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m2_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m2_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 
 # Aridity Gradient - Summarized by Date and MAS ---------------------------
 
@@ -206,19 +275,15 @@ aw6 = aw4 %>%
   dplyr::filter(year(date_time)==2021) %>%
   dplyr::filter(as_date(date_time) < "2021-08-16") %>%
   group_by(site, date, mas_bin) %>%
-  dplyr::summarise_at(vars(aci:species_diversity, 
-                           temp:dew, 
-                           gh:ws10m,
-                           evap_wind:e1_vol,
-                           gh,
-                           pc1:pc3,
-                           atten_alpha04:atten_dist12), ~ mean(.x, na.rm = TRUE)) 
+  dplyr::summarise(across(where(is.numeric), mean, na.rm = TRUE), n = n()) 
 
 arid_comp = aw6 %>% dplyr::select(temp,relh,gh,evap_wind:atten_dist12)
 cor(arid_comp[,c(-1,-2)])
 
 ### Recalculate the pc scores, not just average them
-audio_pca_mas = prcomp(aw6[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+audio_pca_mas = prcomp(aw6[,c("aci","bio","adi","aei","num_vocals","species_diversity")], 
+                       center = TRUE, 
+                       scale. = TRUE)
 summary(audio_pca_mas) #PC1 and PC2 have highest proportion of variance
 audio_pcadf_mas = as.data.frame(audio_pca_mas[["x"]])
 ggbiplot(audio_pca_mas, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw6$site) # Plot PCs
@@ -246,7 +311,13 @@ pc_comp = data.frame("pc1" = aw6$pc1,
                      "bio" = aw6$bio)
 cor(pc_comp)
 
+# Checking cbma to see if pc2 is positively correlated with num vocals and species diversity
 
+cbma_pc = aw6 %>%
+  dplyr::filter(site == "cbma") %>%
+  dplyr::select(aci:species_diversity,temp:dew,evap_wind:e1_vol,pc1:pc3)
+
+cor(cbma_pc[,-c(1:2)])
 # Creating MAS bin labels for graphs
 aw6$mas_labels = factor(aw6$mas_bin, levels = c("0","1","2","3"),
                         labels = c("Predawn","Early","Mid","Late"))
@@ -291,7 +362,7 @@ xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
 ag_graph_site_paper(aw6$pc1, 
                     aw6$ew_vol,
                     "PC1 - Acoustic Diversity",
-                    "evap_rate constant")
+                    xlab)
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -328,7 +399,9 @@ ag_graph_time_paper(aw6$pc2,
                     aw6$ew_vol,
                     "PC2 - Avian Abundance",
                     xlab)
-ggsave('results/arid_grad_pc2_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+ggsave('results/arid_grad_pc2_time_paper.png', 
+       dpi = 600, 
+       height = 6, width = 10, units = "in")
 
 ## PC2 - Avian Abundance across sound attenuation coefficient
 # 4 kHz
@@ -380,7 +453,7 @@ lmpc3time = ag_contrasts_convar_time(aw6,
                                      aw6$ew_vol);lmpc3time
 
 ag_graph_time_paper(aw6$pc3, 
-                    aw6$evap_wind,
+                    aw6$ew_vol,
                     "PC3 - Acoustic Complexity",
                     xlab)
 ggsave('results/arid_grad_pc3_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
@@ -509,7 +582,6 @@ ggsave('results/avg_arid_across_site.png', dpi = 600, height = 6, width = 8, uni
 load("data_clean/water_audio_and_weather_data.Rdata")
 
 ww = water_weather3 %>%
-  dplyr::mutate(gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100)))) %>%
   dplyr::filter(date_time < "2021-08-16") %>%
   dplyr::filter(year(date_time) == 2021) %>%
   dplyr::mutate(rain = replace_na(rain,0)) %>%
@@ -559,7 +631,9 @@ sswma_water = ww3 %>%
          week = week(date_time)) %>%
   arrange(date_time,ws_site,water)
 
-sswma_water_pca = prcomp(sswma_water[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+sswma_water_pca = prcomp(sswma_water[,c("aci","bio","adi","aei","num_vocals","species_diversity")], 
+                         center = TRUE, 
+                         scale. = TRUE)
 summary(sswma_water_pca) #PC1 and PC2 have highest proportion of variance
 sswma_water_pcadf = as.data.frame(sswma_water_pca[["x"]])
 ggbiplot(sswma_water_pca, choices = c(1,2), ellipse = TRUE, alpha = 0, groups = sswma_water$ws_site) 
@@ -577,8 +651,6 @@ sswma_water$pc3 = sswma_water_pcadf$PC3
 #*-1 # multiply pc3 by -1 to make aci values have positive values
 
 save(sswma_water, file = "data_clean/sswma_water.Rdata")
-
-
 
 # Water Supp - SSWMA - Date and MAS Data Organiztion -------------
 
@@ -715,7 +787,9 @@ cbma_water = ww3 %>%
          sound_atten) %>%
   arrange(date_time,ws_site,water)
 
-cbma_water_pca = prcomp(cbma_water[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+cbma_water_pca = prcomp(cbma_water[,c("aci","bio","adi","aei","num_vocals","species_diversity")], 
+                        center = TRUE, 
+                        scale. = TRUE)
 summary(cbma_water_pca) #PC1 and PC2 have highest proportion of variance
 cbma_water_pcadf = as.data.frame(cbma_water_pca[["x"]])
 ggbiplot(cbma_water_pca, choices = c(1,2), ellipse = TRUE, alpha = 0, groups = cbma_water$ws_site) # need to multiply pc1 by -1
@@ -857,3 +931,4 @@ cbma_water_site_paper(cbma_maslag,
                       cbma_maslag$ew_vol,
                       "PC3 - Acoustic Complexity",
                       xlab)
+
