@@ -39,6 +39,42 @@ ag_graph_site_paper = function(yvar,
     theme(strip.text.y = element_text(angle = 0))
 }
 
+ag_graph_site_paper2 = function(yvar,
+                               xvar,
+                               ylabel,
+                               xlabel){
+  # Set color palette
+  cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
+  ## Create group labels
+  # mas_bin labels
+  aw6$mas_labels = factor(aw6$mas_bin, levels = c("0","1","2","3"),
+                          labels = c("Predawn","Early","Mid","Late"))
+  
+  # site labels
+  aw6$site_labels = factor(aw6$site, levels = c("lwma","sswma","cbma","kiowa"),
+                           labels = c("LWMA","SSWMA","CBMA","KIOWA"))
+  
+  ggplot(data = aw4,
+         aes(x=xvar, y=yvar, color = site)) +
+    # ggtitle("Datetime Summarized - PC1 - Acoustic Diversity")+
+    geom_smooth(method = lm) +
+    scale_color_manual(values = cbpalette, 
+                       name = "Site",
+                       labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
+    scale_x_continuous(name = xlabel)+
+    scale_y_continuous(name = ylabel)+
+    # facet_grid(~facet_type) +
+    theme_classic(base_size = 20) +
+    theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+          plot.title = element_text(hjust = 0, vjust = 0),
+          legend.position = "bottom") +
+    # facet_wrap(vars(mas_bin)) + 
+    # ggtitle(label = "Comparisons across Site") +
+    facet_grid(~mas_labels) +
+    # facet_grid(rows = vars(site_labels))+
+    theme(strip.text.y = element_text(angle = 0))
+}
+
 ### Paper Graph - Within Sites, Across Time
 ag_graph_time_paper = function(yvar,
                                xvar,

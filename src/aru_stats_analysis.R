@@ -165,6 +165,20 @@ aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 aw4$pc2 = audio_pcadf$PC2 
 aw4$pc3 = audio_pcadf$PC3
 
+# check to see if pc scores correlate with acoustic metrics
+pc_df = aw4 %>% 
+  dplyr::filter(site == "kiowa") %>%
+  dplyr::select(aci:species_diversity,pc1:pc3)
+cor(pc_df)
+# Find files with high pc1 and pc2 scores in the late period under --------
+
+aw4_pc2 = aw4 %>%
+  dplyr::select(filename, site,aru,date_time,local_time,mas_bin,ew_vol,num_vocals,species_diversity,pc2) %>% 
+  # dplyr::filter(mas_bin == 3) %>% 
+  # dplyr::filter(site == "kiowa") %>%
+  dplyr::arrange(desc(mas_bin),desc(ew_vol))
+
+cor(aw4_pc2[,-c(1:6)])
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 
 # Checking full dataset and gam plots
@@ -275,7 +289,7 @@ atten12pc1 = ag_contrasts_convar_site(aw6,
 xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
 
 ag_graph_site_paper(aw6$pc1, 
-                    aw6$e1_vol,
+                    aw6$ew_vol,
                     "PC1 - Acoustic Diversity",
                     "evap_rate constant")
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
@@ -287,7 +301,7 @@ lmpc1time = ag_contrasts_convar_time(aw6,
 
 ## PC1 plotted against aridity (gh), facet grid by site (comparisons across time, within site)
 ag_graph_time_paper(aw6$pc1, 
-                    aw6$e1_vol,
+                    aw6$ew_vol,
                     "PC1 - Acoustic Diversity",
                     xlab)
 ggsave('results/arid_grad_pc1_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
@@ -299,7 +313,7 @@ lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$ew_vol);lmpc2site
 
 ag_graph_site_paper(aw6$pc2, 
-                    aw6$e1_vol,
+                    aw6$ew_vol,
                     "PC2 - Avian Abundance",
                     xlab)
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
