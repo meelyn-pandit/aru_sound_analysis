@@ -160,7 +160,7 @@ aw4$pc3 = audio_pcadf$PC3
 
 # check to see if pc scores correlate with acoustic metrics
 pc_df = aw4 %>% 
-  dplyr::filter(site == "kiowa") %>%
+  dplyr::filter(site == "cbma") %>%
   dplyr::select(aci:species_diversity,pc1:pc3)
 cor(pc_df)
 # Find files with high pc1 and pc2 scores in the late period under --------
@@ -168,7 +168,7 @@ cor(pc_df)
 aw4_pc2 = aw4 %>%
   dplyr::select(filename, site,aru,date_time,local_time,mas_bin,ew_vol,num_vocals,species_diversity,pc2) %>% 
   # dplyr::filter(mas_bin == 3) %>% 
-  # dplyr::filter(site == "kiowa") %>%
+  dplyr::filter(site == "cbma") %>%
   dplyr::arrange(desc(mas_bin),desc(ew_vol))
 
 cor(aw4_pc2[,-c(1:6)])
