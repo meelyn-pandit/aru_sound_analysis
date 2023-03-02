@@ -219,7 +219,7 @@ ece_all_tables_table = ece_tables_slopes(ece_pc1_mas[[6]],
                                         ece_pc3_mas[[6]],
                                         na_table)
 
-ece_all_tables_table %>% gtsave("results/ece_all_pcs_mas.png", 
+ece_all_tables_table %>% gtsave("results/ece_all_pcs_slopes.png", 
                                 vwidth = 1100, 
                                 vheight = 1500, 
                                 expand = 10)

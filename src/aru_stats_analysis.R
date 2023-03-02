@@ -169,7 +169,7 @@ aw4_pc2 = aw4 %>%
   dplyr::select(filename, site,aru,date_time,local_time,mas_bin,ew_vol,num_vocals,species_diversity,pc2) %>% 
   # dplyr::filter(mas_bin == 3) %>% 
   dplyr::filter(site == "cbma") %>%
-  dplyr::arrange(desc(mas_bin),desc(ew_vol))
+  dplyr::arrange(desc(mas_bin),ew_vol,pc2)
 
 cor(aw4_pc2[,-c(1:6)])
 save(aw4, file = "data_clean/aridity_data_clean.Rdata")
@@ -230,10 +230,12 @@ contrast_gt = contrast %>%
   # gtsave("results/pool_data_contrasts_lmer.png")
 
 
-ggplot(data = aw6, aes(x = ew_vol,
-                       y = pc2)) +
+ggplot(data = aw4 %>% dplyr::filter(week == 25), 
+       aes(x = ew_vol,
+                       y = pc2,
+                       color = site)) +
   geom_smooth(method = lm) +
-  facet_grid(~mas_bin)
+  facet_grid(~week*mas_bin)
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -265,6 +267,21 @@ broom.mixed::tidy(m2_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 
 broom.mixed::tidy(m2_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
 broom.mixed::tidy(m2_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
 broom.mixed::tidy(m2_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
+
+aw4$scale_date = scale(aw4$date)
+aw4$week = week(aw4$date_time)
+aw4$month = month(aw4$date_time)
+
+m2d_lmm = lmer(pc2 ~ 1 + (ew_vol|site/mas_bin),
+               data = aw4,
+               contrast = TRUE,
+               control=lmerControl(optimizer="bobyqa", 
+                                   optCtrl = list(maxfun=2e5)))
+summary(m2d_lmm)
+emm_options(lmerTest.limit = 54000)
+emm = emtrends(m2d_lmm, pairwise ~ site, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
+broom.mixed::tidy(m2d_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 1000)# random effects intercepts and slopes
+broom.mixed::tidy(m2d_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100)
 
 # Aridity Gradient - Summarized by Date and MAS ---------------------------
 
