@@ -248,20 +248,25 @@ ggplot(data = aw4 %>% dplyr::filter(week == 25),
 # Running lmm with fixed and random effects to see if the random intercepts and slopes differed across sites and mas bins --------
 ### predictions would be that there would be site and mas bin differences in intercepts and that ewl_vol would drive the differences in slopes
 
-m1_lmm = lmer(pc1 ~ ew_vol*mas_bin + scale(date) + (ew_vol|site/mas_bin), 
+m1_lmm = lmer(pc1 ~ ew_vol*site*mas_bin + (1|date),
               data = aw4,
-              control=lmerControl(optimizer="bobyqa",
-                                  optCtrl=list(maxfun=2e5)))
+              # contrast = TRUE,
+              control=lmerControl(optimizer="bobyqa", 
+                                  optCtrl = list(maxfun=2e5)))
+summary(m1_lmm)
+emm_options(lmerTest.limit = 54000)
+emm = emtrends(m1_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
 
 broom.mixed::tidy(m1_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
 broom.mixed::tidy(m1_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
 broom.mixed::tidy(m1_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
 broom.mixed::tidy(m1_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 
-m2_lmm = lmer(pc2 ~ ew_vol*mas_bin + scale(date) + (ew_vol|site/mas_bin), 
-              data = aw4,
-              control=lmerControl(optimizer="bobyqa",
-                                  optCtrl=list(maxfun=2e5)))
+m2_lmm = lmer(pc2 ~ ew_vol*site*mas_bin + (1|date),
+               data = aw4,
+               # contrast = TRUE,
+               control=lmerControl(optimizer="bobyqa", 
+                                   optCtrl = list(maxfun=2e5)))
 
 broom.mixed::tidy(m2_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
 broom.mixed::tidy(m2_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
@@ -272,14 +277,14 @@ aw4$scale_date = scale(aw4$date)
 aw4$week = week(aw4$date_time)
 aw4$month = month(aw4$date_time)
 
-m2d_lmm = lmer(pc2 ~ 1 + (ew_vol|site/mas_bin),
+m2d_lmm = lmer(pc2 ~ ew_vol*site*mas_bin + (1|date),
                data = aw4,
-               contrast = TRUE,
+               # contrast = TRUE,
                control=lmerControl(optimizer="bobyqa", 
                                    optCtrl = list(maxfun=2e5)))
 summary(m2d_lmm)
 emm_options(lmerTest.limit = 54000)
-emm = emtrends(m2d_lmm, pairwise ~ site, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
+emm = emtrends(m2d_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
 broom.mixed::tidy(m2d_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 1000)# random effects intercepts and slopes
 broom.mixed::tidy(m2d_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100)
 
