@@ -169,7 +169,7 @@ aw4$pc3 = audio_pcadf$PC3
 
 # check to see if pc scores correlate with acoustic metrics
 pc_df = aw4 %>% 
-  dplyr::filter(site == "cbma") %>%
+  # dplyr::filter(site == "cbma") %>%
   dplyr::select(aci:species_diversity,pc1:pc3)
 cor(pc_df)
 # Find files with high pc1 and pc2 scores in the late period under --------
@@ -257,13 +257,51 @@ ggplot(data = aw4 %>% dplyr::filter(week == 25),
 # Running lmm with fixed and random effects to see if the random intercepts and slopes differed across sites and mas bins --------
 ### predictions would be that there would be site and mas bin differences in intercepts and that ewl_vol would drive the differences in slopes
 
-m1_lmm = lmer(pc1 ~ ew_vol*site*mas_bin + (1|date),
+# Check to see which random effect is best
+m1t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|site),
               data = aw4,
-              # contrast = TRUE,
               control=lmerControl(optimizer="bobyqa", 
-                                  optCtrl = list(maxfun=2e5)))
+                                  optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+m2t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+
+m3t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|mas_bin),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+
+m4t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+m5t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date_time),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+
+m6t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date)+ (1|site) + (1|date/mas_bin),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+AICctab(m1t,m2t,m3t,m4t,m5t,m6t)
+# Best random effect is (date/mas_bin)
+
+
+m1_lmm = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
+              data = aw4,
+              control=lmerControl(optimizer="bobyqa", 
+                                  optCtrl = list(maxfun=2e5)), REML = FALSE)
 summary(m1_lmm)
-emm_options(lmerTest.limit = 54000)
+emm_options(lmerTest.limit = 54000,
+            pbkrtest.limit = 54000)
 emm = emtrends(m1_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
 plot(emm)
 emm_table = summary(emm$emtrends)
@@ -287,14 +325,15 @@ ag_graph_site_paper(aw4,
                     "PC1 - Acoustic Diversity",
                     xlab)
 
-m2_lmm = lmer(pc2 ~ ew_vol*site*mas_bin + (1|date),
+m2_lmm = lmer(pc2 ~ ew_vol*site*mas_bin + (1|date/mas_bin),
                data = aw4,
-               # contrast = TRUE,
                control=lmerControl(optimizer="bobyqa", 
-                                   optCtrl = list(maxfun=2e5)))
+                                   optCtrl = list(maxfun=2e5)), 
+              REML = FALSE)
 summary(m2_lmm)
-emm_options(lmerTest.limit = 54000)
-emm = emtrends(m2_lmm, pairwise ~ site|mas_bin, 
+emm_options(lmerTest.limit = 54000,
+            pbkrtest.limit = 54000)
+emm = emtrends(m2_lmm, pairwise ~ mas_bin|site, 
                var = "ew_vol", 
                type = 'response',
                weights = "cells");summary(emm)
@@ -322,7 +361,6 @@ ag_graph_site_paper(aw4,
 
 m3_lmm = lmer(pc3 ~ ew_vol*site*mas_bin + (1|date),
               data = aw4,
-              # contrast = TRUE,
               control=lmerControl(optimizer="bobyqa", 
                                   optCtrl = list(maxfun=2e5)))
 summary(m3_lmm)
@@ -830,6 +868,21 @@ load("data_clean/sswma_maslag.Rdata")
 sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
                                       yvar = sswma_maslag$pc1,
                                       xvar = sswma_maslag$ew_vol); sswma_lag_pc1
+sw1 = lmer(pc1 ~ ew_vol*ws_site*water*mas_bin + (1|date/mas_bin),
+              data = sswma_maslag,
+              control=lmerControl(optimizer="bobyqa", 
+                                  optCtrl = list(maxfun=2e5)), 
+              REML = FALSE)
+summary(sw1)
+emm_options(lmerTest.limit = 54000,
+            pbkrtest.limit = 54000)
+emm = emtrends(sw1, pairwise ~ ws_site*water|mas_bin, 
+               var = "ew_vol", 
+               type = 'response',
+               weights = "cells");summary(emm)
+plot(emm)
+emm_table = summary(emm$emtrends)
+
 # sswma_lag_pc1[[5]] %>% gtsave("results/sswma_water_pc1_lag.png")
 # plot(sswma_lag_pc1[[4]])
 
@@ -970,6 +1023,20 @@ cbma_lag_pc1 = cbma_water_contrasts2(data = cbma_maslag,
                                      yvar = cbma_maslag$pc1,
                                      xvar = cbma_maslag$ew_vol); cbma_lag_pc1
 
+cw1 = lmer(pc1 ~ ew_vol*ws_site*water*mas_bin + (1|date/mas_bin),
+           data = cbma_maslag,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)), 
+           REML = FALSE)
+summary(cw1)
+emm_options(lmerTest.limit = 54000,
+            pbkrtest.limit = 54000)
+emm = emtrends(cw1, pairwise ~ ws_site*water|mas_bin, 
+               var = "ew_vol", 
+               type = 'response',
+               weights = "cells");summary(emm)
+plot(emm)
+emm_table = summary(emm$emtrends)
 # cbma_lag_pc1[[5]] %>% gtsave("results/cbma_water_pc1_lag.png")
 # plot(cbma_lag_pc1[[4]])
 
@@ -979,6 +1046,20 @@ cbma_lag_pc2 = cbma_water_contrasts2(data = cbma_maslag,
                                      xvar = cbma_maslag$ew_vol); cbma_lag_pc2
 # cbma_lag_pc2[[5]] %>% gtsave("results/cbma_water_pc2_lag.png")
 # plot(cbma_lag_pc2[[4]])
+cw2 = lmer(pc2 ~ ew_vol*ws_site*water*mas_bin + (1|date/mas_bin),
+           data = cbma_maslag,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)), 
+           REML = FALSE)
+summary(cw2)
+emm_options(lmerTest.limit = 54000,
+            pbkrtest.limit = 54000)
+emm = emtrends(cw2, pairwise ~ ws_site*water|mas_bin, 
+               var = "ew_vol", 
+               type = 'response',
+               weights = "cells");summary(emm)
+plot(emm)
+emm_table = summary(emm$emtrends)
 
 # PC3: ACI and BIO
 cbma_lag_pc3 = cbma_water_contrasts2(data = cbma_maslag,
