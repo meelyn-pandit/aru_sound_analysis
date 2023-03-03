@@ -105,6 +105,15 @@ aw4 = aw3 %>%
                                          Pa = (pres/1000)),
                 ewlwvp = if_else(ewlwvp == Inf, 0, ewlwvp))
 
+## Create group labels
+# mas_bin labels
+aw4$mas_labels = factor(aw4$mas_bin, levels = c("0","1","2","3"),
+                        labels = c("Predawn","Early","Mid","Late"))
+
+# site labels
+aw4$site_labels = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"),
+                         labels = c("LWMA","SSWMA","CBMA","KIOWA"))
+
 # Check correlations among weather variables
 arid_comp = aw4 %>% dplyr::select(temp,relh,dew,gh,
                                   evap_wind,evap_1,ew_vol,e1_vol)
@@ -256,22 +265,84 @@ m1_lmm = lmer(pc1 ~ ew_vol*site*mas_bin + (1|date),
 summary(m1_lmm)
 emm_options(lmerTest.limit = 54000)
 emm = emtrends(m1_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
+plot(emm)
+emm_table = summary(emm$emtrends)
+
+ggplot(data = emm_table, aes(x = mas_bin, y = ew_vol.trend, color = site)) +
+  geom_point(position = position_dodge(0.5))+
+  geom_errorbar(aes(ymin = ew_vol.trend-SE, 
+                    ymax = ew_vol.trend+SE), width = 0.5,
+                position = position_dodge(0.5))+
+  scale_color_manual(values = cbpalette,
+                     name = "Site")
 
 broom.mixed::tidy(m1_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
 broom.mixed::tidy(m1_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
 broom.mixed::tidy(m1_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
 broom.mixed::tidy(m1_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 
+ag_graph_site_paper(aw4,
+                    aw4$pc1, 
+                    aw4$ew_vol,
+                    "PC1 - Acoustic Diversity",
+                    xlab)
+
 m2_lmm = lmer(pc2 ~ ew_vol*site*mas_bin + (1|date),
                data = aw4,
                # contrast = TRUE,
                control=lmerControl(optimizer="bobyqa", 
                                    optCtrl = list(maxfun=2e5)))
+summary(m2_lmm)
+emm_options(lmerTest.limit = 54000)
+emm = emtrends(m2_lmm, pairwise ~ site|mas_bin, 
+               var = "ew_vol", 
+               type = 'response',
+               weights = "cells");summary(emm)
+plot(emm)
+emm_table = summary(emm$emtrends)
+
+ggplot(data = emm_table, aes(x = mas_bin, y = ew_vol.trend, color = site)) +
+  geom_point(position = position_dodge(0.5))+
+  geom_errorbar(aes(ymin = ew_vol.trend-SE, 
+                    ymax = ew_vol.trend+SE), width = 0.5,
+                position = position_dodge(0.5))+
+  scale_color_manual(values = cbpalette,
+                     name = "Site")
 
 broom.mixed::tidy(m2_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
 broom.mixed::tidy(m2_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
 broom.mixed::tidy(m2_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
 broom.mixed::tidy(m2_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
+
+ag_graph_site_paper(aw4,
+                    aw4$pc2, 
+                    aw4$ew_vol,
+                    "PC2 - Avian Abundance",
+                    xlab)
+
+m3_lmm = lmer(pc3 ~ ew_vol*site*mas_bin + (1|date),
+              data = aw4,
+              # contrast = TRUE,
+              control=lmerControl(optimizer="bobyqa", 
+                                  optCtrl = list(maxfun=2e5)))
+summary(m3_lmm)
+emm_options(lmerTest.limit = 54000)
+emm = emtrends(m3_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
+plot(emm)
+emm_table = summary(emm$emtrends)
+
+ggplot(data = emm_table, aes(x = mas_bin, y = ew_vol.trend, color = site)) +
+  geom_point(position = position_dodge(0.5))+
+  geom_errorbar(aes(ymin = ew_vol.trend-SE, 
+                    ymax = ew_vol.trend+SE), width = 0.5,
+                position = position_dodge(0.5))+
+  scale_color_manual(values = cbpalette,
+                     name = "Site")
+
+broom.mixed::tidy(m3_lmm, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(m3_lmm, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(m3_lmm, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(m3_lmm, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 
 aw4$scale_date = scale(aw4$date)
 aw4$week = week(aw4$date_time)
@@ -365,8 +436,8 @@ lmpc1site = ag_contrasts_convar_site(aw6,
 ## PC1 - Acoustic Diversity across sound attenuation coefficient
 # 4 kHz
 atten04pc1 = ag_contrasts_convar_site(aw6,
-                         aw6$pc1,
-                         aw6$atten_alpha04)
+                                       aw6$pc1,
+                                       aw6$atten_alpha04)
 
 # 8 kHz
 atten08pc1 = ag_contrasts_convar_site(aw6,
@@ -381,10 +452,11 @@ atten12pc1 = ag_contrasts_convar_site(aw6,
 ## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
 
-ag_graph_site_paper(aw6$pc1, 
-                    aw6$ew_vol,
-                    "PC1 - Acoustic Diversity",
-                    xlab)
+ag_graph_site_paper(aw4,
+                     aw4$pc1, 
+                     aw4$ew_vol,
+                     "PC1 - Acoustic Diversity",
+                     xlab)
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -405,17 +477,17 @@ lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$pc2,
                                  aw6$ew_vol);lmpc2site
 
-ag_graph_site_paper(aw6$pc2, 
-                    aw6$ew_vol,
+ag_graph_site_paper2(aw4$pc2, 
+                    aw4$ew_vol,
                     "PC2 - Avian Abundance",
                     xlab)
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 
 ## LM for PC2 - Avian Abundance, across time periods, within site
-lmpc2time = ag_contrasts_convar_time(aw6,
-                                     aw6$pc2,
-                                     aw6$ew_vol);lmpc2time
+lmpc2time = ag_contrasts_convar_time(aw4,
+                                     aw4$pc2,
+                                     aw4$ew_vol);lmpc2time
 
 ag_graph_time_paper(aw6$pc2, 
                     aw6$ew_vol,
