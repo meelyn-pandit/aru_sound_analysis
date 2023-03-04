@@ -10,6 +10,7 @@ qqPlot(model, main="QQ Plot") #qq plot for studentized resid
 leveragePlots(model) # leverage plots
 
 assump<-function(x) {       #graphs for checking assumptions
+  par(mfrow = c(2,2))
   r<-residuals(x)
   ft<-fitted(x)
   par(mfrow=c(1,1))
@@ -22,5 +23,6 @@ assump<-function(x) {       #graphs for checking assumptions
   qqnorm(ft, ylim=range(ft), main="QQNorm Plot",ylab="Quantiles of fitted values", xlab="Quantiles of normal distribution")
   qqline(ft,lty=2)
   acf(resid(x))
+  par(mfrow = c(1,1)) # set par back to one plot
 }
 
