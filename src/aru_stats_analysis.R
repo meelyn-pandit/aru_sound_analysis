@@ -306,6 +306,30 @@ emm = emtrends(m1_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response
 plot(emm)
 emm_table = summary(emm$emtrends)
 
+lmm1_time = ag_lmm(aw4,
+               aw4$pc1,
+               aw4$ew_vol,
+               "mas_bin",
+               "site")
+
+lmm1_site = ag_lmm(aw4,
+                   aw4$pc1,
+                   aw4$ew_vol,
+                   "site",
+                   "mas_bin")
+
+lmm2_time = ag_lmm(aw4,
+                   aw4$pc2,
+                   aw4$ew_vol,
+                   "mas_bin",
+                   "site")
+
+lmm2_site = ag_lmm(aw4,
+                   aw4$pc2,
+                   aw4$ew_vol,
+                   "site",
+                   "mas_bin")
+
 ggplot(data = emm_table, aes(x = mas_bin, y = ew_vol.trend, color = site)) +
   geom_point(position = position_dodge(0.5))+
   geom_errorbar(aes(ymin = ew_vol.trend-SE, 
