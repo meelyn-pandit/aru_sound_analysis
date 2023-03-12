@@ -85,7 +85,7 @@ aw4 = aw3 %>%
                              t = temp, 
                              rh = (relh/100), 
                              z0 = 0.03))) %>%
-  dplyr::mutate(ewlwvp = ewl/vpd) %>% # in g/h/kpA
+  # dplyr::mutate(ewlwvp = ewl/vpd) %>% # in g/h/kpA
   dplyr::mutate(ew_vol = evap_wind*0.1, # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
                 e1_vol = evap_1*0.1) %>% # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
   dplyr::mutate(atten_alpha04 = att_coef(4000, temp, relh, Pa = (pres/1000)),
@@ -102,8 +102,7 @@ aw4 = aw3 %>%
                 atten_dist12 = aud_range(f = 12000, 
                                          T_cel = temp, 
                                          h_rel = relh, 
-                                         Pa = (pres/1000)),
-                ewlwvp = if_else(ewlwvp == Inf, 0, ewlwvp))
+                                         Pa = (pres/1000)))
 
 ## Create group labels
 # mas_bin labels
@@ -125,7 +124,6 @@ hist(aw4$evap_1)
 hist(aw4$ew_vol)
 hist(aw4$e1_vol)
 hist(aw4$vpd)
-hist(aw4$ewlwvp)
 
 
 aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
@@ -164,7 +162,7 @@ pc_gt = pc_df %>%
 ### PC3: ACI and BIO, higher values = higher ACI
 
 aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have positive values
-aw4$pc2 = audio_pcadf$PC2 
+aw4$pc2 = audio_pcadf$PC2
 aw4$pc3 = audio_pcadf$PC3
 
 # check to see if pc scores correlate with acoustic metrics
@@ -514,11 +512,11 @@ atten12pc1 = ag_contrasts_convar_site(aw6,
 ## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
 
-ag_graph_site_paper(aw4,
-                     aw4$pc1, 
-                     aw4$ew_vol,
-                     "PC1 - Acoustic Diversity",
-                     xlab)
+ag_graph_site_paper(aw6,
+                    aw6$pc1, 
+                    aw6$ew_vol,
+                    "PC1 - Acoustic Diversity",
+                    xlab)
 ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -539,8 +537,9 @@ lmpc2site = ag_contrasts_convar_site(aw6,
                                  aw6$pc2,
                                  aw6$ew_vol);lmpc2site
 
-ag_graph_site_paper2(aw4$pc2, 
-                    aw4$ew_vol,
+ag_graph_site_paper(aw6,
+                    aw6$pc2, 
+                    aw6$ew_vol,
                     "PC2 - Avian Abundance",
                     xlab)
 ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
@@ -551,7 +550,8 @@ lmpc2time = ag_contrasts_convar_time(aw4,
                                      aw4$pc2,
                                      aw4$ew_vol);lmpc2time
 
-ag_graph_time_paper(aw6$pc2, 
+ag_graph_time_paper(aw6,
+                    aw6$pc2, 
                     aw6$ew_vol,
                     "PC2 - Avian Abundance",
                     xlab)
@@ -597,7 +597,8 @@ lmpc3site = ag_contrasts_convar_site(aw6,
                          aw6$ew_vol);lmpc3site
 
 
-ag_graph_site_paper(aw6$pc3, 
+ag_graph_site_paper(aw6,
+                    aw6$pc3, 
                     aw6$ew_vol,
                     "PC3 - Acoustic Complexity",
                     xlab)

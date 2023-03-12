@@ -26,7 +26,10 @@ ag_graph_site_paper = function(data,
     scale_color_manual(values = cbpalette, 
                        name = "Site",
                        labels = c("LWMA","SSWMA","CBMA","KIOWA"))+
-    scale_x_continuous(name = xlabel)+
+    scale_x_continuous(name = xlabel,
+                       breaks = c(0.0,1.0,2.0),
+                       labels = c("0.0","1.0","2.0")
+                       )+
     scale_y_continuous(name = ylabel)+
     # facet_grid(~facet_type) +
     theme_classic(base_size = 20) +
@@ -36,8 +39,9 @@ ag_graph_site_paper = function(data,
     # facet_wrap(vars(mas_bin)) + 
     # ggtitle(label = "Comparisons across Site") +
     facet_grid(~mas_labels) +
+    theme(panel.spacing=unit(2,"lines"))
     # facet_grid(rows = vars(site_labels))+
-    theme(strip.text.y = element_text(angle = 0))
+    # theme(strip.text.y = element_text(angle = 0))
 }
 
 ### Paper Graph - Within Sites, Across Time
