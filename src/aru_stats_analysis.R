@@ -186,29 +186,39 @@ save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 # aw4_linux = aw4
 # save(aw4_linux, file = "data_clean/aridity_data_clean_linux.Rdata")
 
-# Checking full dataset and lm plots
-pas = lmer(pc2 ~ ew_vol*mas_bin + scale(date) + (1|site), data = aw4)
-summary(pas)
-
+### Checking full dataset lmm and lm plots
+# LMM with site as random effect
+pas_lmm = lmer(pc2 ~ ew_vol*mas_bin+scale(date) + (1|site), data = aw4)
+summary(pas_lmm)
+emm_options(lmerTest.limit = 54000
+            # pbkrtest.limit = 54000
+            )
+emm_lmm = emtrends(pas_lmm, ~ mas_bin, 
+               var = "ew_vol", 
+               type = 'response',
+               weights = "cells");emm_lmm
+mas0 = c(1,0,0,0)
+mas1 = c(0,1,0,0)
+mas2 = c(0,0,1,0)
+mas3 = c(0,0,0,1)
+contrast = summary(contrast(
+                    emm_lmm, 
+                    method = list("Early-Predawn" = mas1-mas0,
+                                  "Mid-Predawn" = mas2-mas0,
+                                  "Late-Predawn" = mas3-mas0,
+                                  "Mid-Early" = mas2-mas1,
+                                  "Late-Early" = mas3-mas1,
+                                  "Late-Mid" = mas3-mas2),
+                    adjust = "bonferroni"));contrast
+#LM
 pas_lm = lm(pc2 ~ ew_vol*mas_bin + scale(date), data = aw6)
 summary(pas_lm)
 emm = emtrends(pas_lm, ~ mas_bin, 
                var = "ew_vol", 
                type = 'response',
                weights = "cells") # across sites
+summary(emm)
 
-mas0 = c(1,0,0,0)
-mas1 = c(0,1,0,0)
-mas2 = c(0,0,1,0)
-mas3 = c(0,0,0,1)
-contrast = summary(contrast(emm, 
-                            method = list("Early-Predawn" = mas1-mas0,
-                                          "Mid-Predawn" = mas2-mas0,
-                                          "Late-Predawn" = mas3-mas0,
-                                          "Mid-Early" = mas2-mas1,
-                                          "Late-Early" = mas3-mas1,
-                                          "Late-Mid" = mas3-mas2),
-                           adjust = "bonferroni")) 
 contrast_gt = contrast %>%
   dplyr::mutate(estimate = round(estimate, 3),
                 SE = round(SE, 3),
@@ -239,12 +249,11 @@ contrast_gt = contrast %>%
   # gtsave("results/pool_data_contrasts_lmer.png")
 
 
-ggplot(data = aw4 %>% dplyr::filter(week == 25), 
+ggplot(data = aw4, 
        aes(x = ew_vol,
-                       y = pc2,
-                       color = site)) +
+           y = pc2)) +
   geom_smooth(method = lm) +
-  facet_grid(~week*mas_bin)
+  facet_grid(~mas_bin)
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -254,81 +263,21 @@ ggplot(data = aw4 %>% dplyr::filter(week == 25),
 # pca3d(audio_pca, biplot = true) # only run this on windows machine
 # snapshotPCA3d("audio_pca.png")
 
-# Running lmm with fixed and random effects to see if the random intercepts and slopes differed across sites and mas bins --------
+# Data pooled across sites - linear mixed model with site as random effect --------
 ### predictions would be that there would be site and mas bin differences in intercepts and that ewl_vol would drive the differences in slopes
 
-# Check to see which random effect is best
-m1t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|site),
-              data = aw4,
-              control=lmerControl(optimizer="bobyqa", 
-                                  optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-m2t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-
-m3t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|mas_bin),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-
-m4t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-m5t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date_time),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-
-m6t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date)+ (1|site) + (1|date/mas_bin),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-AICctab(m1t,m2t,m3t,m4t,m5t,m6t)
-# Best random effect is (date/mas_bin)
-
-
-m1_lmm = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
-              data = aw4,
-              control=lmerControl(optimizer="bobyqa", 
-                                  optCtrl = list(maxfun=2e5)), REML = FALSE)
-summary(m1_lmm)
-emm_options(lmerTest.limit = 54000,
-            pbkrtest.limit = 54000)
-emm = emtrends(m1_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
-plot(emm)
-emm_table = summary(emm$emtrends)
 
 lmm1_time = ag_lmm(aw4,
                aw4$pc1,
-               aw4$ew_vol,
-               "mas_bin",
-               "site")
-
-lmm1_site = ag_lmm(aw4,
-                   aw4$pc1,
-                   aw4$ew_vol,
-                   "site",
-                   "mas_bin")
+               aw4$ew_vol);lmm1_time
 
 lmm2_time = ag_lmm(aw4,
                    aw4$pc2,
-                   aw4$ew_vol,
-                   "mas_bin",
-                   "site")
+                   aw4$ew_vol);lmm2_time
 
-lmm2_site = ag_lmm(aw4,
-                   aw4$pc2,
-                   aw4$ew_vol,
-                   "site",
-                   "mas_bin")
+lmm3_time = ag_lmm(aw4,
+                   aw4$pc3,
+                   aw4$ew_vol);lmm3_time
 
 ggplot(data = emm_table, aes(x = mas_bin, y = ew_vol.trend, color = site)) +
   geom_point(position = position_dodge(0.5))+
