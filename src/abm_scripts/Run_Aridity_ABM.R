@@ -30,19 +30,6 @@ terr_size = c(1000,1500,3000)
 ewl = c(T,F)
 site = c("lwma","sswma","cbma","kiowa")
 
-# freq = c(4000,8000,12000)
-freq = 8000
-terr_size = c(1000,1500,3000)
-# ewl = c(T,F)
-ewl = T
-# site = c("lwma","sswma","cbma","kiowa")
-site = "cbma"
-
-freq = c(4000,8000,12000)
-terr_size = c(1000,1500,3000)
-ewl = c(T,F)
-site = c("lwma","sswma","cbma","kiowa")
-
 terr_freq_ewl_site = expand.grid(terr_size,freq,ewl,site)
 names(terr_freq_ewl_site) = c("terr_size","freq","ewl","site")
 terr_freq_ewl_site$terr_size = as.numeric(terr_freq_ewl_site$terr_size)
