@@ -85,7 +85,7 @@ aw4 = aw3 %>%
                              t = temp, 
                              rh = (relh/100), 
                              z0 = 0.03))) %>%
-  dplyr::mutate(ewlwvp = ewl/vpd) %>% # in g/h/kpA
+  # dplyr::mutate(ewlwvp = ewl/vpd) %>% # in g/h/kpA
   dplyr::mutate(ew_vol = evap_wind*0.1, # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
                 e1_vol = evap_1*0.1) %>% # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
   dplyr::mutate(atten_alpha04 = att_coef(4000, temp, relh, Pa = (pres/1000)),
@@ -103,7 +103,8 @@ aw4 = aw3 %>%
                                          T_cel = temp, 
                                          h_rel = relh, 
                                          Pa = (pres/1000)),
-                ewlwvp = if_else(ewlwvp == Inf, 0, ewlwvp))
+                # ewlwvp = if_else(ewlwvp == Inf, 0, ewlwvp),
+                date_time = if_else(hour(date_time) == 18,date_time-3600,date_time))
 
 ## Create group labels
 # mas_bin labels
@@ -167,6 +168,91 @@ aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 aw4$pc2 = audio_pcadf$PC2 
 aw4$pc3 = audio_pcadf$PC3
 
+# Find missing data due to ARUs overheating and water damage  -------------------------------------------------------
+### 91200 data files should have been recorded (4560*5*4), 22800 for each site
+### Have to get unique times and dates and merge them together
+# get unique recording times
+aw4$time = hms::as_hms(aw4$date_time)
+unique_times = aw4 %>% 
+  dplyr::summarise(times = unique(as_hms(aw4$date_time)))
+ut = as.vector(unique_times)
+
+# get unique dates
+unique_dates = aw4 %>%
+  dplyr::summarise(dates = unique(date))
+
+record = expand.grid(unique_dates$dates,unique_times$times)
+record$unique_dt = as_datetime(paste0(record$Var1," ",record$Var2))
+  
+# 22800 for each site
+lwma = aw4 %>% dplyr::filter(site == 'lwma') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+lwma_date = aw4 %>% dplyr::filter(site == 'lwma') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_lwma = lwma$date_range[!lwma$date_range %in% lwma_date$date];md_lwma #794, 3970 for all 5 arus, 
+3970/22800 # 17.41%
+
+sswma = aw4 %>% dplyr::filter(site == 'sswma') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+sswma_date = aw4 %>% dplyr::filter(site == 'sswma') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_sswma = sswma$date_range[!sswma$date_range %in% sswma_date$date];md_sswma #374
+length(md_sswma)/22800 # 8.2%
+
+
+cbma = aw4 %>% dplyr::filter(site == 'cbma') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+cbma_date = aw4 %>% dplyr::filter(site == 'cbma') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_cbma = cbma$date_range[!cbma$date_range %in% cbma_date$date] #187 or 935 if by aru
+length(md_cbma)/22800 #4.1%
+
+
+kiowa = aw4 %>% dplyr::filter(site == 'kiowa') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+kiowa_date = aw4 %>% dplyr::filter(site == 'kiowa') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_kiowa = kiowa$date_range[!kiowa$date_range %in% kiowa_date$date]
+length(md_kiowa)/22800 #5.2%
+
+
+missed_dates = rbind(missed_dates,date_miss)
+sites = unique(aw4$site)
+missed_dates = NULL
+for(s in sites){
+  df = aw4 %>% dplyr::filter(site == s) %>%
+    dplyr::summarise(date_range = seq(min(date), max(date), by = 1))
+  site_date = aw4 %>% dplyr::filter(site == s) %>% 
+    dplyr::summarise(date = unique(date))
+  date_miss = data.frame(site = s,
+                         date_range = df$date_range[!df$date_range %in% site_date$date])
+  missed_dates = rbind(missed_dates,date_miss)
+}
+
+ag_miss = lapply(sites, function(x){
+  
+  df = aw4 %>% dplyr::filter(site == x) %>%
+    dplyr::summarise(date_range = seq(min(date), max(date), by = 1))
+  site_date = aw4 %>% dplyr::filter(site == x) %>% 
+    dplyr::summarise(date = unique(date))
+  date_miss = df$date_range[!df$date_range %in% site_date$date]
+})
+ag_miss = do.call(rbind,ag_miss)
+
+
+test <- purrr::map(sites, function(i){
+  aw4 %>% 
+    rowwise() %>%
+    filter(i %in% c_across(date)) %>% 
+    dplyr::summarise(date_range = seq(min(date), max(date), by = 1)) %>%
+    dplyr::summarise(date_miss = date_range[!date_range %in% date]) %>%
+    ungroup
+  
+})
 # check to see if pc scores correlate with acoustic metrics
 pc_df = aw4 %>% 
   # dplyr::filter(site == "cbma") %>%
