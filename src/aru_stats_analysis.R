@@ -102,7 +102,13 @@ aw4 = aw3 %>%
                 atten_dist12 = aud_range(f = 12000, 
                                          T_cel = temp, 
                                          h_rel = relh, 
+<<<<<<< HEAD
                                          Pa = (pres/1000)))
+=======
+                                         Pa = (pres/1000)),
+                # ewlwvp = if_else(ewlwvp == Inf, 0, ewlwvp),
+                date_time = if_else(hour(date_time) == 18,date_time-3600,date_time))
+>>>>>>> 5f758c81c4dd0c392e638807bd97cb76bdb2e639
 
 ## Create group labels
 # mas_bin labels
@@ -165,6 +171,91 @@ aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 aw4$pc2 = audio_pcadf$PC2
 aw4$pc3 = audio_pcadf$PC3
 
+# Find missing data due to ARUs overheating and water damage  -------------------------------------------------------
+### 91200 data files should have been recorded (4560*5*4), 22800 for each site
+### Have to get unique times and dates and merge them together
+# get unique recording times
+aw4$time = hms::as_hms(aw4$date_time)
+unique_times = aw4 %>% 
+  dplyr::summarise(times = unique(as_hms(aw4$date_time)))
+ut = as.vector(unique_times)
+
+# get unique dates
+unique_dates = aw4 %>%
+  dplyr::summarise(dates = unique(date))
+
+record = expand.grid(unique_dates$dates,unique_times$times)
+record$unique_dt = as_datetime(paste0(record$Var1," ",record$Var2))
+  
+# 22800 for each site
+lwma = aw4 %>% dplyr::filter(site == 'lwma') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+lwma_date = aw4 %>% dplyr::filter(site == 'lwma') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_lwma = lwma$date_range[!lwma$date_range %in% lwma_date$date];md_lwma #794, 3970 for all 5 arus, 
+3970/22800 # 17.41%
+
+sswma = aw4 %>% dplyr::filter(site == 'sswma') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+sswma_date = aw4 %>% dplyr::filter(site == 'sswma') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_sswma = sswma$date_range[!sswma$date_range %in% sswma_date$date];md_sswma #374
+length(md_sswma)/22800 # 8.2%
+
+
+cbma = aw4 %>% dplyr::filter(site == 'cbma') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+cbma_date = aw4 %>% dplyr::filter(site == 'cbma') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_cbma = cbma$date_range[!cbma$date_range %in% cbma_date$date] #187 or 935 if by aru
+length(md_cbma)/22800 #4.1%
+
+
+kiowa = aw4 %>% dplyr::filter(site == 'kiowa') %>%
+  dplyr::group_by(aru) %>%
+  dplyr::summarise(date_range = record$unique_dt)
+kiowa_date = aw4 %>% dplyr::filter(site == 'kiowa') %>% 
+  dplyr::summarise(date = unique(date_time))
+md_kiowa = kiowa$date_range[!kiowa$date_range %in% kiowa_date$date]
+length(md_kiowa)/22800 #5.2%
+
+
+missed_dates = rbind(missed_dates,date_miss)
+sites = unique(aw4$site)
+missed_dates = NULL
+for(s in sites){
+  df = aw4 %>% dplyr::filter(site == s) %>%
+    dplyr::summarise(date_range = seq(min(date), max(date), by = 1))
+  site_date = aw4 %>% dplyr::filter(site == s) %>% 
+    dplyr::summarise(date = unique(date))
+  date_miss = data.frame(site = s,
+                         date_range = df$date_range[!df$date_range %in% site_date$date])
+  missed_dates = rbind(missed_dates,date_miss)
+}
+
+ag_miss = lapply(sites, function(x){
+  
+  df = aw4 %>% dplyr::filter(site == x) %>%
+    dplyr::summarise(date_range = seq(min(date), max(date), by = 1))
+  site_date = aw4 %>% dplyr::filter(site == x) %>% 
+    dplyr::summarise(date = unique(date))
+  date_miss = df$date_range[!df$date_range %in% site_date$date]
+})
+ag_miss = do.call(rbind,ag_miss)
+
+
+test <- purrr::map(sites, function(i){
+  aw4 %>% 
+    rowwise() %>%
+    filter(i %in% c_across(date)) %>% 
+    dplyr::summarise(date_range = seq(min(date), max(date), by = 1)) %>%
+    dplyr::summarise(date_miss = date_range[!date_range %in% date]) %>%
+    ungroup
+  
+})
 # check to see if pc scores correlate with acoustic metrics
 pc_df = aw4 %>% 
   # dplyr::filter(site == "cbma") %>%
@@ -184,29 +275,39 @@ save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 # aw4_linux = aw4
 # save(aw4_linux, file = "data_clean/aridity_data_clean_linux.Rdata")
 
-# Checking full dataset and lm plots
-pas = lmer(pc2 ~ ew_vol*mas_bin + scale(date) + (1|site), data = aw4)
-summary(pas)
-
+### Checking full dataset lmm and lm plots
+# LMM with site as random effect
+pas_lmm = lmer(pc2 ~ ew_vol*mas_bin+scale(date) + (1|site), data = aw4)
+summary(pas_lmm)
+emm_options(lmerTest.limit = 54000
+            # pbkrtest.limit = 54000
+            )
+emm_lmm = emtrends(pas_lmm, ~ mas_bin, 
+               var = "ew_vol", 
+               type = 'response',
+               weights = "cells");emm_lmm
+mas0 = c(1,0,0,0)
+mas1 = c(0,1,0,0)
+mas2 = c(0,0,1,0)
+mas3 = c(0,0,0,1)
+contrast = summary(contrast(
+                    emm_lmm, 
+                    method = list("Early-Predawn" = mas1-mas0,
+                                  "Mid-Predawn" = mas2-mas0,
+                                  "Late-Predawn" = mas3-mas0,
+                                  "Mid-Early" = mas2-mas1,
+                                  "Late-Early" = mas3-mas1,
+                                  "Late-Mid" = mas3-mas2),
+                    adjust = "bonferroni"));contrast
+#LM
 pas_lm = lm(pc2 ~ ew_vol*mas_bin + scale(date), data = aw6)
 summary(pas_lm)
 emm = emtrends(pas_lm, ~ mas_bin, 
                var = "ew_vol", 
                type = 'response',
                weights = "cells") # across sites
+summary(emm)
 
-mas0 = c(1,0,0,0)
-mas1 = c(0,1,0,0)
-mas2 = c(0,0,1,0)
-mas3 = c(0,0,0,1)
-contrast = summary(contrast(emm, 
-                            method = list("Early-Predawn" = mas1-mas0,
-                                          "Mid-Predawn" = mas2-mas0,
-                                          "Late-Predawn" = mas3-mas0,
-                                          "Mid-Early" = mas2-mas1,
-                                          "Late-Early" = mas3-mas1,
-                                          "Late-Mid" = mas3-mas2),
-                           adjust = "bonferroni")) 
 contrast_gt = contrast %>%
   dplyr::mutate(estimate = round(estimate, 3),
                 SE = round(SE, 3),
@@ -237,12 +338,11 @@ contrast_gt = contrast %>%
   # gtsave("results/pool_data_contrasts_lmer.png")
 
 
-ggplot(data = aw4 %>% dplyr::filter(week == 25), 
+ggplot(data = aw4, 
        aes(x = ew_vol,
-                       y = pc2,
-                       color = site)) +
+           y = pc2)) +
   geom_smooth(method = lm) +
-  facet_grid(~week*mas_bin)
+  facet_grid(~mas_bin)
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -252,81 +352,21 @@ ggplot(data = aw4 %>% dplyr::filter(week == 25),
 # pca3d(audio_pca, biplot = true) # only run this on windows machine
 # snapshotPCA3d("audio_pca.png")
 
-# Running lmm with fixed and random effects to see if the random intercepts and slopes differed across sites and mas bins --------
+# Data pooled across sites - linear mixed model with site as random effect --------
 ### predictions would be that there would be site and mas bin differences in intercepts and that ewl_vol would drive the differences in slopes
 
-# Check to see which random effect is best
-m1t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|site),
-              data = aw4,
-              control=lmerControl(optimizer="bobyqa", 
-                                  optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-m2t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-
-m3t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|mas_bin),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-
-m4t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-m5t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date_time),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-
-m6t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date)+ (1|site) + (1|date/mas_bin),
-           data = aw4,
-           control=lmerControl(optimizer="bobyqa", 
-                               optCtrl = list(maxfun=2e5)),
-           REML = TRUE)
-AICctab(m1t,m2t,m3t,m4t,m5t,m6t)
-# Best random effect is (date/mas_bin)
-
-
-m1_lmm = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
-              data = aw4,
-              control=lmerControl(optimizer="bobyqa", 
-                                  optCtrl = list(maxfun=2e5)), REML = FALSE)
-summary(m1_lmm)
-emm_options(lmerTest.limit = 54000,
-            pbkrtest.limit = 54000)
-emm = emtrends(m1_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
-plot(emm)
-emm_table = summary(emm$emtrends)
 
 lmm1_time = ag_lmm(aw4,
                aw4$pc1,
-               aw4$ew_vol,
-               "mas_bin",
-               "site")
-
-lmm1_site = ag_lmm(aw4,
-                   aw4$pc1,
-                   aw4$ew_vol,
-                   "site",
-                   "mas_bin")
+               aw4$ew_vol);lmm1_time
 
 lmm2_time = ag_lmm(aw4,
                    aw4$pc2,
-                   aw4$ew_vol,
-                   "mas_bin",
-                   "site")
+                   aw4$ew_vol);lmm2_time
 
-lmm2_site = ag_lmm(aw4,
-                   aw4$pc2,
-                   aw4$ew_vol,
-                   "site",
-                   "mas_bin")
+lmm3_time = ag_lmm(aw4,
+                   aw4$pc3,
+                   aw4$ew_vol);lmm3_time
 
 ggplot(data = emm_table, aes(x = mas_bin, y = ew_vol.trend, color = site)) +
   geom_point(position = position_dodge(0.5))+
