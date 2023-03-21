@@ -3,11 +3,13 @@
 #########################################
 
 ### Paper Graph - Across Sites
-ag_graph_site_paper = function(data,
-                               yvar,
-                               xvar,
-                               ylabel,
-                               xlabel){
+ag_graph_site = function(data,
+                         yvar,
+                         xvar,
+                         ylabel,
+                         xlabel,
+                         yangle,
+                         title){
   # Set color palette
   cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
   ## Create group labels
@@ -33,23 +35,26 @@ ag_graph_site_paper = function(data,
     scale_y_continuous(name = ylabel)+
     # facet_grid(~facet_type) +
     theme_classic(base_size = 20) +
-    theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+    theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations, 90 for paper
           plot.title = element_text(hjust = 0, vjust = 0),
           legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
-    # ggtitle(label = "Comparisons across Site") +
+    ggtitle(label = title) +
     facet_grid(~mas_labels) +
-    theme(panel.spacing=unit(2,"lines"))
+    theme(panel.spacing=unit(2,"lines"),
+          plot.title = element_text(face = "bold"))
     # facet_grid(rows = vars(site_labels))+
     # theme(strip.text.y = element_text(angle = 0))
 }
 
 ### Paper Graph - Within Sites, Across Time
-ag_graph_time_paper = function(data,
-                               yvar,
-                               xvar,
-                               ylabel,
-                               xlabel){
+ag_graph_time = function(data,
+                         yvar,
+                         xvar,
+                         ylabel,
+                         xlabel,
+                         yangle,
+                         title){
   
   # Set color palette
   cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
@@ -84,22 +89,25 @@ ag_graph_time_paper = function(data,
     scale_y_continuous(name = ylabel) +
     # facet_grid(~facet_type) +
     theme_classic(base_size = 15) +
-    theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+    theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
           legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     facet_grid(~site_labels)+
-    # ggtitle(label = "Comparisons within Site, Across Morning Singing Period (mas_bin)") +
-    theme(strip.text.y = element_text(angle = 0))
+    ggtitle(label = title) +
+    theme(strip.text.y = element_text(angle = 0),
+          plot.title = element_text(face = "bold"))
 }
 
 ### Paper Graph  - Across Sites, within mas-bin
 
-atten_graph_site_paper = function(data,
-                                  yvar,
-                                  xvar,
-                                  ylabel,
-                                  xlabel){
+atten_graph_site = function(data,
+                            yvar,
+                            xvar,
+                            ylabel,
+                            xlabel,
+                            yangle,
+                            title){
   # Set color palette
   cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
   ## Create group labels
@@ -122,21 +130,27 @@ atten_graph_site_paper = function(data,
     scale_x_continuous(name = xlabel) +
     scale_y_continuous(name = ylabel) +
     # facet_grid(~facet_type) +
-    theme_classic(base_size = 20) +
-    theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
-          plot.title = element_text(hjust = 0, vjust = 0),
-          legend.position = "bottom") +
+    theme_classic(base_size = 25) +
+    theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations, 90 for paper in yangle
+          plot.title = element_text(hjust = -0.5, vjust = 0),
+          legend.position = "bottom",
+          plot.title = element_text(face = "bold"),
+          plot.title.position = "plot",
+          plot.caption.position = "plot") +
     # facet_wrap(vars(mas_bin)) + 
-    # ggtitle(label = "Comparisons across Site") +
-    facet_grid(rows = vars(mas_labels)) +
-    theme(strip.text.y = element_text(angle = 0))
+    ggtitle(title) +
+    facet_grid(rows = vars(mas_labels))
+    # theme(strip.text.y = element_text(angle = 0,
+                                      # hjust = -0.5),
 }
 
-atten_graph_time_paper = function(data,
-                                  yvar,
-                                  xvar,
-                                  ylabel,
-                                  xlabel){
+atten_graph_time= function(data,
+                          yvar,
+                          xvar,
+                          ylabel,
+                          xlabel,
+                          yangle,
+                          title){
   
   # Set color palette
   cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
@@ -171,11 +185,12 @@ atten_graph_time_paper = function(data,
     scale_y_continuous(name = ylabel) +
     # facet_grid(~facet_type) +
     theme_classic(base_size = 20) +
-    theme(axis.title.y = element_text(angle = 90, vjust = 0.5), # change angle to 0 for presentations
+    theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
           legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     facet_grid(rows = vars(site_labels))+
-    # ggtitle(label = "Comparisons within Site, Across Morning Singing Period (mas_bin)") +
-    theme(strip.text.y = element_text(angle = 0))
+    ggtitle(title) +
+    theme(strip.text.y = element_text(angle = 0),
+          plot.title = element_text(face = "bold"))
 }
