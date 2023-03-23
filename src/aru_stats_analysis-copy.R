@@ -22,6 +22,7 @@ library(webshot2)
 library(ggbiplot) # plot pcas
 library(broom)
 library(docstring)
+library(pca3d)
 
 # ### Install ggbiplot ###
 # library(devtools)
@@ -130,6 +131,9 @@ aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 
 # Audio Variable PCAs
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+
+pca3d(audio_pca, biplot = true)
+
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
 ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs

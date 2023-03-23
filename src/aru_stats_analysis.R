@@ -22,6 +22,7 @@ library(webshot2)
 library(ggbiplot) # plot pcas
 library(broom)
 library(docstring)
+library(pca3d)
 
 # ### Install ggbiplot ###
 # library(devtools)
