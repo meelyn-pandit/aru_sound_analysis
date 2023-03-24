@@ -22,7 +22,7 @@ library(webshot2)
 library(ggbiplot) # plot pcas
 library(broom)
 library(docstring)
-library(pca3d)
+# library(pca3d)
 
 # ### Install ggbiplot ###
 # library(devtools)
@@ -103,13 +103,7 @@ aw4 = aw3 %>%
                 atten_dist12 = aud_range(f = 12000, 
                                          T_cel = temp, 
                                          h_rel = relh, 
-<<<<<<< HEAD
                                          Pa = (pres/1000)))
-=======
-                                         Pa = (pres/1000)),
-                # ewlwvp = if_else(ewlwvp == Inf, 0, ewlwvp),
-                date_time = if_else(hour(date_time) == 18,date_time-3600,date_time))
->>>>>>> 5f758c81c4dd0c392e638807bd97cb76bdb2e639
 
 ## Create group labels
 # mas_bin labels
@@ -137,6 +131,9 @@ aw4$site = factor(aw4$site, levels = c("lwma","sswma","cbma","kiowa"))
 
 # Audio Variable PCAs
 audio_pca = prcomp(aw4[,c("aci","bio","adi","aei","num_vocals","species_diversity")], center = TRUE, scale. = TRUE)
+
+pca3d(audio_pca, biplot = true)
+
 summary(audio_pca) #PC1 and PC2 have highest proportion of variance
 audio_pcadf = as.data.frame(audio_pca[["x"]])
 ggbiplot(audio_pca, choices = c(1,2),ellipse = TRUE, alpha = 0, groups = aw4$site) # Plot PCs
@@ -151,14 +148,14 @@ pc_df = data.frame(pc = c(1,2,3),
                    desc = c("Acoustic Diversity", "Avian Abundance", "Acoustic Complexity"))
 
 pc_gt = pc_df %>%
-        gt() %>%
-        cols_align('center') %>%
-        cols_label(pc = md("**PC**"),
-                   std = md("**Standard Deviation**"),
-                   prop_var = md("**Proportion\nof Variance**"),
-                   cum_prop = md("**Cumulative\nProportion**"),
-                   desc = md("**Description**")) %>%
-        opt_table_font(
+  gt() %>%
+  cols_align('center') %>%
+  cols_label(pc = md("**PC**"),
+             std = md("**Standard Deviation**"),
+             prop_var = md("**Proportion\nof Variance**"),
+             cum_prop = md("**Cumulative\nProportion**"),
+             desc = md("**Description**")) %>%
+  opt_table_font(
     font = "Times New Roman")%>% gtsave("results/pc_table.png",
                                         vwidth = 1100,
                                         vheight = 1500,
@@ -172,91 +169,6 @@ aw4$pc1 = audio_pcadf$PC1*-1 # Multiply PC1 by -1 to make adi diversity have pos
 aw4$pc2 = audio_pcadf$PC2
 aw4$pc3 = audio_pcadf$PC3
 
-# Find missing data due to ARUs overheating and water damage  -------------------------------------------------------
-### 91200 data files should have been recorded (4560*5*4), 22800 for each site
-### Have to get unique times and dates and merge them together
-# get unique recording times
-aw4$time = hms::as_hms(aw4$date_time)
-unique_times = aw4 %>% 
-  dplyr::summarise(times = unique(as_hms(aw4$date_time)))
-ut = as.vector(unique_times)
-
-# get unique dates
-unique_dates = aw4 %>%
-  dplyr::summarise(dates = unique(date))
-
-record = expand.grid(unique_dates$dates,unique_times$times)
-record$unique_dt = as_datetime(paste0(record$Var1," ",record$Var2))
-  
-# 22800 for each site
-lwma = aw4 %>% dplyr::filter(site == 'lwma') %>%
-  dplyr::group_by(aru) %>%
-  dplyr::summarise(date_range = record$unique_dt)
-lwma_date = aw4 %>% dplyr::filter(site == 'lwma') %>% 
-  dplyr::summarise(date = unique(date_time))
-md_lwma = lwma$date_range[!lwma$date_range %in% lwma_date$date];md_lwma #794, 3970 for all 5 arus, 
-3970/22800 # 17.41%
-
-sswma = aw4 %>% dplyr::filter(site == 'sswma') %>%
-  dplyr::group_by(aru) %>%
-  dplyr::summarise(date_range = record$unique_dt)
-sswma_date = aw4 %>% dplyr::filter(site == 'sswma') %>% 
-  dplyr::summarise(date = unique(date_time))
-md_sswma = sswma$date_range[!sswma$date_range %in% sswma_date$date];md_sswma #374
-length(md_sswma)/22800 # 8.2%
-
-
-cbma = aw4 %>% dplyr::filter(site == 'cbma') %>%
-  dplyr::group_by(aru) %>%
-  dplyr::summarise(date_range = record$unique_dt)
-cbma_date = aw4 %>% dplyr::filter(site == 'cbma') %>% 
-  dplyr::summarise(date = unique(date_time))
-md_cbma = cbma$date_range[!cbma$date_range %in% cbma_date$date] #187 or 935 if by aru
-length(md_cbma)/22800 #4.1%
-
-
-kiowa = aw4 %>% dplyr::filter(site == 'kiowa') %>%
-  dplyr::group_by(aru) %>%
-  dplyr::summarise(date_range = record$unique_dt)
-kiowa_date = aw4 %>% dplyr::filter(site == 'kiowa') %>% 
-  dplyr::summarise(date = unique(date_time))
-md_kiowa = kiowa$date_range[!kiowa$date_range %in% kiowa_date$date]
-length(md_kiowa)/22800 #5.2%
-
-
-missed_dates = rbind(missed_dates,date_miss)
-sites = unique(aw4$site)
-missed_dates = NULL
-for(s in sites){
-  df = aw4 %>% dplyr::filter(site == s) %>%
-    dplyr::summarise(date_range = seq(min(date), max(date), by = 1))
-  site_date = aw4 %>% dplyr::filter(site == s) %>% 
-    dplyr::summarise(date = unique(date))
-  date_miss = data.frame(site = s,
-                         date_range = df$date_range[!df$date_range %in% site_date$date])
-  missed_dates = rbind(missed_dates,date_miss)
-}
-
-ag_miss = lapply(sites, function(x){
-  
-  df = aw4 %>% dplyr::filter(site == x) %>%
-    dplyr::summarise(date_range = seq(min(date), max(date), by = 1))
-  site_date = aw4 %>% dplyr::filter(site == x) %>% 
-    dplyr::summarise(date = unique(date))
-  date_miss = df$date_range[!df$date_range %in% site_date$date]
-})
-ag_miss = do.call(rbind,ag_miss)
-
-
-test <- purrr::map(sites, function(i){
-  aw4 %>% 
-    rowwise() %>%
-    filter(i %in% c_across(date)) %>% 
-    dplyr::summarise(date_range = seq(min(date), max(date), by = 1)) %>%
-    dplyr::summarise(date_miss = date_range[!date_range %in% date]) %>%
-    ungroup
-  
-})
 # check to see if pc scores correlate with acoustic metrics
 pc_df = aw4 %>% 
   # dplyr::filter(site == "cbma") %>%
@@ -276,39 +188,29 @@ save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 # aw4_linux = aw4
 # save(aw4_linux, file = "data_clean/aridity_data_clean_linux.Rdata")
 
-### Checking full dataset lmm and lm plots
-# LMM with site as random effect
-pas_lmm = lmer(pc2 ~ ew_vol*mas_bin+scale(date) + (1|site), data = aw4)
-summary(pas_lmm)
-emm_options(lmerTest.limit = 54000
-            # pbkrtest.limit = 54000
-            )
-emm_lmm = emtrends(pas_lmm, ~ mas_bin, 
-               var = "ew_vol", 
-               type = 'response',
-               weights = "cells");emm_lmm
-mas0 = c(1,0,0,0)
-mas1 = c(0,1,0,0)
-mas2 = c(0,0,1,0)
-mas3 = c(0,0,0,1)
-contrast = summary(contrast(
-                    emm_lmm, 
-                    method = list("Early-Predawn" = mas1-mas0,
-                                  "Mid-Predawn" = mas2-mas0,
-                                  "Late-Predawn" = mas3-mas0,
-                                  "Mid-Early" = mas2-mas1,
-                                  "Late-Early" = mas3-mas1,
-                                  "Late-Mid" = mas3-mas2),
-                    adjust = "bonferroni"));contrast
-#LM
+# Checking full dataset and lm plots
+pas = lmer(pc2 ~ ew_vol*mas_bin + scale(date) + (1|site), data = aw4)
+summary(pas)
+
 pas_lm = lm(pc2 ~ ew_vol*mas_bin + scale(date), data = aw6)
 summary(pas_lm)
 emm = emtrends(pas_lm, ~ mas_bin, 
                var = "ew_vol", 
                type = 'response',
                weights = "cells") # across sites
-summary(emm)
 
+mas0 = c(1,0,0,0)
+mas1 = c(0,1,0,0)
+mas2 = c(0,0,1,0)
+mas3 = c(0,0,0,1)
+contrast = summary(contrast(emm, 
+                            method = list("Early-Predawn" = mas1-mas0,
+                                          "Mid-Predawn" = mas2-mas0,
+                                          "Late-Predawn" = mas3-mas0,
+                                          "Mid-Early" = mas2-mas1,
+                                          "Late-Early" = mas3-mas1,
+                                          "Late-Mid" = mas3-mas2),
+                            adjust = "bonferroni")) 
 contrast_gt = contrast %>%
   dplyr::mutate(estimate = round(estimate, 3),
                 SE = round(SE, 3),
@@ -336,14 +238,15 @@ contrast_gt = contrast %>%
   opt_table_font(
     font = "Times New Roman") %>%
   gtsave("results/pool_data_contrasts_lm.png")
-  # gtsave("results/pool_data_contrasts_lmer.png")
+# gtsave("results/pool_data_contrasts_lmer.png")
 
 
-ggplot(data = aw4, 
+ggplot(data = aw4 %>% dplyr::filter(week == 25), 
        aes(x = ew_vol,
-           y = pc2)) +
+           y = pc2,
+           color = site)) +
   geom_smooth(method = lm) +
-  facet_grid(~mas_bin)
+  facet_grid(~week*mas_bin)
 # # Sound Attenuation PCAs - all pcs in the same direction
 # atten_pca = prcomp(aw4[,c("sound_atten04","sound_atten08","sound_atten12")])
 # summary(atten_pca)
@@ -353,21 +256,81 @@ ggplot(data = aw4,
 # pca3d(audio_pca, biplot = true) # only run this on windows machine
 # snapshotPCA3d("audio_pca.png")
 
-# Data pooled across sites - linear mixed model with site as random effect --------
+# Running lmm with fixed and random effects to see if the random intercepts and slopes differed across sites and mas bins --------
 ### predictions would be that there would be site and mas bin differences in intercepts and that ewl_vol would drive the differences in slopes
 
+# Check to see which random effect is best
+m1t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|site),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+m2t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+
+m3t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|mas_bin),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+
+m4t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+m5t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date_time),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+
+m6t = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date)+ (1|site) + (1|date/mas_bin),
+           data = aw4,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)),
+           REML = TRUE)
+AICctab(m1t,m2t,m3t,m4t,m5t,m6t)
+# Best random effect is (date/mas_bin)
+
+
+m1_lmm = lmer(pc1 ~ ew_vol*site*mas_bin + ew_vol*site*scale(date) + (1|date/mas_bin),
+              data = aw4,
+              control=lmerControl(optimizer="bobyqa", 
+                                  optCtrl = list(maxfun=2e5)), REML = FALSE)
+summary(m1_lmm)
+emm_options(lmerTest.limit = 54000,
+            pbkrtest.limit = 54000)
+emm = emtrends(m1_lmm, pairwise ~ site|mas_bin, var = "ew_vol", type = 'response',weights = "cells");summary(emm)
+plot(emm)
+emm_table = summary(emm$emtrends)
 
 lmm1_time = ag_lmm(aw4,
-               aw4$pc1,
-               aw4$ew_vol);lmm1_time
+                   aw4$pc1,
+                   aw4$ew_vol,
+                   "mas_bin",
+                   "site")
+
+lmm1_site = ag_lmm(aw4,
+                   aw4$pc1,
+                   aw4$ew_vol,
+                   "site",
+                   "mas_bin")
 
 lmm2_time = ag_lmm(aw4,
                    aw4$pc2,
-                   aw4$ew_vol);lmm2_time
+                   aw4$ew_vol,
+                   "mas_bin",
+                   "site")
 
-lmm3_time = ag_lmm(aw4,
-                   aw4$pc3,
-                   aw4$ew_vol);lmm3_time
+lmm2_site = ag_lmm(aw4,
+                   aw4$pc2,
+                   aw4$ew_vol,
+                   "site",
+                   "mas_bin")
 
 ggplot(data = emm_table, aes(x = mas_bin, y = ew_vol.trend, color = site)) +
   geom_point(position = position_dodge(0.5))+
@@ -389,9 +352,9 @@ ag_graph_site_paper(aw4,
                     xlab)
 
 m2_lmm = lmer(pc2 ~ ew_vol*site*mas_bin + (1|date/mas_bin),
-               data = aw4,
-               control=lmerControl(optimizer="bobyqa", 
-                                   optCtrl = list(maxfun=2e5)), 
+              data = aw4,
+              control=lmerControl(optimizer="bobyqa", 
+                                  optCtrl = list(maxfun=2e5)), 
               REML = FALSE)
 summary(m2_lmm)
 emm_options(lmerTest.limit = 54000,
@@ -537,28 +500,32 @@ lmpc1site = ag_contrasts_convar_site(aw6,
 ## PC1 - Acoustic Diversity across sound attenuation coefficient
 # 4 kHz
 atten04pc1 = ag_contrasts_convar_site(aw6,
-                                       aw6$pc1,
-                                       aw6$atten_alpha04)
+                                      aw6$pc1,
+                                      aw6$atten_alpha04)
 
 # 8 kHz
 atten08pc1 = ag_contrasts_convar_site(aw6,
-                         aw6$pc1,
-                         aw6$atten_alpha08)
+                                      aw6$pc1,
+                                      aw6$atten_alpha08)
 
 # 12 kHz
 atten12pc1 = ag_contrasts_convar_site(aw6,
-                         aw6$pc1,
-                         aw6$atten_alpha12)
+                                      aw6$pc1,
+                                      aw6$atten_alpha12)
 
 ## PC1 plotted against aridity (gh), facet grid by mas_bin (comparisons across site, within time)
 xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
 
-ag_graph_site_paper(aw6,
-                    aw6$pc1, 
-                    aw6$ew_vol,
-                    "PC1 - Acoustic Diversity",
-                    xlab)
-ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+ag_graph_site(aw6,
+              aw6$pc1, 
+              aw6$ew_vol,
+              "PC1\nAcoustic Diversity",
+              xlab,
+              0,
+              "PC1 scores were significantly higher\nin the western sites during predawn and early periods")
+# ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+ggsave('results/arid_grad_pc1_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
+
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
 lmpc1time = ag_contrasts_convar_time(aw6,
@@ -566,24 +533,28 @@ lmpc1time = ag_contrasts_convar_time(aw6,
                                      aw6$ew_vol);lmpc1time
 
 ## PC1 plotted against aridity (gh), facet grid by site (comparisons across time, within site)
-ag_graph_time_paper(aw6$pc1, 
-                    aw6$ew_vol,
-                    "PC1 - Acoustic Diversity",
-                    xlab)
+ag_graph_time(aw6,
+              aw6$pc1, 
+              aw6$ew_vol,
+              "PC1 - Acoustic Diversity",
+              xlab,
+              0)
 ggsave('results/arid_grad_pc1_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### PC2 - Avian Abundance
 ## LMs for PC2 with aridity (gh) as the independent variable
 lmpc2site = ag_contrasts_convar_site(aw6,
-                                 aw6$pc2,
-                                 aw6$ew_vol);lmpc2site
+                                     aw6$pc2,
+                                     aw6$ew_vol);lmpc2site
 
-ag_graph_site_paper(aw6,
-                    aw6$pc2, 
-                    aw6$ew_vol,
-                    "PC2 - Avian Abundance",
-                    xlab)
-ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+ag_graph_site(aw6,
+              aw6$pc2, 
+              aw6$ew_vol,
+              "PC2\nAvian Abundance",
+              xlab,
+              0)
+# ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+ggsave('results/arid_grad_pc2_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
 
 
 ## LM for PC2 - Avian Abundance, across time periods, within site
@@ -591,11 +562,11 @@ lmpc2time = ag_contrasts_convar_time(aw4,
                                      aw4$pc2,
                                      aw4$ew_vol);lmpc2time
 
-ag_graph_time_paper(aw6,
-                    aw6$pc2, 
-                    aw6$ew_vol,
-                    "PC2 - Avian Abundance",
-                    xlab)
+ag_graph_time(aw6,
+              aw6$pc2, 
+              aw6$ew_vol,
+              "PC2 - Avian Abundance",
+              xlab)
 ggsave('results/arid_grad_pc2_time_paper.png', 
        dpi = 600, 
        height = 6, width = 10, units = "in")
@@ -608,13 +579,13 @@ atten04pc2 = ag_contrasts_convar_site(aw6,
 
 # 8 kHz
 atten08pc2 = ag_contrasts_convar_site(aw6,
-                         aw6$pc2,
-                         aw6$atten_alpha08)
+                                      aw6$pc2,
+                                      aw6$atten_alpha08)
 
 # 12 kHz
 atten12pc2 = ag_contrasts_convar_site(aw6,
-                         aw6$pc2,
-                         aw6$atten_alpha12)
+                                      aw6$pc2,
+                                      aw6$atten_alpha12)
 
 # Plotting sound attenuation coefficient as the continuous, independent variable
 atten_graph_time_paper(aw6$pc2, 
@@ -634,26 +605,29 @@ ggsave('results/sound_atten8khz_distance_pc2_time_paper.png', dpi = 600, height 
 ### PC3 - Acoustic Complexity
 ## LMs for PC3 across sites, within mas_bin
 lmpc3site = ag_contrasts_convar_site(aw6,
-                         aw6$pc3,
-                         aw6$ew_vol);lmpc3site
+                                     aw6$pc3,
+                                     aw6$ew_vol);lmpc3site
 
 
-ag_graph_site_paper(aw6,
-                    aw6$pc3, 
-                    aw6$ew_vol,
-                    "PC3 - Acoustic Complexity",
-                    xlab)
-ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+ag_graph_site(aw6,
+              aw6$pc3, 
+              aw6$ew_vol,
+              "PC3 - Acoustic Complexity",
+              xlab,
+              0)
+# ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
+ggsave('results/arid_grad_pc3_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
+
 
 ### LM for PC3 - Acoustic Complexity, Across time periods, within sites
 lmpc3time = ag_contrasts_convar_time(aw6,
                                      aw6$pc3,
                                      aw6$ew_vol);lmpc3time
 
-ag_graph_time_paper(aw6$pc3, 
-                    aw6$ew_vol,
-                    "PC3 - Acoustic Complexity",
-                    xlab)
+ag_graph_time(aw6$pc3, 
+              aw6$ew_vol,
+              "PC3 - Acoustic Complexity",
+              xlab)
 ggsave('results/arid_grad_pc3_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ## PC3 - Acoustic complexity across sound attenuation coefficient
@@ -664,37 +638,37 @@ atten04pc3 = ag_contrasts_convar_site(aw6,
 
 # 8 kHz
 atten08pc3 = ag_contrasts_convar_site(aw6,
-                                       aw6$pc3,
-                                       aw6$atten_alpha08)
+                                      aw6$pc3,
+                                      aw6$atten_alpha08)
 
 # 12 kHz
 atten12pc3 = ag_contrasts_convar_site(aw6,
-                                       aw6$pc3,
-                                       aw6$atten_alpha12)
+                                      aw6$pc3,
+                                      aw6$atten_alpha12)
 
 ### Sound attenuation at 4kHz tables
 atten04_tables = ag_slopes_table(atten04pc1[[6]],
                                  atten04pc2[[6]],
                                  atten04pc3[[6]]) %>% gtsave("results/atten04_slopes.png", 
-                                                           vwidth = 1100,
-                                                           # vheight = 15000, 
-                                                           expand = 1000)
+                                                             vwidth = 1100,
+                                                             # vheight = 15000, 
+                                                             expand = 1000)
 
 ### Sound attenuation at 8kHz tables
 atten08_tables = ag_slopes_table(atten08pc1[[6]],
-                               atten08pc2[[6]],
-                               atten08pc3[[6]]) %>% gtsave("results/atten08_slopes.png", 
-                                                          vwidth = 1100,
-                                                          # vheight = 15000, 
-                                                          expand = 1000)
+                                 atten08pc2[[6]],
+                                 atten08pc3[[6]]) %>% gtsave("results/atten08_slopes.png", 
+                                                             vwidth = 1100,
+                                                             # vheight = 15000, 
+                                                             expand = 1000)
 
 ### Sound attenuation at 8kHz tables
 atten12_tables = ag_slopes_table(atten12pc1[[6]],
-                               atten12pc2[[6]],
-                               atten12pc3[[6]]) %>% gtsave("results/atten12_slopes.png", 
-                                                           vwidth = 1100,
-                                                           # vheight = 15000, 
-                                                           expand = 1000)
+                                 atten12pc2[[6]],
+                                 atten12pc3[[6]]) %>% gtsave("results/atten12_slopes.png", 
+                                                             vwidth = 1100,
+                                                             # vheight = 15000, 
+                                                             expand = 1000)
 
 ### Big table for all aridity gradient pcs slopes
 pc_tables = ag_slopes_table(lmpc1site[[6]],
@@ -702,17 +676,17 @@ pc_tables = ag_slopes_table(lmpc1site[[6]],
                             lmpc3site[[6]]); pc_tables
 
 pc_tables %>% gtsave("results/ag_all_pcs_slopes.png", 
-                      vwidth = 1100,
-                      # vheight = 15000, 
-                      expand = 1000)
+                     vwidth = 1100,
+                     # vheight = 15000, 
+                     expand = 1000)
 
 pc_tables_contrasts_site = ag_contrasts_table_site(tab1 = lmpc1site[[3]],
                                                    tab2 = lmpc2site[[3]],
                                                    tab3 = lmpc3site[[3]]);pc_tables_contrasts_site
 pc_tables_contrasts_site %>% gtsave("results/ag_all_pcs_contrasts_site.png", 
-                     vwidth = 1100,
-                     # vheight = 15000, 
-                     expand = 1000)
+                                    vwidth = 1100,
+                                    # vheight = 15000, 
+                                    expand = 1000)
 
 pc_tables_contrasts_time = ag_contrasts_table_time(tab1 = lmpc1time[[3]],
                                                    tab2 = lmpc2time[[3]],
@@ -758,7 +732,7 @@ ggplot(data = mas_graphs,
                     ymax = evap_volmean+evap_volse), width = 0.5,
                 position = position_dodge(0.5))+
   scale_color_manual(values = cbpalette,
-                      name = "Site")+
+                     name = "Site")+
   scale_x_discrete(name = "Morning Acoustic Period") +
   scale_y_continuous(name = expression(paste("Evap. Rate (mL/cm"^"2","/day)")),
                      limits = c(0.0,0.8),
@@ -921,11 +895,11 @@ sswma_maslag = sswmawl %>%
 ### Creating Labels for Graphs
 # mas labels
 sswma_maslag$mas_labels = factor(sswma_maslag$mas_bin, levels = c("0","1","2","3"),
-                        labels = c("Predawn","Early","Mid","Late"))
+                                 labels = c("Predawn","Early","Mid","Late"))
 
 # site labels
 sswma_maslag$wssite_labels = factor(sswma_maslag$ws_site, levels = c("1","2","3"),
-                         labels = c("Water Site 1", "Water Site 2", "Water Site 3"))
+                                    labels = c("Water Site 1", "Water Site 2", "Water Site 3"))
 
 save(sswma_maslag, file = "data_clean/sswma_maslag.Rdata")
 load("data_clean/sswma_maslag.Rdata")
@@ -935,10 +909,10 @@ sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
                                       yvar = sswma_maslag$pc1,
                                       xvar = sswma_maslag$ew_vol); sswma_lag_pc1
 sw1 = lmer(pc1 ~ ew_vol*ws_site*water*mas_bin + (1|date/mas_bin),
-              data = sswma_maslag,
-              control=lmerControl(optimizer="bobyqa", 
-                                  optCtrl = list(maxfun=2e5)), 
-              REML = FALSE)
+           data = sswma_maslag,
+           control=lmerControl(optimizer="bobyqa", 
+                               optCtrl = list(maxfun=2e5)), 
+           REML = FALSE)
 summary(sw1)
 emm_options(lmerTest.limit = 54000,
             pbkrtest.limit = 54000)
@@ -1067,7 +1041,7 @@ cbmawl = rbind(cbma_wlag1, cbma_wlag2) %>%
 # cbmawl$pc2 = cbma_waterpcadf$PC2 * -1 # switching direction of Num Vocals/Species Diversity so that it is positive
 # cbmawl$pc3 = cbma_waterpcadf$PC3 # Higher ACI and BIO with higher positive values
 
-# Water Supplementation - CBMA - Date and MAS - Statistical Analysis - Lag ----------------------
+# Water Supp - CBMA - Date and MAS - Statistical Analysis - Lag ----------------------
 
 cbma_maslag = cbmawl %>%
   mutate(date = date(date_time),
@@ -1142,9 +1116,9 @@ cbma_pc_table = cbma_water_table3(cbma_lag_pc1[[4]],
                                   cbma_lag_pc2[[4]],
                                   cbma_lag_pc3[[4]]);cbma_pc_table
 cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
-                          expand = 10,
-                          vwidth = 1100, 
-                          vheight = 1500)
+                         expand = 10,
+                         vwidth = 1100, 
+                         vheight = 1500)
 
 ### Plotting CBMA Water Supp Lag data
 ### Creating Labels for Graphs
@@ -1173,3 +1147,16 @@ cbma_water_site_paper(cbma_maslag,
                       "PC3 - Acoustic Complexity",
                       xlab)
 
+
+
+
+# Water Supp - SSWMA Plots ------------------------------------------------
+sswma_maslag$mas_labels = factor(sswma_maslag$mas_bin, 
+                                 levels = c("0","1","2","3"),
+                                 labels = c("Predawn","Early","Mid","Late"))
+sswma_boxplot(sswma_maslag,
+              sswma_maslag$pc1,
+              sswma_maslag$mas_labels,
+              "PC1\nAcoustic Diversity\nEstimates",
+              "Morning Acoustic Periods",
+              90)
