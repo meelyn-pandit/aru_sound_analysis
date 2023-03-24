@@ -47,7 +47,10 @@ snapshot3d("results/ag_pca_full.png")
 # Making it so Loading lines are longer
 plot3d(scores[,1:3], 
        alpha = 1, 
-       size=1)
+       size=1,
+       xlab = "",
+       ylab = "",
+       zlab = "")
 # text3d(apca$scores[,1:3],texts=rownames(aw4))
 # text3d(apca$loadings[,1:3]*10, 
 #        texts=rownames(apca$loadings),
@@ -57,8 +60,10 @@ coords <- NULL
 for (i in 1:nrow(apca$loadings)) {
   coords <- rbind(coords, rbind(c(0,0,0),apca$loadings[i,1:3]))
 }
-lines3d(coords*10, col="red", lwd=4)
-snapshot3d("results/ag_pca_full_no_text.png")
+lines3d(coords*10, col="orange", lwd=4)
+snapshot3d("results/ag_pca_full_no_text.png",
+           width = 1600,
+           height = 900)
 
 # PCA3D method ------------------------------------------------------------
 library(pca3d)
