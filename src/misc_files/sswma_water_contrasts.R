@@ -23,8 +23,10 @@ sswma_water_contrasts = function(data,
   
   emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
   # sswma_pairwise_pc = sswma_water_table(emm_cntrst);sswma_pairwise_pc
-  my_list = list(summary, diagnostics, emm_cntrst_summary,
-                  emm_confi_summary
+  my_list = list(summary, 
+                 diagnostics,
+                 emm_cntrst_summary,
+                 emm_confi_summary
                  # , sswma_pairwise_pc
                  )
   return(my_list)

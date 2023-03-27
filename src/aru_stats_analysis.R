@@ -522,7 +522,7 @@ ag_graph_site(aw6,
               "PC1\nAcoustic Diversity",
               xlab,
               0,
-              "PC1 scores were significantly higher\nin the western sites during predawn and early periods")
+              "PC1 scores decreased as evaporation rate increased and were higher in the\nwestern sites during predawn and early periods")
 # ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 ggsave('results/arid_grad_pc1_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
 
@@ -538,7 +538,8 @@ ag_graph_time(aw6,
               aw6$ew_vol,
               "PC1 - Acoustic Diversity",
               xlab,
-              0)
+              0,
+              'PC1 Scores were consistent across time periods')
 ggsave('results/arid_grad_pc1_time_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 
 ### PC2 - Avian Abundance
@@ -552,7 +553,8 @@ ag_graph_site(aw6,
               aw6$ew_vol,
               "PC2\nAvian Abundance",
               xlab,
-              0)
+              0,
+              'PC2 scores increased in the predawn and early period as, but decreased in\nlater periods. CBMA PC2 scores increased in all time periods')
 # ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 ggsave('results/arid_grad_pc2_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
 
@@ -612,9 +614,10 @@ lmpc3site = ag_contrasts_convar_site(aw6,
 ag_graph_site(aw6,
               aw6$pc3, 
               aw6$ew_vol,
-              "PC3 - Acoustic Complexity",
+              "PC3\nAcoustic Complexity",
               xlab,
-              0)
+              0,
+              "PC3 scores decreased as evaporation rate increased except\nCBMA which saw significant increases")
 # ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 ggsave('results/arid_grad_pc3_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
 
@@ -939,7 +942,7 @@ sswma_lag_pc2 = sswma_water_contrasts(data = sswma_maslag,
                                       yvar = sswma_maslag$pc2,
                                       xvar = sswma_maslag$ew_vol); sswma_lag_pc2
 # sswma_lag_pc2[[5]] %>% gtsave("results/sswma_water_pc2_lag.png")
-# plot(sswma_lag_pc2[[4]])
+plot(sswma_lag_pc2[[5]])
 # Create graph to show water site slopes
 sswma_water_site_paper(sswma_maslag,
                        sswma_maslag$pc2,
@@ -1150,7 +1153,12 @@ cbma_water_site_paper(cbma_maslag,
 
 
 
-# Water Supp - SSWMA Plots ------------------------------------------------
+# Water Supp - SSWMA Contrast Plots ------------------------------------------------
+library(ggpubr)
+library(rstatix)
+library(ggprism)
+
+load("data_clean/sswma_maslag.Rdata")
 sswma_maslag$mas_labels = factor(sswma_maslag$mas_bin, 
                                  levels = c("0","1","2","3"),
                                  labels = c("Predawn","Early","Mid","Late"))
@@ -1159,4 +1167,178 @@ sswma_boxplot(sswma_maslag,
               sswma_maslag$mas_labels,
               "PC1\nAcoustic Diversity\nEstimates",
               "Morning Acoustic Periods",
-              90)
+              0)
+
+sswma_pc2 = sswma_lag_pc2[[3]] %>%
+  dplyr::mutate(combo = paste0(ws_site,water),
+                mas_labels = factor(mas_bin, 
+                                    levels=c(0,1,2,3)
+                                               )) %>%
+  dplyr::mutate(indgrp = paste0(combo,mas_labels)) %>%
+  dplyr::filter(is.na(xvar.trend)==FALSE)
+
+pc2_stat <- tibble::tribble(
+  ~group1, ~group2,   ~mas_labels,    ~p.adj,    ~p.adj.sig,    ~y.position,  ~tip.length,
+  "10",     "21",     3,              0.005,     "**",          4,            0.2  
+)
+pc2_stat
+
+sswma_dotplot(sswma_pc2,
+              sswma_pc2$xvar.trend,
+              sswma_pc2$combo,
+              "PC2\nAvian\nAbundance\nEstimates",
+              "Morning Acoustic Periods",
+              sswma_pc2$water,
+              0,
+              'Water increased PC2 Scores only in the Late Period at SSWMA',
+              pc2_stat)
+ggsave('results/sswma_water_pc2_dotplot.png',
+       plot = last_plot(),
+       dpi = 600, 
+       height = 9, 
+       width = 16, 
+       units = "in")
+
+### SSWMA PC3 Dotplot
+
+sswma_pc3 = sswma_lag_pc3[[3]] %>%
+  dplyr::mutate(combo = paste0(ws_site,water),
+                mas_labels = factor(mas_bin, 
+                                    levels=c(0,1,2,3)
+                )) %>%
+  dplyr::mutate(indgrp = paste0(combo,mas_labels)) %>%
+  dplyr::filter(is.na(xvar.trend)==FALSE)
+
+pc3_stat <- tibble::tribble(
+  ~group1, ~group2,   ~mas_labels,    ~p.adj,    ~p.adj.sig,    ~y.position,  ~tip.length,
+  "21",     "30",     3,         0.001,         "**",          3,             0.05)
+
+sswma_dotplot(sswma_pc3,
+              sswma_pc3$xvar.trend,
+              sswma_pc3$combo,
+              "PC3\nAcoustic\nComplexity\nEstimates",
+              "Morning Acoustic Periods",
+              sswma_pc3$water,
+              0,
+              'Water increased PC3 Scores only in the Late Period at SSWMA',
+              pc3_stat)
+ggsave('results/sswma_water_pc3_dotplot.png',
+       plot = last_plot(),
+       dpi = 600, 
+       height = 9, 
+       width = 16, 
+       units = "in")
+
+
+# Water Supp - CBMA Dotplots -----------------------------------------------------------
+
+library(ggpubr)
+library(rstatix)
+library(ggprism)
+
+load("data_clean/cbma_maslag.Rdata")
+cbma_maslag$mas_labels = factor(cbma_maslag$mas_bin, 
+                                 levels = c("0","1","2","3"),
+                                 labels = c("Predawn","Early","Mid","Late"))
+# cbma_boxplot(cbma_maslag,
+#               cbma_maslag$pc1,
+#               cbma_maslag$mas_labels,
+#               "PC1\nAcoustic Diversity\nEstimates",
+#               "Morning Acoustic Periods",
+#               0)
+cbma_pc1 = cbma_lag_pc1[[3]] %>%
+  dplyr::mutate(combo = paste0(ws_site,water),
+                mas_labels = factor(mas_bin, 
+                                    levels=c(0,1,2,3)
+                )) %>%
+  dplyr::mutate(indgrp = paste0(combo,mas_labels)) %>%
+  dplyr::filter(is.na(xvar.trend)==FALSE)
+
+pc1_stat <- tibble::tribble(
+  ~group1,~group2,~mas_labels,~p.adj,~p.adj.sig,~y.position,  ~tip.length,
+  "11",     "21",     1,       0.003,     "**",          0.5,  0.05,
+  "10",     "21",     3,       0.007,     "**",          1.5,  0.05
+  )
+pc1_stat
+
+cbma_dotplot(cbma_pc1,
+             cbma_pc1$xvar.trend,
+             cbma_pc1$combo,
+             "PC1\nAcoustic\nDiversity\nEstimates",
+             "Morning Acoustic Periods",
+             cbma_pc1$water,
+             0,
+             'PC1 Scores increased under restricted water access in the Late period\n at CBMA',
+             pc1_stat)
+
+ggsave('results/cbma_water_pc1_dotplot.png',
+       plot = last_plot(),
+       dpi = 600, 
+       height = 9, 
+       width = 16, 
+       units = "in")
+
+
+### CBMA PC2
+cbma_pc2 = cbma_lag_pc2[[3]] %>%
+  dplyr::mutate(combo = paste0(ws_site,water),
+                mas_labels = factor(mas_bin, 
+                                    levels=c(0,1,2,3)
+                )) %>%
+  dplyr::mutate(indgrp = paste0(combo,mas_labels)) %>%
+  dplyr::filter(is.na(xvar.trend)==FALSE)
+
+pc2_stat <- tibble::tribble(
+  ~group1, ~group2,   ~mas_labels,    ~p.adj,    ~p.adj.sig,    ~y.position,  ~tip.length,
+  "11",     "21",     0,              0.034,     "*",           3.5,            0.05,
+  "10",     "21",     0,              0.016,     "*",           1.2,            0.05,
+  # "11",     "21",     3,              0.805,     "ns",          2,            0.05,
+  "10",     "21",     3,              0.034,     "*",           0.75,            0.05
+)
+pc2_stat
+
+cbma_dotplot(cbma_pc2,
+              cbma_pc2$xvar.trend,
+              cbma_pc2$combo,
+              "PC2\nAvian\nAbundance\nEstimates",
+              "Morning Acoustic Periods",
+              cbma_pc2$water,
+              0,
+              'Water increased PC2 Scores in the Predawn & Late Periods at CBMA',
+              pc2_stat[1:3,])
+ggsave('results/cbma_water_pc2_dotplot.png',
+       plot = last_plot(),
+       dpi = 600, 
+       height = 9, 
+       width = 16, 
+       units = "in")
+
+### cbma PC3 Dotplot
+
+cbma_pc3 = cbma_lag_pc3[[3]] %>%
+  dplyr::mutate(combo = paste0(ws_site,water),
+                mas_labels = factor(mas_bin, 
+                                    levels=c(0,1,2,3)
+                )) %>%
+  dplyr::mutate(indgrp = paste0(combo,mas_labels)) %>%
+  dplyr::filter(is.na(xvar.trend)==FALSE)
+
+pc3_stat <- tibble::tribble(
+  ~group1, ~group2,   ~mas_labels,    ~p.adj,    ~p.adj.sig,    ~y.position,  ~tip.length,
+  "10",     "21",     0,         0.004,         "**",            3,             0.05)
+
+cbma_dotplot(cbma_pc3,
+              cbma_pc3$xvar.trend,
+              cbma_pc3$combo,
+              "PC3\nAcoustic\nComplexity\nEstimates",
+              "Morning Acoustic Periods",
+              cbma_pc3$water,
+              0,
+              'Water increased PC3 Scores in the Predawn Period at CBMA',
+              pc3_stat)
+ggsave('results/cbma_water_pc3_dotplot.png',
+       plot = last_plot(),
+       dpi = 600, 
+       height = 9, 
+       width = 16, 
+       units = "in")

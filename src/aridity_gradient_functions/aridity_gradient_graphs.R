@@ -34,9 +34,12 @@ ag_graph_site = function(data,
                        )+
     scale_y_continuous(name = ylabel)+
     # facet_grid(~facet_type) +
-    theme_classic(base_size = 20) +
-    theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations, 90 for paper
+    theme_classic(base_size = 30) +
+    theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
+          plot.title.position = "plot",
+          # plot.subtitle.position = "plot",
+          plot.caption.position = "plot",
           legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     ggtitle(label = title) +
@@ -88,15 +91,16 @@ ag_graph_time = function(data,
     scale_x_continuous(name = xlabel) +
     scale_y_continuous(name = ylabel) +
     # facet_grid(~facet_type) +
-    theme_classic(base_size = 15) +
+    theme_classic(base_size = 25) +
     theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations
-          plot.title = element_text(hjust = 0, vjust = 0),
+          plot.title = element_text(hjust = -1, vjust = 0),
+          plot.title.position = "plot",
+          plot.caption.position = "plot",
           legend.position = "bottom") +
     # facet_wrap(vars(mas_bin)) + 
     facet_grid(~site_labels)+
     ggtitle(label = title) +
-    theme(strip.text.y = element_text(angle = 0),
-          plot.title = element_text(face = "bold"))
+    theme(plot.title = element_text(face = "bold"))
 }
 
 ### Paper Graph  - Across Sites, within mas-bin
