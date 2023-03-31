@@ -14,8 +14,8 @@ ag_graph_site = function(data,
   cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
   ## Create group labels
   # mas_bin labels
-  aw6$mas_labels = factor(aw6$mas_bin, levels = c("0","1","2","3"),
-                          labels = c("Predawn","Early","Mid","Late"))
+  # aw6$mas_labels = factor(aw6$mas_bin, levels = c("0","1","2","3"),
+  #                         labels = c("Predawn","Early","Mid","Late"))
   
   # site labels
   aw6$site_labels = factor(aw6$site, levels = c("lwma","sswma","cbma","kiowa"),
@@ -34,13 +34,14 @@ ag_graph_site = function(data,
                        )+
     scale_y_continuous(name = ylabel)+
     # facet_grid(~facet_type) +
-    theme_classic(base_size = 30) +
+    theme_classic(base_size = 20) +
     theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = 0, vjust = 0),
           plot.title.position = "plot",
           # plot.subtitle.position = "plot",
           plot.caption.position = "plot",
-          legend.position = "bottom") +
+          legend.position = "bottom",
+          legend.margin=margin(t=-25)) +
     # facet_wrap(vars(mas_bin)) + 
     ggtitle(label = title) +
     facet_grid(~mas_labels) +
@@ -91,12 +92,13 @@ ag_graph_time = function(data,
     scale_x_continuous(name = xlabel) +
     scale_y_continuous(name = ylabel) +
     # facet_grid(~facet_type) +
-    theme_classic(base_size = 25) +
+    theme_classic(base_size = 20) +
     theme(axis.title.y = element_text(angle = yangle, vjust = 0.5), # change angle to 0 for presentations
           plot.title = element_text(hjust = -1, vjust = 0),
           plot.title.position = "plot",
           plot.caption.position = "plot",
-          legend.position = "bottom") +
+          legend.position = "bottom",
+          legend.margin=margin(t=-25)) +
     # facet_wrap(vars(mas_bin)) + 
     facet_grid(~site_labels)+
     ggtitle(label = title) +

@@ -477,7 +477,10 @@ cbma_pc = aw6 %>%
 cor(cbma_pc[,-c(1:2)])
 # Creating MAS bin labels for graphs
 aw6$mas_labels = factor(aw6$mas_bin, levels = c("0","1","2","3"),
-                        labels = c("Predawn","Early","Mid","Late"))
+                        labels = c("Predawn\n(Before Sunrise)",
+                                   "Early\n(~1 hr After Sunrise)",
+                                   "Mid\n(~3 hr After Sunrise)",
+                                   "Late\n(~5 hr After Sunrise)"))
 
 # Creating site labels for graphs
 aw6$site_labels = factor(aw6$site, levels = c("lwma","sswma","cbma","kiowa"),
@@ -519,12 +522,18 @@ xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
 ag_graph_site(aw6,
               aw6$pc1, 
               aw6$ew_vol,
-              "PC1\nAcoustic Diversity",
+              "PC1\nAcoustic\nDiversity",
               xlab,
               0,
-              "PC1 scores decreased as evaporation rate increased and were higher in the\nwestern sites during predawn and early periods")
+              # NULL
+              "PC1 decreased as evaporation rate increased and were higher in the\nwestern sites during predawn and early periods"
+              )
 # ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
-ggsave('results/arid_grad_pc1_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
+ggsave('results/arid_grad_pc1_site_pres.png', 
+       dpi = 600, 
+       height = 7.5, 
+       width = 13.33, 
+       units = "in")
 
 
 ### LM for PC1 - Acoustic Diversity, across time periods, within sites
@@ -536,7 +545,7 @@ lmpc1time = ag_contrasts_convar_time(aw6,
 ag_graph_time(aw6,
               aw6$pc1, 
               aw6$ew_vol,
-              "PC1 - Acoustic Diversity",
+              "PC1\nAcoustic\nDiversity",
               xlab,
               0,
               'PC1 Scores were consistent across time periods')
@@ -551,12 +560,16 @@ lmpc2site = ag_contrasts_convar_site(aw6,
 ag_graph_site(aw6,
               aw6$pc2, 
               aw6$ew_vol,
-              "PC2\nAvian Abundance",
+              "PC2\nAvian\nAbundance",
               xlab,
               0,
-              'PC2 scores increased in the predawn and early period as, but decreased in\nlater periods. CBMA PC2 scores increased in all time periods')
+              'PC2 scores increased in the predawn and early period, but decreased\nin later periods. CBMA PC2 scores increased in all time periods')
 # ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
-ggsave('results/arid_grad_pc2_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
+ggsave('results/arid_grad_pc2_site_pres.png', 
+       dpi = 600, 
+       height = 7.5, 
+       width = 13.33, 
+       units = "in")
 
 
 ## LM for PC2 - Avian Abundance, across time periods, within site
@@ -571,7 +584,7 @@ ag_graph_time(aw6,
               xlab)
 ggsave('results/arid_grad_pc2_time_paper.png', 
        dpi = 600, 
-       height = 6, width = 10, units = "in")
+       height = 7.5, width = 13.33, units = "in")
 
 ## PC2 - Avian Abundance across sound attenuation coefficient
 # 4 kHz
@@ -614,12 +627,16 @@ lmpc3site = ag_contrasts_convar_site(aw6,
 ag_graph_site(aw6,
               aw6$pc3, 
               aw6$ew_vol,
-              "PC3\nAcoustic Complexity",
+              "PC3\nAcoustic\nComplexity",
               xlab,
               0,
-              "PC3 scores decreased as evaporation rate increased except\nCBMA which saw significant increases")
+              "PC3 scores decreased as evaporation rate increased except CBMA\nwhich saw significant increases")
 # ggsave('results/arid_grad_pc3_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
-ggsave('results/arid_grad_pc3_site_pres.png', dpi = 600, height = 9, width = 16, units = "in")
+ggsave('results/arid_grad_pc3_site_pres.png', 
+       dpi = 600, 
+       height = 7.5, 
+       width = 13.33, 
+       units = "in")
 
 
 ### LM for PC3 - Acoustic Complexity, Across time periods, within sites
@@ -1126,8 +1143,12 @@ cbma_pc_table %>% gtsave("results/cbma_water_allpcs_lag.png",
 ### Plotting CBMA Water Supp Lag data
 ### Creating Labels for Graphs
 # mas labels
-cbma_maslag$mas_labels = factor(cbma_maslag$mas_bin, levels = c("0","1","2","3"),
-                                labels = c("Predawn","Early","Mid","Late"))
+cbma_maslag$mas_labels = factor(cbma_maslag$mas_bin, 
+                                levels = c("0","1","2","3"),
+                                labels = c("Predawn\n(Before Sunrise)",
+                                           "Early\n(~1 hr After Sunrise)",
+                                           "Mid\n(~3 hr After Sunrise)",
+                                           "Late\n(~5 hr After Sunrise)"))
 
 # site labels
 cbma_maslag$wssite_labels = factor(cbma_maslag$ws_site, levels = c("1","2"),
@@ -1161,7 +1182,10 @@ library(ggprism)
 load("data_clean/sswma_maslag.Rdata")
 sswma_maslag$mas_labels = factor(sswma_maslag$mas_bin, 
                                  levels = c("0","1","2","3"),
-                                 labels = c("Predawn","Early","Mid","Late"))
+                                 labels = c("Predawn\n(Before Sunrise)",
+                                            "Early\n(~1 hr After Sunrise)",
+                                            "Mid\n(~3 hr After Sunrise)",
+                                            "Late\n(~5 hr After Sunrise)"))
 sswma_boxplot(sswma_maslag,
               sswma_maslag$pc1,
               sswma_maslag$mas_labels,
@@ -1238,8 +1262,11 @@ library(ggprism)
 
 load("data_clean/cbma_maslag.Rdata")
 cbma_maslag$mas_labels = factor(cbma_maslag$mas_bin, 
-                                 levels = c("0","1","2","3"),
-                                 labels = c("Predawn","Early","Mid","Late"))
+                                levels = c("0","1","2","3"),
+                                labels = c("Predawn\n(Before Sunrise)",
+                                           "Early\n(~1 hr After Sunrise)",
+                                           "Mid\n(~3 hr After Sunrise)",
+                                           "Late\n(~5 hr After Sunrise)"))
 # cbma_boxplot(cbma_maslag,
 #               cbma_maslag$pc1,
 #               cbma_maslag$mas_labels,
