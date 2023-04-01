@@ -82,6 +82,7 @@ sswma_dotplot = function(data,
                size = 10,
                stroke = 3,
                aes(fill = as.factor(water)))+
+    guides(color = guide_legend(override.aes = list(size = 3)))+
         geom_errorbar(aes(ymin = yvar-SE, 
                       ymax = yvar+SE), 
                   width = 0.5,
@@ -101,22 +102,24 @@ sswma_dotplot = function(data,
     # xlab(label = xlabel) +
     facet_grid(~factor(mas_labels,
                        levels = c(0,1,2,3),
-                       labels = c("Predawn",
-                                  "Early",
-                                  "Mid",
-                                  "Late")),
+                       labels = c("Predawn\n(Before Sunrise)",
+                                  "Early\n(~1 hr After Sunrise)",
+                                  "Mid\n(~3 hr After Sunrise)",
+                                  "Late\n(~5 hr After Sunrise)")),
                switch = "both") +
-    theme_classic(base_size = 30) +
+    theme_classic(base_size = 25) +
     theme(axis.title.y = element_text(angle = 0, 
                                       vjust = 0.5), # 90 for paper, 0 for presentations
           # axis.title.x=element_text(),
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
+          strip.text.x = element_text(size = 17),
           # axis.text.x = element_text(),
           plot.title.position = "plot",
           plot.title = element_text(face = "bold"),
           # plot.subtitle.position = "plot",
           plot.caption.position = "plot",
+          # legend.key.size = 10,
           legend.key.width = unit(1, 'in'),
           legend.key.height = unit(0, "in"),
           legend.position = "bottom",
@@ -150,7 +153,7 @@ cbma_dotplot = function(data,
   # Set color palette
   cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999") # Set color palette for graphs
   
-  #Dotplot for Water SSWMA vocals Diversity
+  #Dotplot for Water CBMA vocals Diversity
   ggplot(data = data,
          aes(x=xvar, 
              y=yvar, 
@@ -182,22 +185,24 @@ cbma_dotplot = function(data,
     # xlab(label = xlabel) +
     facet_grid(~factor(mas_labels,
                        levels = c(0,1,2,3),
-                       labels = c("Predawn",
-                                  "Early",
-                                  "Mid",
-                                  "Late")),
+                       labels = c("Predawn\n(Before Sunrise)",
+                                  "Early\n(~1 hr After Sunrise)",
+                                  "Mid\n(~3 hr After Sunrise)",
+                                  "Late\n(~5 hr After Sunrise)")),
                switch = "both") +
-    theme_classic(base_size = 30) +
+    theme_classic(base_size = 25) +
     theme(axis.title.y = element_text(angle = 0, 
                                       vjust = 0.5), # 90 for paper, 0 for presentations
           # axis.title.x=element_text(),
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
+          strip.text.x = element_text(size = 17),
           # axis.text.x = element_text(),
           plot.title.position = "plot",
           plot.title = element_text(face = "bold"),
           # plot.subtitle.position = "plot",
           plot.caption.position = "plot",
+          legend.key.size = 10,
           legend.key.width = unit(1, 'in'),
           legend.key.height = unit(0, "in"),
           legend.position = "bottom",

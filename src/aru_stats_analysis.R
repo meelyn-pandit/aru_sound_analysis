@@ -1219,8 +1219,8 @@ sswma_dotplot(sswma_pc2,
 ggsave('results/sswma_water_pc2_dotplot.png',
        plot = last_plot(),
        dpi = 600, 
-       height = 9, 
-       width = 16, 
+       height = 7.5, 
+       width = 13.33, 
        units = "in")
 
 ### SSWMA PC3 Dotplot
@@ -1249,8 +1249,8 @@ sswma_dotplot(sswma_pc3,
 ggsave('results/sswma_water_pc3_dotplot.png',
        plot = last_plot(),
        dpi = 600, 
-       height = 9, 
-       width = 16, 
+       height = 7.5, 
+       width = 13.33, 
        units = "in")
 
 
