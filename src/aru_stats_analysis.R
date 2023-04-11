@@ -22,9 +22,6 @@ library(webshot2)
 library(ggbiplot) # plot pcas
 library(broom)
 library(docstring)
-library(ggpubr)
-library(rstatix)
-library(ggprism)
 # library(pca3d)
 
 # ### Install ggbiplot ###
@@ -46,7 +43,6 @@ source("src/ece_functions/sswma_water_ece_functions.R")
 source("src/ece_functions/cbma_ece_functions.R")
 source("src/evap_rate_function.R")
 source("src/inflection_points.R") # used to determine thresholds for ECE analysis
-source("src/water_supp_functions/water_supp_plots.R")
 
 
 # Load Full Dataset and Clean ---------------------------------------------
@@ -530,7 +526,7 @@ ag_graph_site(aw6,
               xlab,
               0,
               # NULL
-              "PC1 decreased as evaporation rate increased and were\nhigher in the western sites during predawn and early periods"
+              "PC1 decreased as evaporation rate increased and were higher in the\nwestern sites during predawn and early periods"
               )
 # ggsave('results/arid_grad_pc1_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 ggsave('results/arid_grad_pc1_site_pres.png', 
@@ -567,7 +563,7 @@ ag_graph_site(aw6,
               "PC2\nAvian\nAbundance",
               xlab,
               0,
-              'PC2 scores increased in early periods, but decreased in later periods.\nCBMA PC2 scores increased in all time periods')
+              'PC2 scores increased in the predawn and early period, but decreased\nin later periods. CBMA PC2 scores increased in all time periods')
 # ggsave('results/arid_grad_pc2_site_paper.png', dpi = 600, height = 6, width = 8, units = "in")
 ggsave('results/arid_grad_pc2_site_pres.png', 
        dpi = 600, 
@@ -1184,21 +1180,6 @@ library(rstatix)
 library(ggprism)
 
 load("data_clean/sswma_maslag.Rdata")
-
-# PC1: ADI, AEI, positive  values more likely to have higher ADI
-sswma_lag_pc1 = sswma_water_contrasts(data = sswma_maslag,
-                                      yvar = sswma_maslag$pc1,
-                                      xvar = sswma_maslag$ew_vol)
-# PC2: Num vocals and species diversity
-sswma_lag_pc2 = sswma_water_contrasts(data = sswma_maslag,
-                                      yvar = sswma_maslag$pc2,
-                                      xvar = sswma_maslag$ew_vol); 
-
-# PC3: ACI and BIO
-sswma_lag_pc3 = sswma_water_contrasts(data = sswma_maslag,
-                                      yvar = sswma_maslag$pc3,
-                                      xvar = sswma_maslag$ew_vol); 
-
 sswma_maslag$mas_labels = factor(sswma_maslag$mas_bin, 
                                  levels = c("0","1","2","3"),
                                  labels = c("Predawn\n(Before Sunrise)",
@@ -1233,13 +1214,13 @@ sswma_dotplot(sswma_pc2,
               "Morning Acoustic Periods",
               sswma_pc2$water,
               0,
-              '\nWater increased PC2 Scores only in the Late Period at SSWMA',
+              'Water increased PC2 Scores only in the Late Period at SSWMA',
               pc2_stat)
 ggsave('results/sswma_water_pc2_dotplot.png',
        plot = last_plot(),
        dpi = 600, 
-       height = 9, 
-       width = 16, 
+       height = 7.5, 
+       width = 13.33, 
        units = "in")
 
 ### SSWMA PC3 Dotplot
@@ -1268,8 +1249,8 @@ sswma_dotplot(sswma_pc3,
 ggsave('results/sswma_water_pc3_dotplot.png',
        plot = last_plot(),
        dpi = 600, 
-       height = 9, 
-       width = 16, 
+       height = 7.5, 
+       width = 13.33, 
        units = "in")
 
 
@@ -1280,27 +1261,12 @@ library(rstatix)
 library(ggprism)
 
 load("data_clean/cbma_maslag.Rdata")
-
 cbma_maslag$mas_labels = factor(cbma_maslag$mas_bin, 
                                 levels = c("0","1","2","3"),
                                 labels = c("Predawn\n(Before Sunrise)",
                                            "Early\n(~1 hr After Sunrise)",
                                            "Mid\n(~3 hr After Sunrise)",
                                            "Late\n(~5 hr After Sunrise)"))
-# PC1: ADI, AEI, positive  values more likely to have higher ADI
-cbma_lag_pc1 = cbma_water_contrasts2(data = cbma_maslag,
-                                     yvar = cbma_maslag$pc1,
-                                     xvar = cbma_maslag$ew_vol);
-
-# PC2: Num vocals and species diversity
-cbma_lag_pc2 = cbma_water_contrasts2(data = cbma_maslag,
-                                     yvar = cbma_maslag$pc2,
-                                     xvar = cbma_maslag$ew_vol);
-
-# PC3: ACI and BIO
-cbma_lag_pc3 = cbma_water_contrasts2(data = cbma_maslag,
-                                     yvar = cbma_maslag$pc3,
-                                     xvar = cbma_maslag$ew_vol);
 # cbma_boxplot(cbma_maslag,
 #               cbma_maslag$pc1,
 #               cbma_maslag$mas_labels,
@@ -1318,7 +1284,7 @@ cbma_pc1 = cbma_lag_pc1[[3]] %>%
 pc1_stat <- tibble::tribble(
   ~group1,~group2,~mas_labels,~p.adj,~p.adj.sig,~y.position,  ~tip.length,
   "11",     "21",     1,       0.003,     "**",          0.5,  0.05,
-  "10",     "21",     3,       0.007,     "**",          1.0,  0.05
+  "10",     "21",     3,       0.007,     "**",          1.5,  0.05
   )
 pc1_stat
 
@@ -1329,7 +1295,7 @@ cbma_dotplot(cbma_pc1,
              "Morning Acoustic Periods",
              cbma_pc1$water,
              0,
-             'PC1 Scores increased under restricted water access in the Late\nperiod at CBMA',
+             'PC1 Scores increased under restricted water access in the Late period\n at CBMA',
              pc1_stat)
 
 ggsave('results/cbma_water_pc1_dotplot.png',
