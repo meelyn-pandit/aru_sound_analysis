@@ -32,20 +32,20 @@ water_species = NULL
 
 # Data Cleaning and Organization ------------------------------------------
 for(s in sites){
-  setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
+  # setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/")
   if(s == "lwma"){
     # load lwma bird data
-    load("birdnet_data/lwma_aru_results.Rdata")
+    load("data_clean/birdnet_data/lwma_aru_results.Rdata")
     data <- lwma_aru_results %>%
       mutate(hour_utc = hour(date_time),
              date = date(date_time)) %>%
       group_by(site,aru,common_name,date_time,date) %>%
-      summarise(n = n()) %>%
+      dplyr::summarise(n = n()) %>%
       pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
       dplyr::select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`, `Scissor-tailed Flycatcher`,`Northern Mockingbird`, `Blue Grosbeak`, `Dickcissel`)
     
     #load 2021 mesonet data
-    load("mesonet_data/lwma_mesonet.Rdata")
+    load("data_clean/mesonet_data/lwma_mesonet.Rdata")
     wd = lwma_mesonet %>%
       mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
@@ -53,27 +53,27 @@ for(s in sites){
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
-    load("historic_weather_data/lwma_wh.Rdata")
-    hd = lwma_wh %>%
-      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
-      dplyr::filter(is.na(mas)==FALSE)%>%
-      dplyr::filter(is.na(gh_hobs)==FALSE)%>%
-      group_by(month_day, mas) %>%
-      summarise_all(funs(mean))
+    # load("historic_weather_data/lwma_wh.Rdata")
+    # hd = lwma_wh %>%
+    #   dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+    #   dplyr::filter(is.na(mas)==FALSE)%>%
+    #   dplyr::filter(is.na(gh_hobs)==FALSE)%>%
+    #   group_by(month_day, mas) %>%
+    #   summarise_all(funs(mean))
     tz = "US/Central"
     
   } else if(s == "sswma"){
     # load sswma bird data
-    load("birdnet_data/sswma_aru_results.Rdata")
+    load("data_clean/birdnet_data/sswma_aru_results.Rdata")
     data = sswma_aru_results %>%
       mutate(hour_utc = hour(date_time),
              date = date(date_time)) %>%
       group_by(site,aru,common_name,date_time,date) %>%
-      summarise(n = n()) %>%
+      dplyr::summarise(n = n()) %>%
       pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
       dplyr::select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`, `Scissor-tailed Flycatcher`,`Northern Mockingbird`, `Blue Grosbeak`, `Dickcissel`)
     
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/sswma_mesonet.Rdata")
+    load("data_clean/mesonet_data/sswma_mesonet.Rdata")
     wd = sswma_mesonet%>%
       mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
@@ -82,28 +82,28 @@ for(s in sites){
     
     
     #load historic data from 2005-2021
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/sswma_wh.Rdata")
-    hd = sswma_wh %>%
-      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
-      dplyr::filter(is.na(mas)==FALSE)  %>%
-      dplyr::filter(is.na(gh_hobs)==FALSE)  %>%
-      group_by(month_day, mas) %>%
-      summarise_all(funs(mean))
+    # load("data_clean/historic_weather_data/sswma_wh.Rdata")
+    # hd = sswma_wh %>%
+    #   dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+    #   dplyr::filter(is.na(mas)==FALSE)  %>%
+    #   dplyr::filter(is.na(gh_hobs)==FALSE)  %>%
+    #   group_by(month_day, mas) %>%
+    #   summarise_all(funs(mean))
     tz = "US/Central"
     
     
   } else if(s == "cbma"){
     # load cbma bird data
-    load("birdnet_data/cbma_aru_results.Rdata")
+    load("data_clean/birdnet_data/cbma_aru_results.Rdata")
     data = cbma_aru_results %>%
       mutate(hour_utc = hour(date_time),
              date = date(date_time)) %>%
       group_by(site,aru,common_name,date_time,date) %>%
-      summarise(n = n()) %>%
+      dplyr::summarise(n = n()) %>%
       pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
       dplyr::select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`, `Scissor-tailed Flycatcher`,`Northern Mockingbird`, `Blue Grosbeak`, `Dickcissel`)
     
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/cbma_mesonet.Rdata")
+    load("data_clean/mesonet_data/cbma_mesonet.Rdata")
     wd = cbma_mesonet%>%
       mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
@@ -111,28 +111,28 @@ for(s in sites){
     wd$mas = cut(wd$mas, seq(-725,760,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/cbma_wh.Rdata")
-    hd = cbma_wh %>% 
-      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
-      dplyr::filter(is.na(mas)==FALSE)  %>%
-      dplyr::filter(is.na(gh_hobs)==FALSE)  %>%
-      group_by(month_day, mas) %>%
-      summarise_all(funs(mean))
+    # load("data_clean/historic_weather_data/cbma_wh.Rdata")
+    # hd = cbma_wh %>% 
+    #   dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+    #   dplyr::filter(is.na(mas)==FALSE)  %>%
+    #   dplyr::filter(is.na(gh_hobs)==FALSE)  %>%
+    #   group_by(month_day, mas) %>%
+      # summarise_all(funs(mean))
     tz = "US/Central"
-    
+
     
   } else if(s == "kiowa"){
     # load kiowa bird data
-    load("birdnet_data/kiowa_aru_results.Rdata")
+    load("data_clean/birdnet_data/kiowa_aru_results.Rdata")
     data = kiowa_aru_results %>%
       mutate(hour_utc = hour(date_time),
              date = date(date_time)) %>%
       group_by(site,aru,common_name,date_time,date) %>%
-      summarise(n = n()) %>%
+      dplyr::summarise(n = n()) %>%
       pivot_wider(names_from = common_name, values_from = n, values_fill = 0) %>%
       dplyr::select(`Northern Cardinal`, `House Finch`, `Cassin's Sparrow`, `Eastern Meadowlark`, `Western Meadowlark`, `Lark Sparrow`, `Scissor-tailed Flycatcher`,`Northern Mockingbird`, `Blue Grosbeak`, `Dickcissel`)
     
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/mesonet_data/kiowa_mesonet.Rdata")
+    load("data_clean/mesonet_data/kiowa_mesonet.Rdata")
     wd = kiowa_mesonet%>%
       mutate(ghobs_scaled = scale(gh))
     wd$month_day = format(as.Date(wd$date_time), "%m-%d")
@@ -140,13 +140,13 @@ for(s in sites){
     wd$mas = cut(wd$mas, seq(-750,735,5),labels = labels, right = FALSE)
     
     #load historic data from 2005-2021
-    load("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean/historic_weather_data/kiowa_wh.Rdata")
-    hd = kiowa_wh %>% 
-      dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
-      dplyr::filter(is.na(mas)==FALSE)  %>%
-      dplyr::filter(is.na(gh_hobs)==FALSE)  %>%
-      group_by(month_day, mas) %>%
-      summarise_all(funs(mean))
+    # load("data_clean/historic_weather_data/kiowa_wh.Rdata")
+    # hd = kiowa_wh %>% 
+    #   dplyr::select(month_day,hour_utc,mas, gh_hobs, ghhobs_scaled,ghmean_time,ghsite_scaled)%>%
+    #   dplyr::filter(is.na(mas)==FALSE)  %>%
+    #   dplyr::filter(is.na(gh_hobs)==FALSE)  %>%
+    #   group_by(month_day, mas) %>%
+    #   summarise_all(funs(mean))
     tz = "US/Mountain"
     
   }
@@ -190,25 +190,28 @@ for(s in sites){
   #   dplyr::filter(is.na(mas)==TRUE)
   
   
-  hd2 = full_join(wd,hd, by = c("month_day","mas")) %>%
-    arrange(month_day, mas)
-  hd2$hour_utc = hour(hd2$date_time)
-  hd2$gh_hobs = na.approx(hd2$gh_hobs, na.rm = FALSE)
-  hd2$ghhobs_scaled = na.approx(hd2$ghhobs_scaled, na.rm = FALSE)
-  hd2$ghmean_time = na.approx(hd2$ghmean_time, na.rm = FALSE)
-  hd2$ghsite_scaled = na.approx(hd2$ghsite_scaled, na.rm = FALSE)
+  # hd2 = full_join(wd,hd, by = c("month_day","mas")) %>%
+  #   arrange(month_day, mas)
+  # hd2$hour_utc = hour(hd2$date_time)
+  # hd2$gh_hobs = na.approx(hd2$gh_hobs, na.rm = FALSE)
+  # hd2$ghhobs_scaled = na.approx(hd2$ghhobs_scaled, na.rm = FALSE)
+  # hd2$ghmean_time = na.approx(hd2$ghmean_time, na.rm = FALSE)
+  # hd2$ghsite_scaled = na.approx(hd2$ghsite_scaled, na.rm = FALSE)
   
-  data_temp2 = left_join(data_temp, hd2, by = c("date_time")) %>%
+  data_temp2 = left_join(data_temp, wd, by = c("date_time")) %>%
     arrange(date_time)
   
   data_temp3 = data_temp2 %>%
-    mutate(site = factor(site.x, levels=c("lwma","sswma","cbma","kiowa")))%>%
-    # dplyr::select(-site.x, -site.y,-hour.x,-hour.y)
-    dplyr::select(-hour, -site.y, -hour_utc.y, -month_day.y) %>%
-    rename(hour_utc = "hour_utc.x",
-           month_day = "month_day.x")
+    dplyr::select(-site.y,-month_day.y) %>%
+    dplyr::rename(site = "site.x",
+                  month_day = "month_day.x")
+    
+  #   mutate(site = factor(site.x, levels=c("lwma","sswma","cbma","kiowa")))%>%
+  #   dplyr::select(-hour, -site.y, -hour_utc.y, -month_day.y) %>%
+  #   rename(hour_utc = "hour_utc.x",
+  #          month_day = "month_day.x")
   
-  data_temp_arid = data_temp3%>%
+  data_temp_arid = data_temp3 %>%
     filter(aru == "aru01" | aru == "aru02"| aru == "aru03"| aru == "aru04"| aru == "aru05")
   
   data_temp_water = data_temp3 %>%
@@ -217,20 +220,67 @@ for(s in sites){
              aru == "ws11" | aru == "ws12"| aru == "ws13"| aru == "ws14"| aru == "ws15" |
              aru == "wg01" | aru == "wg02"| aru == "wg03"| aru == "wg04"| aru == "wg05")
   
-  arid_species = rbind(data_temp_arid,arid_species) %>%
-    filter(is.na(gh_hobs)==FALSE)
+  arid_species = rbind(data_temp_arid,arid_species)
+  # %>%
+  #   filter(is.na(gh_hobs)==FALSE)
 
-  water_species = rbind(data_temp_water,water_species) %>%
-    filter(is.na(gh_hobs)==FALSE)
+  water_species = rbind(data_temp_water,water_species) 
+  # %>%
+  #   filter(is.na(gh_hobs)==FALSE)
 }
 
-arid_species$ghacross_sites = scale(arid_species$gh) # scaling observed aridity across sites
+# arid_species$arid_within = na.approx(aw$arid_within, na.rm = FALSE)
+
+### Adding variable calculations
+arid_species2 = arid_species %>%
+  dplyr::filter(year(date_time)==2021) %>%
+  dplyr::filter(as_date(date_time) < "2021-08-16") %>%
+  dplyr::filter(is.na(temp) == FALSE) %>%
+  mutate(date = date(date_time),
+         date_time = round_date(date_time, unit = "minute"),
+         pres = na.approx(pres, na.rm = FALSE), # approximating missing pressure data
+         # gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))),
+         evap_wind = (evap_rate(u2 = ws2m, # evaporation rate in mm/day
+                                p = pres, 
+                                t = temp, 
+                                rh = (relh/100), 
+                                z0 = 0.03)), 
+         evap_1 = (evap_rate(u2 = 1, # evaporation rate with windspeed set at 1m/s
+                             p = pres, 
+                             t = temp, 
+                             rh = (relh/100), 
+                             z0 = 0.03))) %>%
+  # dplyr::mutate(ewlwvp = ewl/vpd) %>% # in g/h/kpA
+  dplyr::mutate(ew_vol = evap_wind*0.1, # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
+                e1_vol = evap_1*0.1) %>% # volume of water (mL) being evaporated per day from a circular pan with a radius of 10cm, units are mL/cm^2/day
+  dplyr::mutate(atten_alpha04 = att_coef(4000, temp, relh, Pa = (pres/1000)),
+                atten_alpha08 = att_coef(8000, temp, relh, Pa = (pres/1000)),
+                atten_alpha12 = att_coef(12000, temp, relh, Pa = (pres/1000))) %>%
+  dplyr::mutate(atten_dist04 = aud_range(f = 4000, 
+                                         T_cel = temp, 
+                                         h_rel = relh, 
+                                         Pa = (pres/1000)),
+                atten_dist08 = aud_range(f = 8000, 
+                                         T_cel = temp, 
+                                         h_rel = relh, 
+                                         Pa = (pres/1000)),
+                atten_dist12 = aud_range(f = 12000, 
+                                         T_cel = temp, 
+                                         h_rel = relh, 
+                                         Pa = (pres/1000)),
+                mas_num = as.numeric(as.character(mas)),
+                site_labels = factor(site, levels = c("lwma","sswma","cbma","kiowa"),
+                                     labels = c("LWMA","SSWMA","CBMA","KIOWA"))) %>%
+  dplyr::mutate(mas_bin = cut(mas_num, 
+                              include.lowest = TRUE, 
+                              breaks = c(-400,-5,125,255,400), 
+                              labels = c("0","1","2","3")))
+save(arid_species2, file = "data_clean/species_ag_all.Rdata")
 
 # Day bin - Aridity Gradient - Data Organization  --------
-arid_species2 = arid_species %>%
-  # group_by(site,date,hour_utc,mas)%>%
-  group_by(site,date)%>%
-  summarise(num_noca = sum(`Northern Cardinal`),
+arid_species3 = arid_species2 %>%
+  group_by(site_labels,date,mas_bin) %>%
+  dplyr::summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
             num_eame = sum(`Eastern Meadowlark`),
@@ -241,22 +291,16 @@ arid_species2 = arid_species %>%
             num_nomo = sum(`Northern Mockingbird`),
             num_dick = sum(`Dickcissel`),
             num_mela = num_eame+num_weme,
-            gh_obs = mean(gh), #observed aridity in 2021
-            gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
-            arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
-            arid_across = mean(ghacross_sites), # observed aridity scaled across sites
-            hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
-            hist_across = mean(ghsite_scaled) #%>% #historic aridity scaled across sites sites
+            ew_volmean = mean(ew_vol, na.rm = TRUE)
+            # gh_obs = mean(gh), #observed aridity in 2021
+            # gh_hist = mean(gh_hobs), #historic aridity from 2005-2021
+            # arid_within = mean(ghobs_scaled), # observed aridity scaled within sites
+            # arid_across = mean(ghacross_sites), # observed aridity scaled across sites
+            # hist_within = mean(ghhobs_scaled), #historic aridity scaled within sites
+            # hist_across = mean(ghsite_scaled) #%>% #historic aridity scaled across sites sites
   )
 
-a3 = arid_species2 %>% # data binned by date
-  mutate(arid_within = cut(arid_within, breaks = 5, labels = c(1,2,3,4,5)), # observed aridity scaled within sites
-         arid_across = cut(arid_across, breaks = 5, labels = c(1,2,3,4,5)), # observed aridity scaled across sites
-         hist_within = cut(hist_within, breaks = 5, labels = c(1,2,3,4,5)), #historic aridity scaled within sites
-         hist_across = cut(hist_across, breaks = 5, labels = c(1,2,3,4,5))) #%>% #historic aridity scaled across sites
-  # mutate(mas = as.numeric(as.character(mas)))
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/data_clean")
-save(a3, file = "species_ag_day_bin.Rdata")
+save(arid_species3, file = "data_clean/species_ag_mas_bin.Rdata")
 
 # Day bin - Aridity Gradient - Data Plots -----------------
 
@@ -264,20 +308,23 @@ save(a3, file = "species_ag_day_bin.Rdata")
 cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2", "#CC79A7","#999999")
 #################light blue, green, orange-yellow, orange, yellow, dark blue, pink, gray
 
+load('data_clean/species_ag_day_bin.Rdata')
 #Aridity gradient sites plotted against day-binned aridity
-ggplot(data = a3,
-       aes(x=as.factor(arid_within), y=num_casp, color = site)) +
-  geom_boxplot()+
+ggplot(data = arid_species3,
+       aes(x=ew_volmean, y=num_dick, color = site_labels)) +
+  # geom_boxplot()+
+  # geom_point() +
   # geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Site")+
   scale_y_continuous(name = "Number of Vocals")+
   theme_classic(base_size = 20) +
-  ggtitle(paste0("Species: Cassin's Sparrow")) +
+  ggtitle(paste0("Species: Dickcissel")) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
-        legend.position = "bottom")
-setwd("/home/meelyn/Documents/dissertation/aru_sound_analysis/")
+        legend.position = "bottom") +
+  geom_smooth(method = lm) +
+  facet_grid(~mas_bin)
 ggsave("results/casp_daybin_results.jpg", width = 8, height = 6, units = "in", dpi = 600)
 
 # Day bin - Aridity Gradient - Statistical Analyses ----------------------------------------------------
@@ -326,7 +373,7 @@ water_species$ghacross_sites = scale(water_species$gh)
 ws_sswma = water_species %>%
   dplyr::filter(site == "sswma") %>% 
   group_by(aru,date,hour_utc)%>%
-  summarise(num_noca = sum(`Northern Cardinal`),
+  dplyr::summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
             num_eame = sum(`Eastern Meadowlark`),
@@ -370,7 +417,7 @@ ws_sswma = rbind(ws_sswma1, ws_sswma2, ws_sswma3)
 ws_cbma = water_species %>%
   dplyr::filter(site == "cbma") %>% #creating water sites (ws)
          group_by(aru,date,hour_utc)%>%
-           summarise(num_noca = sum(`Northern Cardinal`),
+           dplyr::summarise(num_noca = sum(`Northern Cardinal`),
                      num_hofi = sum(`House Finch`),
                      num_casp = sum(`Cassin's Sparrow`),
                      num_eame = sum(`Eastern Meadowlark`),
@@ -564,7 +611,7 @@ TukeyHSD(aov(zwsc_lasp))
 a4 = arid_species %>%
   # group_by(site,date,hour_utc,mas)%>%
   group_by(site,mas)%>%
-  summarise(num_noca = sum(`Northern Cardinal`),
+  dplyr::summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
             num_eame = sum(`Eastern Meadowlark`),
@@ -638,7 +685,7 @@ ws_sswma = rbind(ws_sswma1, ws_sswma2, ws_sswma3)
 
 wmas_sswma = ws_sswma %>%
   group_by(ws_site,water,mas) %>%
-  summarise(num_noca = sum(`Northern Cardinal`),
+  dplyr::summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
             num_eame = sum(`Eastern Meadowlark`),
@@ -683,7 +730,7 @@ ws_cbma = rbind(ws_cbma1, ws_cbma2)
 
 wmas_cbma = ws_cbma %>%
   group_by(ws_site,water,mas)%>%
-  summarise(num_noca = sum(`Northern Cardinal`),
+  dplyr::summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
             num_eame = sum(`Eastern Meadowlark`),
@@ -904,26 +951,26 @@ TukeyHSD(aov(zwsc_nomo))
 lwma_species = arid_species %>%
   dplyr::filter(site == "lwma") %>%
   group_by(common_name) %>%
-  summarise(num_species = n())
+  dplyr::summarise(num_species = n())
 
 sswma_species = arid_species %>%
   dplyr::filter(site == "sswma") %>%
   group_by(common_name) %>%
-  summarise(num_species = n())
+  dplyr::summarise(num_species = n())
   # group_by(site,aru)%>%
   # summarize(n_distinct(common_name))
 
 cbma_species = arid_species %>%
   dplyr::filter(site == "cbma") %>%
   group_by(common_name) %>%
-  summarise(num_species = n())
+  dplyr::summarise(num_species = n())
   # group_by(site,aru)%>%
   # summarize(n_distinct(common_name))
 
 kiowa_species = arid_species %>%
   dplyr::filter(site == "kiowa") %>%
   group_by(common_name) %>%
-  summarise(num_species = n())
+  dplyr::summarise(num_species = n())
   # group_by(site,aru)%>%
   # summarize(n_distinct(common_name))
 
