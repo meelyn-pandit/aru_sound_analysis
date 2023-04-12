@@ -279,7 +279,7 @@ save(arid_species2, file = "data_clean/species_ag_all.Rdata")
 
 # Day bin - Aridity Gradient - Data Organization  --------
 arid_species3 = arid_species2 %>%
-  group_by(site_labels,date,mas_bin) %>%
+  group_by(site,site_labels,date,mas_bin) %>%
   dplyr::summarise(num_noca = sum(`Northern Cardinal`),
             num_hofi = sum(`House Finch`),
             num_casp = sum(`Cassin's Sparrow`),
@@ -311,14 +311,14 @@ cbpalette <- c("#56B4E9", "#009E73", "#E69F00", "#D55E00", "#F0E442", "#0072B2",
 load('data_clean/species_ag_day_bin.Rdata')
 #Aridity gradient sites plotted against day-binned aridity
 ggplot(data = arid_species3,
-       aes(x=ew_volmean, y=num_dick, color = site_labels)) +
+       aes(x=ew_volmean, y=num_nomo, color = site_labels)) +
   # geom_boxplot()+
   # geom_point() +
   # geom_smooth(method = "lm")+
   scale_color_manual(values = cbpalette,name = "Site")+
   scale_y_continuous(name = "Number of Vocals")+
   theme_classic(base_size = 20) +
-  ggtitle(paste0("Species: Dickcissel")) +
+  ggtitle(paste0("Species: Northern Mockingbird")) +
   theme(axis.title.y = element_text(angle = 90, vjust = 0.5),
         # axis.title.x=element_blank(),
         # axis.text.x = element_blank(),
@@ -326,6 +326,16 @@ ggplot(data = arid_species3,
   geom_smooth(method = lm) +
   facet_grid(~mas_bin)
 ggsave("results/casp_daybin_results.jpg", width = 8, height = 6, units = "in", dpi = 600)
+
+
+ag_contrasts_convar_time(arid_species3,
+                         arid_species3$num_noca,
+                         arid_species3$ew_volmean)
+
+ag_contrasts_convar_site(arid_species3,
+                         arid_species3$num_noca,
+                         arid_species3$ew_volmean)
+
 
 # Day bin - Aridity Gradient - Statistical Analyses ----------------------------------------------------
 ### Date-bin Number of Vocalizations
