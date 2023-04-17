@@ -1,0 +1,175 @@
+scientific_name,common_name,granivore,body_mass,num_ind,tewl25_mghr-1,tewl40-mghr-1,log_slope_ewl,activity_phase,reference
+Melozone aberti,Abert's towhee,N,41.8,33,410,821.4,4.8,A,Smith et al. 2017
+Cuculus gularis,African Cuckoo,N,109.6,6,481,700.6,5.5,A,Smit et al. 2017
+Struthio camelus,African ostrich,N,95400,6,49608,NA,NA,R,Withers 1983
+Cinclus mexicanus,American Dipper,N,50.2,11,144.1,768.1,3.9,R,Murrish 1970
+Carduelis tristis,American Goldfinch,Y,114,6,83.3,NA,NA,A,Ro and Williams 2010
+Turdus migratorius,American robin,N,73.7,5,295.8,NA,NA,A,Ro and Williams 2010
+Calypte anna,Anna’s Hummingbird,N,4.8,3,47.9,NA,NA,R,Lasiewski 1964
+Aegotheles cristatus,Australian Owlet-nightjar,N,44.2,23,200,790,4.9,A,Talbot et al. 2017
+Barnardius zonarius,Australian Ringneck,N,137,1,148.4,NA,NA,R,Dawson 1965
+Coragyps atratus,Black Vulture,N,2100,6,2367.4,2938.1,NA,R,Larochelle et al. 1982
+Pterocles orientalis,black-bellied sandgrouse,Y,386.4,5,521.6,1594.9,4.8,R,Hinsley et al. 1993
+Parus atricapillus,Black-capped chickadee,N,10.8,NA,109.6,NA,NA,R,Shilov 1968
+Archilochus alexandri,Black-chinned Hummingbird,N,3.3,3,44.6,NA,NA,R,Lasiewski 1964
+Eremopterix nigriceps,black-crowned sparrow-lark,N,15.2,6,55.8,NA,NA,R,Tieleman et al. 2003
+Estrilda troglodytes,black-rumped waxbill,Y,6.1,22,45.8,107.5,NA,A,Lasiewski et al. 1964
+Amphispiza bilineata,Black-throated Sparrow,N,13.5,NA,108,NA,NA,R,Bartholomew 1972
+Volatinia jacarina,blue-black grassquit,Y,9.1,NA,67.9,NA,NA,R,Weathers 1986
+Neopsephotus bourkii,Bourke's parrot,Y,35.3,2,113.3,NA,NA,R,Dawson 1965
+Spizella breweri,Brewer's sparrow,N,12.2,7,56.4,NA,NA,R,Dawson et al. 1979
+Baeolophus wollweberi,Bridled Titmouse,N,10,11,65,243.8,3.7,R,Weathers and Greene 1998
+Anous stolidus,Brown Noddy,N,141.8,15,717.5,1982.4,5.3,A,Ellis et al. 1995
+Corvus ruficollis,Brown-necked Raven,N,610,8,1860.5,5820,NA,R,Marder 1973
+Melopsittacus undulatus,budgerigar,Y,33.7,6,146.3,371.5,4.9,R,Weathers and Schoenbaechler 1976
+Athene cunicularia,Burrowing Owl,N,132.4,29,233,1451.7,5.2,A,Coulombe 1970
+Campylorhynchus brunneicapillus,Cactus Wren,N,34.5,22,240,561.4,4.7,A,Smith et al. 2017
+Callipepla californica,California Quail,Y,149.6,18,281.2,1155.6,4.8,R,Brush 1965
+Aphelocoma californica,California Scrub Jay,N,78.7,11,322.8,NA,NA,A,Mann 1983
+Emberiza capensis,Cape bunting,N,20,7,120,486.2,3.9,A,Milne et al. 2015
+Serinus canicollis,Cape canary,Y,15,3,138,384.1,NA,A,Milne et al. 2015
+Sphenoeacus afer,Cape grass-warbler,N,30,5,165,473.8,4,A,Milne et al. 2015
+Chaetops frenatus,Cape Rockjumper,N,53.6,5,139.4,811.5,4.4,A,Milne et al. 2015
+Serinus totta,Cape siskin,N,12.7,3,88.9,350.2,3.7,A,Milne et al. 2015
+Promerops cafer,Cape sugarbird,N,35.6,6,192.2,522,4,A,Milne et al. 2015
+Haemorhous cassinii,Cassin’s Finch,N,28.1,7,212.6,614.1,4.7,R,Weathers et al. 1980
+Fringilla coelebs,chaffinch,Y,19.7,NA,78.3,NA,NA,R,Shilov 1968
+Pomatostomus ruficeps,chestnut-crowned babbler,N,52,17,300,762.9,4.9,A,McKechnie et al. 2017
+Gallus gallus,chicken,N,1771,9,2283.3,NA,NA,R,Medway and Kare 1957
+Garrulax canorus,Chinese hwamei,N,57.6,10,282.8,471.3,NA,R,Xia et al. 2015
+Spizella passerina,chipping sparrow,N,11.8,15,32.6,NA,NA,R,Dawson et al. 1979
+Alectoris chukar,Chukar,Y,412,28,598.9,1267.7,4.6,R,Frumkin et al. 1986
+Nymphicus hollandicus,cockatiel,Y,80.7,1,141.2,NA,NA,R,Dawson 1965
+Trichoglossus haematodus,coconut lorikeet,N,137.1,7,0.5,NA,NA,R,Williams et al. 1991
+Chordeiles minor,Common Nighthawk,N,70,6,175,698.7,4.7,R,Lasiewski and Dawson 1964
+Sturnus vulgaris,Common starling,N,83,25,426.6,1556,5.3,A,Dmi'el and Tel-Tzur 1985
+Saxicola torquatus,common stonechat,N,NA,18,54.6,NA,NA,R,Versteegh et al. 2008
+Calypte costae,Costa’s Hummingbird,N,3.2,3,38.8,66.9,1.7,R,Lasiewski 1964
+Ocyphaps lophotes,crested pigeon,Y,186.5,39,4630,1538.6,5.4,A,McKechnie et al. 2016
+Ammomanes deserti,Desert Lark,N,19.8,NA,101.3,983.7,NA,R,Williams 1996
+Geopelia cuneata,diamond dove,Y,38,14,126.2,322.4,4,R,Schleucher 1999
+Certhilauda erythrochlamys,Dune Lark,N,27.3,12,92.1,453.8,4.6,R,Williams 1999
+Eremalauda dunni,Dunn's lark,N,20.6,16,152.1,151.8,4.2,R,Tieleman et al. 2002
+Sayornis phoebe,Eastern phoebe,N,16.6,5,125,NA,NA,A,Ro and Williams 2010
+Contopus virens,Eastern Wood Pewee,N,11.6,1,79.2,NA,NA,A,Ro and Williams 2010
+Dromaius novaehollandiae,Emu,N,43100,10,15800,73150,NA,R,Maloney and Dawson 1994
+Pyrrhula pyrrhula,Eurasian bullfinch,N,12.4,NA,46.7,NA,NA,R,Shilov 1968
+Pica pica,Eurasian magpie,N,158.9,9,346.5,2010.6,5,R,Hayworth and Weathers 1983
+Carduelis spinus,Eurasian Siskin,Y,16.4,NA,75.4,NA,NA,R,Shilov 1968
+Alauda arvensis,Eurasian Skylark,N,31.7,14,204.6,828.4,4.8,R,Tieleman et al. 2002
+Passer montanus,Eurasian tree sparrow,N,21.3,NA,92.1,NA,NA,R,Shilov 1968
+Carduelis carduelis,European Goldfinch,Y,24.9,NA,70.8,NA,NA,R,Shilov 1968
+Carduelis chloris,European Greenfinch,Y,19.7,NA,78.3,NA,NA,R,Shilov 1968
+Erithacus rubecula,European robin,N,16.7,NA,77.1,NA,NA,R,Shilov 1968
+Cercomela familiaris,Familiar Chat,N,20.5,6,104.6,401.4,3.9,A,Milne et al. 2015
+Caprimulgis tristigma,Freckled Nightjar,N,64.7,24,140,472.9,4.5,R,O'Connor et al. 2017
+Callipepla gambelii,Gambel’s Quail,Y,160.7,19,670,922.8,5.1,A,Smith et al. 2015
+Erythrura gouldiae,Gouldian finch,Y,17.1,14,56.6,275,4.1,A,Burton and Weathers 2003
+Bubo virginianus,Great Horned Owl,N,1000,3,1680,5336.1,5.7,A,Ganey et al. 1993
+Parus major,Great Tit,N,16.7,NA,83.8,NA,NA,R,Shilov 1968
+Alaemon alaudipes,Greater hoopoe-lark,N,37.7,14,120.4,413.8,4.9,R,Tieleman et al. 2002
+Rhea americana,greater rhea,N,21700,3,9600,NA,NA,R,Crawford and Lasiewski 1968
+Cracticus torquatus,Grey Butcherbird,N,86,16,590,1461.1,5.5,A,McKechnie et al. 2017
+Eremophila alpestris,horned lark,N,26,57,158.3,NA,NA,A,Trost 1972
+Chlamydotis undulata,Houbara Bustard,N,1245,7,1210.4,3854.2,6.1,R,Tieleman et al. 2002
+Haemorhous mexicanus,House Finch,Y,18.1,38,130,318.2,4.4,A,Smith et al. 2017
+Troglodytes aedon,House wren,N,9.7,2,145.5,242.5,NA,A,Kendeigh 1939
+Spheniscus humboldti,Humboldt's penguin,N,3870,3,1625,NA,NA,R,"Drent and Stonehouse, 1971"
+Columbina inca,Inca Dove,Y,39.3,9,NA,400.5,4.2,R,Lasiewski and Seymour 1972
+Baeolophus ridgwayi,Juniper Titmouse,N,16,24,177.8,1179.1,4.8,R,Cooper and Gessaman 2004
+Spilopelia senegalensis,laughing dove,Y,89.4,33,3600,702.5,4.9,A,McKechnie et al. 2016
+Carduelis psaltria,Lesser Goldfinch,Y,9.7,32,180,390,3.8,A,Smith et al. 2017
+Chordeiles acutipennis,Lesser Nighthawk,N,50.6,21,200,683.4,4.7,A,Talbot et al. 2017
+Coracias caudatus,Lilac-breasted Roller,N,95.4,10,850,1645.6,5.6,A,Smit et al. 2017
+Cacatua tenuirostris,Long-billed Corella,Y,549.9,5,1166.7,NA,NA,R,Williams et al. 1991
+Nectarinia famosa,malachite sunbird,N,15.1,2,134.4,541.7,3.9,A,Milne et al. 2015
+Leipoa ocellata,malleefowl,N,1390,4,1515.1,5909.7,6.7,R,Booth 1989
+Myiopsitta monachus,monk parakeet,Y,83.1,8,253.5,1029.1,5.1,A,Weathers and Caccamise 1978
+Zenaida macroura,mourning dove,Y,104,49,740,1310,5.2,A,Smith et al. 2015
+Emberiza hortulana,Ortolan Bunting,N,22,20,307.1,NA,NA,R,Wallgren 1954
+Emberiza sulphurata,Yellow Bunting,N,26.4,20,293.6,NA,NA,R,Wallgren 1954
+Eremalauda starki,Stark’s Lark,N,15.6,NA,64,NA,NA,A,Willoughby 1968
+Eremiornis carteri,Spinifexbird,N,11.7,19,53.4,212.5,3.7,R,Ambrose et al. 1996
+Eremopterix verticalis,Grey-backed Sparrow-lark,N,15.1,NA,52.9,NA,NA,A,Willoughby 1968
+Eugenes fulgens,Rivoli’s Hummingbird,N,6.6,7,64,NA,NA,R,Lasiewski and Lasiewski 1967
+Galerida cristada,Crested Lark,N,35.8,NA,181.7,NA,NA,R,Williams 1996
+Geococcyx californianus,Greater Roadrunner,N,284.7,9,484,2183.8,5.9,R,Calder and Schmidt-Nielsen 1967
+Geophaps plumifera,Spinifex Pigeon,Y,89,9,413,603.6,4.9,R,Withers and Williams 1990
+Himatione sanguinea,Apapane,N,13.5,4,89.2,NA,NA,R,Weathers et al. 1983
+Lampornis clemenciae,Blue-throated mountaingem,N,7.9,7,65.5,NA,NA,R,Lasiewski and Lasiewski 1967
+Lamprotornis australis,Burchell’s Starling,N,109.1,7,1000,NA,5.4,A,Smit et al. 2017
+Larus dominicanus,Kelp Gull,N,980.3,4,3050,NA,NA,A,Morgan et al. 1992
+Lonchura fuscans,Dusky Munia,Y,9.5,8,70.4,211.2,3.3,R,Weathers 1977
+Macronetes giganteus,Southern Giant Petrel,N,3928.8,6,7560,NA,NA,A,Morgan et al. 1992
+Melanocorypha calandra,Calandra Lark,N,50.6,2,126.3,NA,NA,R,Tieleman et al. 2003
+Micrathene whitneyi,Elf Owl,N,39.7,19,380,770,4.7,A,Talbot et al. 2018
+Neophema petrophila,Rock Parrot,Y,40.7,1,137.4,NA,NA,R,Dawson 1965
+Onychognathus tristramii,Tristam’s Starling,N,123,15,426.8,1671.5,5.5,A,Dmi'el and Tel-Tzur 1985
+Parus gambeli,Mountain Chickadee,N,10.8,18,179.6,682.9,4.3,R,Cooper and Gessaman 2004
+Patagona gigas,Giant Hummingbird,N,19.1,3,134.8,NA,NA,R,Lasiewski et al. 1967
+Phalaenoptilus nuttallii,Common Poorwill,N,44.4,34,210,529,4.7,A,Talbot et al. 2017
+Phaps elegans,Brush Bronzewing,Y,224,4,172.5,NA,NA,R,Larcombe et al. 2003
+Plocepasser mahali,White-browed Sparrow-weaver,N,39.4,31,1517.3,460.7,5.4,A,Whitfield et al. 2015
+Podargus ocellatus,Marbled Frogmouth,N,145,2,777.2,1434.1,5.2,A,"Lasiewski, Dawson and Bartholomew 1970"
+Pterocles burchelli,Burchell’s Sandgrouse,Y,192.9,17,808,1319.6,6.1,A,McKechnie et al. 2016
+Selasphorus sasin,Allen’s Hummingbird,N,3.7,3,44.6,NA,NA,R,Lasiewski 1964
+Serinus leucopterus,Protea Canary,N,20.5,5,123,457.9,3.9,A,Milne et al. 2015
+Sporopipes squamifrons,Scaly-feathered Weaver,N,10.4,15,449.5,141.8,4,A,Whitfield et al. 2015
+Struthidea cinerea,Apostlebird,N,117.6,7,580,1451.8,5.4,A,McKechnie et al. 2017
+Sylvia atricapilla,Eurasian Blackcap,N,16.7,NA,77.1,NA,NA,R,Shilov 1968
+Synoicus chinensis,King Quail,N,42.7,NA,129,631.4,4.8,R,Lasiewski et al. 1966
+Telespiza cantans,Laysan Finch,N,32.8,12,878,NA,NA,A,Weathers and van Riper 1982
+Toxostoma curvirostre,Curve-billed Thrasher,N,70.9,17,390,1228.7,5.3,A,Smith et al. 2017
+Zanda baudinii,Baudin’s Black Cockatoo,N,597,4,388.1,NA,NA,R,Cooper et al. 2002
+Oena capensis,namaqua dove,Y,36.4,5,105.6,201.2,NA,R,Schleucher 1999
+Cardinalis cardinalis,Northern Cardinal,N,40,16,118,638.7,4.2,R,Dawson 1958
+Mimus polyglottos,Northern mockingbird,N,46.6,5,258.3,NA,NA,A,Ro and Williams 2010
+Lanius excubitor,northern shrike,N,60,4,276.8,377,NA,A,Ward and Pinshow 1995
+Nectarinia violacea,orange-breasted sunbird,N,9.4,5,92.1,242.1,3.5,A,Milne et al. 2015
+Loxioides bailleui,palila,Y,36,4,1099,NA,NA,R,Weathers and van Riper 1982
+Pterocles alchata,pin-tailed sandgrouse,Y,242.9,6,648.5,1665.3,4.8,A,Hinsley et al. 1993
+Cardinalis sinuatus,Pyrrhuloxia,N,32,6,140,571.9,4.4,R,Hinds and Calder 1973
+Calidris canutus,Red Knot,N,118,NA,254.2,NA,NA,R,Verboven and Piersma 1995
+Certhilauda burra,Red Lark,N,38.3,10,260,580,4.4,A,Kemp and McKechnie 2019
+Sitta canadensis,Red-breasted nuthatch,N,11.2,19,72.8,216.7,NA,A,Mugaas and Templeton 1970
+Vireo olivaceus,red-eyed vireo,N,15.4,6,116.7,NA,NA,A,Ro and Williams 2010
+Psephotus haematonotus,Red-rumped parrot,N,54.9,6,130.7,NA,NA,R,MacMillen and Baudinette 1993
+Calyptorhynchus banksii,Red-tailed Black Cockatoo,Y,665,3,292.6,NA,NA,R,Cooper et al. 2002
+Streptopelia capicola,ring-necked dove,Y,147.5,26,5400,1234,5.5,A,McKechnie et al. 2016
+Agapornis roseicollis,Rosy-faced Lovebird,Y,48.1,6,0.2,NA,NA,R,Pinowski and Kendeigh 1977
+Selasphorus rufus,rufous hummingbird,N,3.8,3,45.4,NA,NA,R,Lasiewski 1964
+Caprimulgis rufigena,Rufous-cheeked Nightjar,N,53,25,130,408.5,4.5,R,O'Connor et al. 2017
+Zonotrichia capensis,rufous-collared sparrow,N,20.1,9,2011,NA,NA,R,Sabat et al. 2006
+Ammoperdix heyi,Sand Partridge,Y,172,36,341.9,NA,4.6,R,Frumkin et al. 1986
+Passerculus sandwichensis,Savannah sparrow,N,17.4,12,135.7,NA,NA,R,Williams and Hansell 1981
+Piranga olivacea,scarlet tanager,N,27.3,4,150,NA,NA,A,Ro and Williams 2010
+Zanda latirostris,slender-billed black-cockatoo,N,665,4,591.9,NA,NA,R,Cooper et al. 2002
+Philetairus socius,sociable weaver,N,24.9,25,933,385.6,5.4,A,Whitfield et al. 2015
+Melospiza melodia,song sparrow,N,19.3,6,137.5,NA,NA,A,Ro and Williams 2010
+Onychoprion fuscatus,sooty tern,N,155.9,4,320.4,816.2,NA,A,MacMillen et al. 1977
+Catharacta maccormicki,South Polar Skua,N,1249.5,6,3279.2,NA,NA,A,Morgan et al. 1992
+Nectarinia chalybea,Southern double-collared sunbird,N,7.6,5,81.3,257.4,2.8,A,Milne et al. 2015
+Colius striatus,Speckled Mousebird,N,52.5,6,132.8,NA,NA,A,Bartholomew and Trost 1970
+Acanthagenys rufogularis,Spiny-cheeked Honeyeater,N,41.7,20,230,478.2,5,A,McKechnie et al. 2017
+Eurostopodus argus,Spotted eared-nightjar,N,88,2,320.3,400.8,5.2,R,Dawson and Fisher 1969
+Strix occidentalis,Spotted owl,N,571,4,1827.2,3372,4.7,A,Ganey et al. 1993
+Cyanocitta stelleri,Steller’s Jay,N,99.1,8,412.4,NA,NA,A,Mann 1983
+Cacatua galerita,Sulphur-crested Cockatoo,Y,776.1,4,1366,NA,NA,R,Williams et al. 1991
+Tachycineta bicolor,Tree swallow,N,16.3,5,141.7,NA,NA,A,Ro and Williams 2010
+Cathartes aura,Turkey Vulture,N,1380.3,6,1877.2,7429,6.2,A,"Arad and Bernstein, 1988"
+Sporophila corvina,Variable seedeater,Y,9.8,13,87.4,212.7,3.8,A,Weathers 1997
+Auriparus flaviceps,Verdin,N,7,8,39.8,144.2,3.6,R,Wolf and Walsberg 1996
+Bradypterus victorini,Victorin’s Warbler,N,16.6,3,139.4,355.2,3.2,A,Milne et al. 2015
+Ploceus cucullatus,village weaver,Y,39.6,8,NA,702,4.7,R,Lasiewski and Seymour 1972
+Ardenna pacifica,Wedge-tailed Shearwater,N,320.5,18,519.2,3718.7,6.2,A,Whittow et al. 1987
+Cacatua pastinator,Western Corella,Y,717,3,394.4,NA,NA,R,Cooper et al. 2002
+Megascops kennicottii,western screech-owl,N,101.3,23,615,1012,5.5,A,Talbot et al. 2018
+Lagopus leucura,white-tailed ptarmigan,N,326,24,772.6,3785.8,NA,A,Johnson 1968
+Lonchura malabarica,white-throated silverbill,Y,11,7,78.9,NA,NA,A,Willoughby 1969
+Zenaida asiatica,white-winged dove,Y,147.3,52,990,1494.6,5.8,A,Smith et al. 2015
+Oceanites oceanicus,Wilson's storm-petrel,N,34.1,6,250,NA,NA,A,Morgan et al. 1992
+Lullula arborea,wood lark,N,25.5,14,175,458.9,NA,R,Tieleman et al. 2002
+Sitta europaea,wood nuthatch,N,21,NA,90.8,NA,NA,R,Shilov 1968
+Pica nuttalli,Yellow-billed magpie,N,151.9,12,525,2062.8,5.1,R,Hayworth and Weathers 1983
+Lichenostomus ornatus,Yellow-plumed honeyeater,N,16.7,20,120,320.4,4.3,A,McKechnie et al. 2017
+Taeniopygia guttata,zebra finch,N,12,12,103.1,NA,NA,A,Calder 1964
