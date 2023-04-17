@@ -88,14 +88,14 @@ lwma_weather3 = lwma_weather2 %>%
                                    sunrise,
                                    units = c("mins"))),
          rain = if_else((lead(RAIN)-RAIN) >= 0, (lead(RAIN)-RAIN), 0),
-         gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
+         gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))) %>%
   dplyr::rename(temp = "TAIR",
          relh = "RELH",
          ws10m = "WSPD",
          ws2m = "WS2M",
          pres = "PRES",
          solar_rad = "SRAD") %>%
-  dplyr::mutate(pres = pres/10) # convert pressure from millibars to kPa
+  dplyr::mutate(pres = pres/10)) # convert pressure from millibars to kPa
 
 # Evaporation rate equation: https://www.engineeringtoolbox.com/evaporation-water-surface-d_690.html
 # gh = Θ A (xs - x); amounted of water evaporated per hour
@@ -178,7 +178,7 @@ sswma_weather3 = sswma_weather2 %>%
          arid = abs((1/dew)),
          mas = as.numeric(difftime(date_time,sunrise,units = c("mins"))),
          rain = if_else((lead(RAIN)-RAIN) >= 0, (lead(RAIN)-RAIN), 0),
-         gh = (25+(19*WS2M) * 1 *(max_sat(TAIR)-(RELH/100)))) %>%
+         gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100)))) %>%
   dplyr::rename(temp = "TAIR",
                 relh = "RELH",
                 ws10m = "WSPD",
@@ -241,7 +241,7 @@ cbma_wind = read_csv("data/mesonet_data/cbma_mesonet_wind.csv", col_names = TRUE
                 ws10m = "Wind Speed 10m (kn)") %>%
   dplyr::filter(date(date_time) > "2021-04-30") %>%
   dplyr::mutate(ws10m = 0.514444*ws10m) %>% #convert from miles/hour to m/s
-  dplyr::mutate(ws2m = (ws10m*4.87)/(log((67.8*10)-5.42))
+  dplyr::mutate(ws2m = (ws10m*4.87)/(log((67.8*10)-5.42)) # convert from wind speed at 10m to wind speed at 2m
     )
 
 # approximating missing weather values
@@ -304,7 +304,7 @@ cbma_weather3 = cbma_weather2 %>%
          mas = as.numeric(difftime(date_time,
                                    sunrise,
                                    units = c("mins"))),
-         gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100)))) %>%
+         gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100)))) %>%
   dplyr::mutate(pres = (sea_pres*(exp(((-9.80665*0.0289644)*elev_m)/(8.31432*(temp+273.15)))))
 )
 
@@ -360,7 +360,7 @@ setwd("C:/Users/meely/OneDrive - University of Oklahoma/University of Oklahoma/R
 # Determine kiowa wind speeds from ASOS iowa mesonet from Mills Canyon weather station (mlcn5)
 # all units are in US/Imperial, will need to convert to metric
 # assuming wind is at 10m, will need to convert to 2m wind speeds
-kiowa_weather <- read_csv("data/mesonet_data/kiowa_wind.csv") %>% 
+kiowa_weather <- read_csv("data/mesonet_data/kiowa_wind_weather.csv") %>% 
   dplyr::rename(date_time = "utc_valid",
                 rain_acc = "PCIRGZ",
                 rain = "PPHRGZ",
@@ -440,7 +440,7 @@ kiowa_weather3 = kiowa_weather2 %>%
          mas = as.numeric(difftime(date_time,
                                    sunrise,
                                    units = c("mins")))) %>%
-  dplyr::mutate(gh = (25+(19*ws2m) * 1 *(max_sat(temp)-(relh/100))),
+  dplyr::mutate(gh = ((25+(19*ws2m))* 1 *(max_sat(temp)-(relh/100))),
                 pres = (101.325*(exp(((-9.80665*0.0289644)*1776)/(8.31432*(temp+273.15)))))
   )
 

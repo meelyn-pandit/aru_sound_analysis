@@ -25,5 +25,5 @@ acf(resid(x))
   }
 
 # par(mfrow = c(2,2))
-Assump(m3)
-Assump(m2)
+assump(m3)
+assump(m2)

@@ -14,7 +14,9 @@ round_factor = function(x){
 }
 
 # Atmospheric Sound Attenuation
-att_coef <- function(f, T_cel, h_rel, Pa=101.325){
+att_coef <- function(f, T_cel, h_rel, Pa
+                     # Pa=101.325
+                     ){
   #f=frequency, d = distance in meters, T_cel = temperature in celcius
   #h_rel = Relative humidity (percent - "70" = 70% humidity)
   #Pa = ambient pressure (101.325 is standard, 1 atmosphere)
@@ -37,6 +39,23 @@ att_coef <- function(f, T_cel, h_rel, Pa=101.325){
   Xn = 0.1068 * exp(-3352 / T_kel) * (Frn + (f^2 / Frn))^-1
   Alpha = 8.68589 * f^2 * (Xc + T_rel^(-5/2) * (Xo + Xn))
   return(Alpha)
+}
+
+aud_range <- function(dbOri = 85, 
+                      dbMin = 30, 
+                      f, 
+                      T_cel, 
+                      h_rel, 
+                      Pa #Pa=101.325
+) {
+  #dbOri=original decible level, dmMin = threshold decible level for detection,
+  #f=frequency, d = distance in meters, T_cel = temperature in celcius
+  #h_rel = Relative humidity (percent - "70" = 70% humidity)
+  #Pa = ambient pressure (101.325 is standard, 1 atmosphere)
+  Alpha = att_coef(f, T_cel, h_rel, Pa) #Get absorption coefficient
+  dbDiff = dbOri-dbMin #calculate loss of sound energy from original to threshold level
+  dist <- dbDiff/Alpha #calculate the distance based on absorption coefficient
+  return(dist)
 }
 
 determine_sig = function(p.value){
@@ -90,3 +109,38 @@ pressure = function(altitude,
                     temperature) {
   pres = (101.325*(exp(((-9.80665*0.0289644)*altitude)/(8.31432*temperature+273.15))))
 }
+
+
+# Calculate maximum saturation of air, based on temperature ---------------
+
+max_sat <- function(temp){
+  y = 0.0039*(exp(0.0656*temp))
+  return(y)
+}
+
+# Regression Diagnostics --------------------------------------------------
+#Assessing Outliers
+library(car)
+library(predictmeans)
+library(tidyverse)
+library(broom)
+
+# outlierTest(m3) # Bonferonni p-value for most extreme obs
+# qqPlot(m3, main="QQ Plot") #qq plot for studentized resid 
+# leveragePlots(m3) # leverage plots
+
+assump<-function(x) {       #graphs for checking assumptions
+  r<-residuals(x)
+  ft<-fitted(x)
+  # par(mfrow=c(2,2))
+  library(MASS)
+  truehist(r,main="Histogram of Residuals",xlab="Residuals")
+  curve(dnorm(x,mean=mean(r),sd=sd(r)),add=TRUE)
+  qqnorm(r, ylim=range(r), main="QQNorm Plot",ylab="Quantiles of (ie, ordered) residuals", xlab="Quantiles of normal distribution")
+  qqline(r,lty=2)
+  plot(r~ft,main="Residuals vs Fitted",xlab="Fitted (predicted) values",ylab="Residuals");abline(h=0)
+  qqnorm(ft, ylim=range(ft), main="QQNorm Plot",ylab="Quantiles of fitted values", xlab="Quantiles of normal distribution")
+  qqline(ft,lty=2)
+  acf(resid(x))
+}
+

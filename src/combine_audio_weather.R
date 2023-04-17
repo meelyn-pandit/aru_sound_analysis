@@ -930,8 +930,8 @@ wfull$arid_across = scale(wfull$gh)
 wfull = wfull %>%
   dplyr::select(-arid)
 water_wfull = wfull
-setwd("data_clean/mesonet_data")
-save(water_wfull, file = "water_mesonet_weather.Rdata")
+# setwd("data_clean/mesonet_data")
+save(water_wfull, file = "data_clean/mesonet_data/water_mesonet_weather.Rdata")
 
 
 ## Water Supplementation - Combine Acoustic and Weather Data --------------------
