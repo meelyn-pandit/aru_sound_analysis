@@ -188,9 +188,17 @@ save(aw4, file = "data_clean/aridity_data_clean.Rdata")
 # aw4_linux = aw4
 # save(aw4_linux, file = "data_clean/aridity_data_clean_linux.Rdata")
 
+# Aridity Gradient - Data Pooled across sites -----------------------------
+
+
 # Checking full dataset and lm plots
 pas = lmer(pc2 ~ ew_vol*mas_bin + scale(date) + (1|site), data = aw4)
 summary(pas)
+
+broom.mixed::tidy(pas, effects = "ran_coefs", conf.int = TRUE) %>% print(n = 100) #fixed + random effects
+broom.mixed::tidy(pas, effects = "fixed", conf.int = TRUE) %>% print(n = 100) #fixed effects
+broom.mixed::tidy(pas, effects = "ran_vals", conf.int = TRUE) %>% print(n = 100)# random effects intercepts and slopes
+broom.mixed::tidy(pas, effects = "ran_pars", conf.int = TRUE) %>% print(n = 100)
 
 pas_lm = lm(pc2 ~ ew_vol*mas_bin + scale(date), data = aw6)
 summary(pas_lm)
@@ -457,9 +465,9 @@ aw6$pc3b = audio_pcadf_mas$PC3 * -1# aci and bio increases as values become more
 pc_comp = data.frame("pc1" = aw6$pc1,
                      "pc2" = aw6$pc2,
                      "pc3" = aw6$pc3,
-                     "pc1b" = aw6$pc1b,
-                     "pc2b" = aw6$pc2b,
-                     "pc3b" = aw6$pc3b,
+                     # "pc1b" = aw6$pc1b,
+                     # "pc2b" = aw6$pc2b,
+                     # "pc3b" = aw6$pc3b,
                      "adi" = aw6$adi,
                      "aei" = aw6$aei,
                      "num_vocals" = aw6$num_vocals,
@@ -487,6 +495,29 @@ aw6$site_labels = factor(aw6$site, levels = c("lwma","sswma","cbma","kiowa"),
                          labels = c("LWMA","SSWMA","CBMA","KIOWA"))
 
 save(aw6, file = "data_clean/aridity_gradient_mas.Rdata")
+
+
+# Aridity Gradient - Comparisons across sites (mas_bins not includ --------
+# pc ~ ew_wind*site + scale(date)
+load("data_clean/aridity_gradient_mas.Rdata")
+lmpc1site = ag_contrasts_convar_site2(aw6,
+                                      aw6$pc1,
+                                      aw6$ew_vol)
+lmpc1site[[4]]
+lmpc1site[[2]]
+
+
+lmpc2site = ag_contrasts_convar_site2(aw6,
+                                      aw6$pc2,
+                                      aw6$ew_vol)
+lmpc2site[[4]]
+lmpc2site[[2]]
+
+lmpc3site = ag_contrasts_convar_site2(aw6,
+                                      aw6$pc3,
+                                      aw6$ew_vol)
+lmpc3site[[4]]
+lmpc3site[[2]]
 
 # Aridity Gradient - Summarized by Date and MAS - LINEAR MODELS! --------
 ### Evaporation rate (mL/cm2/day) is treated as a continuous variable rather than a factor to reduce complexity
