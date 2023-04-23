@@ -129,6 +129,56 @@ ag_contrasts_convar_site = function(data,
   return(my_list)
 }
 
+### Aridity Gradient - Linear Model analysis with aridity (gh) or sound attenuation at 8kHz as a continuous variable. Comparing across sites and within mas_bins
+## Includes functions to make manuscript-level tables
+ag_contrasts_convar_site2 = function(data,
+                                     yvar,
+                                     xvar){
+  # m = lm(pc ~ arid_within*mas_bin*x3 + scale(date), data = data)
+  m = lm(yvar ~ xvar*site + scale(date), data = data)
+  summary = summary(m)
+  diagnostics = assump(m)
+  # emm = emmeans(m, pairwise ~ x3*x2)
+  # # Setting up comparisons for emmeans contrast function
+  lwma  = c(1,0,0,0)
+  sswma = c(0,1,0,0)
+  cbma  = c(0,0,1,0)
+  kiowa = c(0,0,0,1)
+  
+  emm = emtrends(m, ~ site, 
+                 var = "xvar", 
+                 type = 'response',
+                 weights = "cells") # across sites
+  emm_summary = summary(emm) # have to save summary to make it a dataframe
+  emm_cntrst = contrast(emm,
+                        method = list(
+                          "SSWMA - LWMA" = sswma-lwma,
+                          "CBMA - LWMA"  = cbma -lwma,
+                          "KIOWA - LWMA" = kiowa-lwma,
+                          "CBMA - SSWMA"  = cbma -sswma,
+                          "KIOWA - SSWMA" = kiowa-sswma,
+                          "KIOWA - CBMA" = kiowa-cbma),
+                        adjust = "bonferroni")
+  # emm_cntrst = contrast(emm)
+  emm_cntrst_summary = summary(emm_cntrst)
+  emm_confi_summary = confint(emm_cntrst) # run this for confidence intervals, will need to change the table function
+  # arid_table = aridity_table_mas2(emm_cntrst_summary);arid_table
+  # arid_table = aridity_contrast_table_site(emm_cntrst_summary);arid_table
+  
+  # slope_table = ind_slopes_site(emm_summary)
+  
+  my_list = list(summary, # summary of linear model
+                 # diagnostics, # regression diagnostics plots to see if model is good
+                 emm_cntrst_summary, # Emmeans contrast table w/ pvalues
+                 emm_confi_summary, # Emmeans contrast table with CI 
+                 # arid_table, # Good emmeans contrast table made with gh()
+                 emm_summary # Emtrends table saved as a dataframe, slopes of each site
+                 # slope_table
+                 ) # Emtrends table saved as a gh() object, manuscript table
+  # my_list = list(summary, diagnostics, emm_cntrst_summary, emm_confi_summary, emm)
+  return(my_list)
+}
+
 ## Create a gt table for site contrasts
 aridity_contrast_table_site = function(contrast_table) {
   contrast_table$mas_bin = factor(contrast_table$mas_bin, 
