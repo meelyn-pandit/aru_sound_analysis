@@ -519,6 +519,53 @@ lmpc3site = ag_contrasts_convar_site2(aw6,
 lmpc3site[[4]]
 lmpc3site[[2]]
 
+
+# Aridity Gradient - Across Sites (no mas_bins) Plots ---------------------
+
+#X-axis Label - need this line of code for the superscript
+xlab = expression(paste("Water Evaporation Rate (mL/cm"^"2","/day)"))
+
+# PC1
+ag_across_sites(aw6,
+                aw6$pc1,
+                aw6$ew_vol,
+                "PC1 - Acoustic Diversity",
+                xlab,
+                90,
+                NULL)
+ggsave('results/ag_pc1_across_sites_paper.png', 
+       dpi = 600, 
+       height = 7.5, 
+       width = 13.33, 
+       units = "in")
+
+# PC2
+ag_across_sites(aw6,
+                aw6$pc2,
+                aw6$ew_vol,
+                "PC2 - Avian Abundance",
+                xlab,
+                90,
+                NULL)
+ggsave('results/ag_pc2_across_sites_paper.png', 
+       dpi = 600, 
+       height = 7.5, 
+       width = 13.33, 
+       units = "in")
+
+# PC3
+ag_across_sites(aw6,
+                aw6$pc3,
+                aw6$ew_vol,
+                "PC3 - Acoustic Complexity",
+                xlab,
+                90,
+                NULL)
+ggsave('results/ag_pc3_across_sites_paper.png', 
+       dpi = 600, 
+       height = 7.5, 
+       width = 13.33, 
+       units = "in")
 # Aridity Gradient - Summarized by Date and MAS - LINEAR MODELS! --------
 ### Evaporation rate (mL/cm2/day) is treated as a continuous variable rather than a factor to reduce complexity
 
