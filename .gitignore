@@ -40,4 +40,16 @@ vignettes/*.pdf
 
 # Audio data files
 *.wav
+*.WAV
 #.mp3
+
+# LibreOffice / office lock files
+.~lock.*#
+
+# OneDrive / device sync conflict copies
+*-LAPTOP-*
+*-DESKTOP-*
+
+# Editor backups and copies
+*-copy.R
+*.Rdata~
